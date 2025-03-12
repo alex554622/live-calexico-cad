@@ -59,7 +59,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const newUser: Partial<User> = {
             username: email,
             name: email.split('@')[0],
-            role: 'user',
+            role: 'officer', // Fixed the type here to match allowed values
           };
           
           const { data, error } = await supabase
