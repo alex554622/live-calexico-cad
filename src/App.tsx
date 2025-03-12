@@ -14,6 +14,7 @@ import Officers from "./pages/Officers";
 import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
+import UserManagement from "./pages/UserManagement";
 
 const queryClient = new QueryClient();
 
@@ -27,6 +28,21 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   
   if (!user) {
     return <Navigate to="/login" replace />;
+  }
+  
+  return <>{children}</>;
+};
+
+// Admin only route
+const AdminRoute = ({ children }: { children: React.ReactNode }) => {
+  const { user, loading, hasPermission } = useAuth();
+  
+  if (loading) {
+    return <div className="min-h-screen flex items-center justify-center">Loading...</div>;
+  }
+  
+  if (!user || !hasPermission('manageSettings')) {
+    return <Navigate to="/" replace />;
   }
   
   return <>{children}</>;
@@ -51,6 +67,11 @@ const App = () => (
                       <Route path="/incidents" element={<Incidents />} />
                       <Route path="/notifications" element={<Notifications />} />
                       <Route path="/settings" element={<Settings />} />
+                      <Route path="/users" element={
+                        <AdminRoute>
+                          <UserManagement />
+                        </AdminRoute>
+                      } />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>
