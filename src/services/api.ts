@@ -715,3 +715,36 @@ export const simulateRealTimeUpdates = (
   
   return () => clearInterval(interval);
 };
+
+// New function to reset a user's password
+export const resetUserPassword = (id: string, newPassword: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const userIndex = users.findIndex(u => u.id === id);
+      if (userIndex !== -1) {
+        // Store the new password (in a real app, this would be hashed)
+        (users[userIndex] as any).password = newPassword;
+        
+        // Create a notification
+        const newNotification: Notification = {
+          id: String(notifications.length + 1),
+          title: 'Password Reset',
+          message: `${users[userIndex].name}'s password has been reset`,
+          type: 'info',
+          timestamp: new Date().toISOString(),
+          read: false,
+          relatedTo: {
+            type: 'user',
+            id
+          }
+        };
+        
+        notifications = [newNotification, ...notifications];
+        
+        resolve();
+      } else {
+        reject(new Error('User not found'));
+      }
+    }, 300);
+  });
+};
