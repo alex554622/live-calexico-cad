@@ -26,17 +26,27 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Check if data retention was previously enabled
-    const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
-    
-    // When logging in, pass the retention status
-    const success = await login(email, password, retentionEnabled);
-    if (success) {
-      navigate('/');
-    } else {
+    try {
+      // Check if data retention was previously enabled
+      const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
+      
+      // When logging in, pass the retention status
+      const success = await login(email, password, retentionEnabled);
+      
+      if (success) {
+        navigate('/');
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Invalid email or password. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error('Login error:', error);
       toast({
-        title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        title: "Login Error",
+        description: "An error occurred during login. Please try again.",
         variant: "destructive"
       });
     }

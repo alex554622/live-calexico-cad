@@ -26,8 +26,8 @@ export const mapDbIncidentToAppIncident = (dbIncident: any): Incident => {
     location: dbIncident.location,
     reportedAt: dbIncident.reported_at,
     updatedAt: dbIncident.updated_at,
-    assignedOfficers: dbIncident.assigned_officers,
-    type: dbIncident.type,
+    assignedOfficers: dbIncident.assigned_officers || [],
+    type: dbIncident.type || 'general',
     reportedBy: dbIncident.reported_by || 'Unknown'
   };
 };
