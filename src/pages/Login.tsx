@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -46,28 +45,12 @@ const Login = () => {
           user_permissions(permission)
         `)
         .eq('username', username)
-        .single();
+        .maybeSingle(); // Use maybeSingle() instead of single() to avoid errors when no data is found
       
-      if (error) {
-        console.error('Login error:', error);
+      // Check if user exists and password matches
+      if (error || !data || data.password !== password) {
         throw new Error('Invalid username or password');
       }
-      
-      // Check password (in a real app this would use proper hashing)
-      if (!data || data.password !== password) {
-        throw new Error('Invalid username or password');
-      }
-      
-      // Sign in with Supabase auth (in this case we're using a custom JWT)
-      // We create a session in localStorage to simulate auth
-      localStorage.setItem('supabase.auth.token', JSON.stringify({
-        currentSession: {
-          user: {
-            id: data.id,
-            email: data.username
-          }
-        }
-      }));
       
       // Store data retention preference
       localStorage.setItem('dataRetention', retentionEnabled ? 'true' : 'false');
@@ -79,6 +62,16 @@ const Login = () => {
           permissions[p.permission] = true;
         });
       }
+      
+      // Create session in localStorage
+      localStorage.setItem('supabase.auth.token', JSON.stringify({
+        currentSession: {
+          user: {
+            id: data.id,
+            email: data.username
+          }
+        }
+      }));
       
       // Call the login function from AuthContext
       const success = await login(username, password, retentionEnabled);
