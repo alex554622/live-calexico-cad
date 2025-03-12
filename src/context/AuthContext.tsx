@@ -22,6 +22,9 @@ const defaultPermissions = {
     createUser: true,
     editUser: true,
     editOfficer: true,
+    createOfficer: true,
+    viewOfficerDetails: true,
+    assignIncidentToOfficer: true,
   },
   supervisor: {
     createIncident: true,
@@ -30,6 +33,9 @@ const defaultPermissions = {
     createUser: true,
     editUser: false,
     editOfficer: true,
+    createOfficer: true,
+    viewOfficerDetails: true,
+    assignIncidentToOfficer: true,
   },
   dispatcher: {
     createIncident: true,
@@ -38,6 +44,9 @@ const defaultPermissions = {
     createUser: false,
     editUser: false,
     editOfficer: false,
+    createOfficer: false,
+    viewOfficerDetails: true,
+    assignIncidentToOfficer: true,
   },
   officer: {
     createIncident: false,
@@ -46,6 +55,9 @@ const defaultPermissions = {
     createUser: false,
     editUser: false,
     editOfficer: false,
+    createOfficer: false,
+    viewOfficerDetails: false,
+    assignIncidentToOfficer: false,
   }
 };
 

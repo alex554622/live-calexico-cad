@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   username: string;
@@ -12,6 +11,9 @@ export interface User {
     createUser?: boolean;
     editUser?: boolean;
     editOfficer?: boolean;
+    createOfficer?: boolean;
+    viewOfficerDetails?: boolean;
+    assignIncidentToOfficer?: boolean;
   };
 }
 
