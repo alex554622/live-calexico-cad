@@ -23,18 +23,20 @@ const LoginForm = () => {
     setLoading(true);
     
     try {
-      // Admin credentials check
-      if (email === 'avalla' && password === '1992') {
-        const adminEmail = 'avalladolid@calexico.ca.gov';
-        
-        // Try to login with admin account first
-        const success = await login(adminEmail, "1992", false);
-        
-        if (!success) {
-          // If login failed, try to create admin account
+      // Admin credentials check for Alex Valladolid
+      if (email === 'avalladolid@calexico.ca.gov') {
+        // Check if admin profile exists
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('username', email)
+          .single();
+
+        if (!existingProfile) {
+          // Create admin user if it doesn't exist
           const { data: authData, error: signUpError } = await supabase.auth.signUp({
-            email: adminEmail,
-            password: "1992",
+            email,
+            password,
             options: {
               data: {
                 name: 'Administrator'
@@ -43,6 +45,7 @@ const LoginForm = () => {
           });
 
           if (signUpError) {
+            console.error("Admin creation error:", signUpError);
             toast({
               title: "Admin Creation Error",
               description: signUpError.message || "Failed to create admin account",
@@ -51,17 +54,14 @@ const LoginForm = () => {
             setLoading(false);
             return;
           }
-
+          
+          // Set the role explicitly to admin in the profiles table
           if (authData?.user) {
-            // Wait for profile creation
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            
-            // Set admin role
             const { error: profileError } = await supabase
               .from('profiles')
               .update({ role: 'admin' })
               .eq('id', authData.user.id);
-
+            
             if (profileError) {
               console.error("Error setting admin role:", profileError);
               toast({
@@ -72,53 +72,45 @@ const LoginForm = () => {
               setLoading(false);
               return;
             }
-
-            // Try login again after account creation
-            const loginSuccess = await login(adminEmail, "1992", false);
-            if (loginSuccess) {
-              toast({
-                title: "Admin Login Successful",
-                description: "Welcome, Administrator!",
-              });
-              navigate('/');
-            } else {
-              toast({
-                title: "Admin Login Failed",
-                description: "Created admin account but failed to login",
-                variant: "destructive"
-              });
-            }
           }
-        } else {
-          // Successful admin login
+          
           toast({
-            title: "Admin Login Successful",
-            description: "Welcome, Administrator!",
+            title: "Admin Account Created",
+            description: "Administrator account has been created. Please sign in.",
           });
-          navigate('/');
+        } else if (existingProfile.role !== 'admin') {
+          // Update existing profile to admin if not already
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ role: 'admin' })
+            .eq('id', existingProfile.id);
+            
+          if (updateError) {
+            console.error("Error updating to admin role:", updateError);
+          }
         }
+      }
+
+      // Regular login attempt
+      const success = await login(email, password, false);
+      if (success) {
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+        navigate('/');
       } else {
-        // Regular user login
-        const success = await login(email, password, false);
-        if (success) {
-          toast({
-            title: "Login Successful",
-            description: "Welcome back!",
-          });
-          navigate('/');
-        } else {
-          toast({
-            title: "Login Failed",
-            description: "Invalid email or password",
-            variant: "destructive"
-          });
-        }
+        toast({
+          title: "Login Failed",
+          description: "Invalid email or password. Please try again.",
+          variant: "destructive"
+        });
       }
     } catch (error) {
       console.error("Login error:", error);
       toast({
         title: "Login Error",
-        description: "An unexpected error occurred",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
     } finally {
@@ -130,11 +122,11 @@ const LoginForm = () => {
     <form onSubmit={handleLogin}>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <Label htmlFor="email">Username or Email</Label>
+          <Label htmlFor="email">Email</Label>
           <Input
             id="email"
-            type="text"
-            placeholder="Enter your username or email"
+            type="email"
+            placeholder="Enter your email"
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
