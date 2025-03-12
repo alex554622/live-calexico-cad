@@ -133,20 +133,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = async (email: string, password: string, retainData = false) => {
+    console.log('Login function called with email:', email);
     try {
       setLoading(true);
-      console.log('Attempting login with email:', email);
       
-      // Clear any previous session data to avoid conflicts
-      console.log('Clearing previous session data');
+      if (!email || !password) {
+        console.error('Email or password is missing');
+        return false;
+      }
       
+      console.log('Attempting Supabase signInWithPassword...');
       const { data, error } = await supabase.auth.signInWithPassword({
         email, 
         password
       });
       
       if (error) {
-        console.error('Login error:', error);
+        console.error('Login error from Supabase:', error.message);
         toast({
           title: "Login Failed",
           description: error.message,
@@ -155,8 +158,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
+      console.log('Supabase auth response:', data ? 'Success' : 'No data');
+      
       if (data.session) {
-        console.log('Login successful, session:', data.session.user.id);
+        console.log('Login successful, session established:', data.session.user.id);
         
         // Store data retention preference
         localStorage.setItem('dataRetention', retainData ? 'true' : 'false');
@@ -172,14 +177,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           console.error('Error fetching user profile after login:', profileError);
         } else if (profile) {
           console.log('User profile loaded:', profile.name);
+          setUser({
+            id: profile.id,
+            username: profile.username,
+            name: profile.name,
+            role: profile.role as User['role'],
+            avatar: profile.avatar || `https://ui-avatars.com/api/?name=${encodeURIComponent(profile.name)}&background=1E40AF&color=fff`,
+            permissions: profile.permissions as any
+          });
         }
         
         return true;
       }
       
+      console.error('No session returned from Supabase');
       return false;
     } catch (error) {
-      console.error('Login error:', error);
+      console.error('Unexpected login error:', error);
       return false;
     } finally {
       setLoading(false);

@@ -32,9 +32,8 @@ const Login = () => {
     }
   }, [user, navigate]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log('Login form submitted');
+  const handleLogin = async () => {
+    console.log('Login function called directly');
     
     if (!email || !password) {
       console.log('Missing email or password');
@@ -93,45 +92,42 @@ const Login = () => {
               Real-Time Officer Activity Display
             </CardDescription>
           </CardHeader>
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="Enter your email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button
-                className="w-full bg-police hover:bg-police-dark"
-                type="submit"
-                disabled={loading || isSubmitting}
-                onClick={(e) => {
-                  console.log('Login button clicked');
-                  // Do not call handleSubmit directly, let the form submit handle it
-                }}
-              >
-                {loading || isSubmitting ? "Logging in..." : "Login"}
-              </Button>
-            </CardFooter>
-          </form>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                placeholder="Enter your email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                type="password"
+                placeholder="Enter your password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            <Button
+              className="w-full mt-6 bg-police hover:bg-police-dark"
+              onClick={handleLogin}
+              disabled={loading || isSubmitting}
+            >
+              {loading || isSubmitting ? "Logging in..." : "Login"}
+            </Button>
+          </CardContent>
+          <CardFooter className="flex justify-center">
+            <p className="text-sm text-gray-500">
+              Log in with your authorized account credentials
+            </p>
+          </CardFooter>
         </Card>
       </div>
       
