@@ -5,6 +5,14 @@ export interface User {
   name: string;
   role: 'admin' | 'dispatcher' | 'supervisor' | 'officer';
   avatar?: string;
+  permissions?: {
+    createIncident?: boolean;
+    editIncident?: boolean;
+    assignOfficer?: boolean;
+    createUser?: boolean;
+    editUser?: boolean;
+    editOfficer?: boolean;
+  };
 }
 
 export type OfficerStatus = 'available' | 'busy' | 'responding' | 'offDuty';
@@ -42,6 +50,7 @@ export interface Incident {
   reportedAt: string;
   updatedAt: string;
   reportedBy: string;
+  documentLink?: string;
 }
 
 export interface Notification {
@@ -55,4 +64,14 @@ export interface Notification {
     type: 'officer' | 'incident';
     id: string;
   };
+}
+
+export interface IncidentDocument {
+  id: string;
+  incidentId: string;
+  filename: string;
+  url: string;
+  uploadedAt: string;
+  uploadedBy: string;
+  type: string;
 }

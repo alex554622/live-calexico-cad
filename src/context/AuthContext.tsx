@@ -9,9 +9,45 @@ interface AuthContextType {
   loading: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
+  hasPermission: (permission: keyof NonNullable<User['permissions']>) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const defaultPermissions = {
+  admin: {
+    createIncident: true,
+    editIncident: true,
+    assignOfficer: true,
+    createUser: true,
+    editUser: true,
+    editOfficer: true,
+  },
+  supervisor: {
+    createIncident: true,
+    editIncident: true,
+    assignOfficer: true,
+    createUser: true,
+    editUser: false,
+    editOfficer: true,
+  },
+  dispatcher: {
+    createIncident: true,
+    editIncident: true,
+    assignOfficer: true,
+    createUser: false,
+    editUser: false,
+    editOfficer: false,
+  },
+  officer: {
+    createIncident: false,
+    editIncident: false,
+    assignOfficer: false,
+    createUser: false,
+    editUser: false,
+    editOfficer: false,
+  }
+};
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -22,7 +58,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkAuth = async () => {
       try {
         const currentUser = await getCurrentUser();
-        setUser(currentUser);
+        if (currentUser) {
+          // Attach default permissions based on role
+          currentUser.permissions = defaultPermissions[currentUser.role];
+          setUser(currentUser);
+        }
       } catch (error) {
         console.error('Auth error:', error);
       } finally {
@@ -39,7 +79,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const loggedInUser = await apiLogin(username, password);
       
       if (loggedInUser) {
+        // Attach default permissions based on role
+        loggedInUser.permissions = defaultPermissions[loggedInUser.role];
         setUser(loggedInUser);
+        
         toast({
           title: 'Login successful',
           description: `Welcome back, ${loggedInUser.name}!`,
@@ -87,8 +130,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const hasPermission = (permission: keyof NonNullable<User['permissions']>): boolean => {
+    if (!user || !user.permissions) return false;
+    return !!user.permissions[permission];
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission }}>
       {children}
     </AuthContext.Provider>
   );

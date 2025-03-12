@@ -1,6 +1,7 @@
 
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
+import { useAuth } from '@/context/AuthContext';
 import { Incident } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -20,17 +21,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertTriangle, Search, Filter, MapPin, Clock, FileText } from 'lucide-react';
+import { AlertTriangle, Search, Filter, MapPin, Clock, FileText, Plus, ExternalLink } from 'lucide-react';
 import IncidentStatusBadge from '@/components/common/IncidentStatusBadge';
 import IncidentPriorityBadge from '@/components/common/IncidentPriorityBadge';
+import IncidentForm from '@/components/incidents/IncidentForm';
 import { format } from 'date-fns';
 
 const Incidents = () => {
   const { incidents, officers, loadingIncidents, loadingOfficers } = useData();
+  const { hasPermission } = useAuth();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [isCreating, setIsCreating] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
 
   // Filter incidents based on search term and filters
   const filteredIncidents = incidents.filter(incident => {
@@ -45,13 +50,36 @@ const Incidents = () => {
     return matchesSearch && matchesStatus && matchesPriority;
   });
 
+  const handleCreateSuccess = (newIncident: Incident) => {
+    setIsCreating(false);
+    setSelectedIncident(newIncident);
+  };
+
+  const handleEditSuccess = (updatedIncident: Incident) => {
+    setIsEditing(false);
+    setSelectedIncident(updatedIncident);
+  };
+
+  const openDocumentLink = (url?: string) => {
+    if (url) {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    }
+  };
+
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Incidents</h1>
-        <p className="text-muted-foreground">
-          View and manage all incidents in the system.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Incidents</h1>
+          <p className="text-muted-foreground">
+            View and manage all incidents in the system.
+          </p>
+        </div>
+        {hasPermission('createIncident') && (
+          <Button onClick={() => setIsCreating(true)}>
+            <Plus className="h-4 w-4 mr-1" /> New Incident
+          </Button>
+        )}
       </div>
 
       {/* Search and filters */}
@@ -139,6 +167,12 @@ const Incidents = () => {
                         <Clock className="h-3 w-3 mr-1" />
                         <span>{format(new Date(incident.reportedAt), 'MMM d, h:mm a')}</span>
                       </div>
+                      {incident.documentLink && (
+                        <div className="flex items-center text-blue-500">
+                          <FileText className="h-3 w-3 mr-1" />
+                          <span>Doc</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -148,101 +182,162 @@ const Incidents = () => {
         </div>
       )}
 
+      {/* Create Incident Dialog */}
+      <Dialog open={isCreating} onOpenChange={setIsCreating}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Create New Incident</DialogTitle>
+            <DialogDescription>
+              Fill in the details below to report a new incident.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <IncidentForm 
+            onSuccess={handleCreateSuccess}
+            onCancel={() => setIsCreating(false)}
+          />
+        </DialogContent>
+      </Dialog>
+
       {/* Incident Details Dialog */}
       <Dialog open={!!selectedIncident} onOpenChange={(open) => !open && setSelectedIncident(null)}>
         {selectedIncident && (
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
-              <DialogTitle>{selectedIncident.title}</DialogTitle>
+              <DialogTitle className="flex items-center justify-between">
+                <span>{selectedIncident.title}</span>
+                {hasPermission('editIncident') && (
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setIsEditing(true);
+                    }}
+                  >
+                    Edit
+                  </Button>
+                )}
+              </DialogTitle>
               <div className="flex space-x-2 mt-2">
                 <IncidentPriorityBadge priority={selectedIncident.priority} />
                 <IncidentStatusBadge status={selectedIncident.status} />
               </div>
             </DialogHeader>
             
-            <Tabs defaultValue="details">
-              <TabsList className="grid grid-cols-3">
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="officers">Officers</TabsTrigger>
-                <TabsTrigger value="timeline">Timeline</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="details" className="space-y-4 py-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Description</h3>
-                  <p className="text-sm">{selectedIncident.description}</p>
-                </div>
+            {isEditing ? (
+              <IncidentForm 
+                initialData={selectedIncident}
+                onSuccess={handleEditSuccess}
+                onCancel={() => setIsEditing(false)}
+              />
+            ) : (
+              <Tabs defaultValue="details">
+                <TabsList className="grid grid-cols-3">
+                  <TabsTrigger value="details">Details</TabsTrigger>
+                  <TabsTrigger value="officers">Officers</TabsTrigger>
+                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
+                </TabsList>
                 
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Location</h3>
-                  <p className="text-sm">{selectedIncident.location.address}</p>
-                </div>
+                <TabsContent value="details" className="space-y-4 py-4">
+                  <div>
+                    <h3 className="text-sm font-medium mb-1">Description</h3>
+                    <p className="text-sm">{selectedIncident.description}</p>
+                  </div>
+                  
+                  <div>
+                    <h3 className="text-sm font-medium mb-1">Location</h3>
+                    <p className="text-sm">{selectedIncident.location.address}</p>
+                  </div>
+                  
+                  {selectedIncident.documentLink && (
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Documentation</h3>
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex items-center text-blue-600"
+                        onClick={() => openDocumentLink(selectedIncident.documentLink)}
+                      >
+                        <FileText className="h-4 w-4 mr-1" />
+                        View Document
+                        <ExternalLink className="h-3 w-3 ml-1" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Reported At</h3>
+                      <p className="text-sm">{format(new Date(selectedIncident.reportedAt), 'MMM d, h:mm a')}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Last Updated</h3>
+                      <p className="text-sm">{format(new Date(selectedIncident.updatedAt), 'MMM d, h:mm a')}</p>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">Reported By</h3>
+                      <p className="text-sm">{selectedIncident.reportedBy}</p>
+                    </div>
+                  </div>
+                </TabsContent>
                 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">Reported At</h3>
-                    <p className="text-sm">{format(new Date(selectedIncident.reportedAt), 'MMM d, h:mm a')}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">Last Updated</h3>
-                    <p className="text-sm">{format(new Date(selectedIncident.updatedAt), 'MMM d, h:mm a')}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">Reported By</h3>
-                    <p className="text-sm">{
-                      selectedIncident.reportedBy
-                    }</p>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="officers">
-                {loadingOfficers ? (
-                  <div className="py-8 text-center">Loading officers...</div>
-                ) : (
-                  <>
-                    {selectedIncident.assignedOfficers.length > 0 ? (
-                      <div className="space-y-3 py-4">
-                        {selectedIncident.assignedOfficers.map(officerId => {
-                          const officer = officers.find(o => o.id === officerId);
-                          if (!officer) return null;
-                          
-                          return (
-                            <div key={officer.id} className="flex items-center justify-between p-2 border rounded-md">
-                              <div>
-                                <p className="font-medium">{officer.name}</p>
-                                <p className="text-sm text-muted-foreground">{officer.rank} • Badge #{officer.badgeNumber}</p>
+                <TabsContent value="officers">
+                  {loadingOfficers ? (
+                    <div className="py-8 text-center">Loading officers...</div>
+                  ) : (
+                    <>
+                      {selectedIncident.assignedOfficers.length > 0 ? (
+                        <div className="space-y-3 py-4">
+                          {selectedIncident.assignedOfficers.map(officerId => {
+                            const officer = officers.find(o => o.id === officerId);
+                            if (!officer) return null;
+                            
+                            return (
+                              <div key={officer.id} className="flex items-center justify-between p-2 border rounded-md">
+                                <div>
+                                  <p className="font-medium">{officer.name}</p>
+                                  <p className="text-sm text-muted-foreground">{officer.rank} • Badge #{officer.badgeNumber}</p>
+                                </div>
+                                <div className="flex items-center">
+                                  <span className={`h-2 w-2 rounded-full mr-2 ${
+                                    officer.status === 'available' ? 'bg-status-available' :
+                                    officer.status === 'responding' ? 'bg-status-responding' :
+                                    officer.status === 'busy' ? 'bg-status-busy' :
+                                    'bg-gray-400'
+                                  }`} />
+                                  <span className="text-sm">{
+                                    officer.status.charAt(0).toUpperCase() + officer.status.slice(1)
+                                  }</span>
+                                </div>
                               </div>
-                              <div className="flex items-center">
-                                <span className={`h-2 w-2 rounded-full mr-2 ${
-                                  officer.status === 'available' ? 'bg-status-available' :
-                                  officer.status === 'responding' ? 'bg-status-responding' :
-                                  officer.status === 'busy' ? 'bg-status-busy' :
-                                  'bg-gray-400'
-                                }`} />
-                                <span className="text-sm">{
-                                  officer.status.charAt(0).toUpperCase() + officer.status.slice(1)
-                                }</span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    ) : (
-                      <div className="py-8 text-center text-muted-foreground">
-                        No officers assigned to this incident
-                      </div>
-                    )}
-                  </>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="timeline">
-                <div className="py-8 text-center text-muted-foreground">
-                  Timeline feature coming soon
-                </div>
-              </TabsContent>
-            </Tabs>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <div className="py-8 text-center text-muted-foreground">
+                          No officers assigned to this incident
+                        </div>
+                      )}
+                      
+                      {hasPermission('assignOfficer') && (
+                        <div className="pt-4">
+                          <Button variant="outline" className="w-full">
+                            Assign Officers
+                          </Button>
+                        </div>
+                      )}
+                    </>
+                  )}
+                </TabsContent>
+                
+                <TabsContent value="timeline">
+                  <div className="py-8 text-center text-muted-foreground">
+                    Timeline feature coming soon
+                  </div>
+                </TabsContent>
+              </Tabs>
+            )}
           </DialogContent>
         )}
       </Dialog>

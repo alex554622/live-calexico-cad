@@ -4,7 +4,6 @@ import {
   Home, 
   Users, 
   Bell, 
-  Map, 
   AlertTriangle, 
   Settings, 
   ChevronLeft, 
@@ -13,48 +12,16 @@ import {
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { Link, useLocation } from 'react-router-dom';
+import { useAuth } from '@/context/AuthContext';
 
 interface SidebarProps {
   isOpen: boolean;
   toggle: () => void;
 }
 
-const menuItems = [
-  { 
-    icon: Home, 
-    label: 'Dashboard', 
-    path: '/',
-    exact: true
-  },
-  { 
-    icon: AlertTriangle, 
-    label: 'Incidents', 
-    path: '/incidents' 
-  },
-  { 
-    icon: Users, 
-    label: 'Officers', 
-    path: '/officers' 
-  },
-  { 
-    icon: Map, 
-    label: 'Map', 
-    path: '/map' 
-  },
-  { 
-    icon: Bell, 
-    label: 'Notifications', 
-    path: '/notifications' 
-  },
-  { 
-    icon: Settings, 
-    label: 'Settings', 
-    path: '/settings' 
-  }
-];
-
 const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
   const location = useLocation();
+  const { user } = useAuth();
   
   const isActive = (path: string, exact = false) => {
     if (exact) {
@@ -62,6 +29,44 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
     }
     return location.pathname.startsWith(path);
   };
+  
+  const menuItems = [
+    { 
+      icon: Home, 
+      label: 'Dashboard', 
+      path: '/',
+      exact: true,
+      roles: ['admin', 'dispatcher', 'supervisor', 'officer']
+    },
+    { 
+      icon: AlertTriangle, 
+      label: 'Incidents', 
+      path: '/incidents',
+      roles: ['admin', 'dispatcher', 'supervisor', 'officer']
+    },
+    { 
+      icon: Users, 
+      label: 'Officers', 
+      path: '/officers',
+      roles: ['admin', 'dispatcher', 'supervisor', 'officer']
+    },
+    { 
+      icon: Bell, 
+      label: 'Notifications', 
+      path: '/notifications',
+      roles: ['admin', 'dispatcher', 'supervisor', 'officer']
+    },
+    { 
+      icon: Settings, 
+      label: 'Settings', 
+      path: '/settings',
+      roles: ['admin', 'supervisor']
+    }
+  ];
+
+  const filteredMenuItems = menuItems.filter(item => 
+    user && item.roles.includes(user.role)
+  );
   
   return (
     <aside 
@@ -89,7 +94,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
       
       <nav className="flex-1 overflow-y-auto py-4">
         <ul className="space-y-1 px-2">
-          {menuItems.map((item, index) => (
+          {filteredMenuItems.map((item, index) => (
             <li key={index}>
               <Link 
                 to={item.path}
