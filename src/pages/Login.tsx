@@ -66,17 +66,6 @@ const Login = () => {
                   required
                 />
               </div>
-
-              <div className="text-sm">
-                <p className="text-muted-foreground">
-                  For demo, use these credentials:
-                </p>
-                <ul className="list-disc pl-5 text-muted-foreground text-xs mt-1">
-                  <li>Admin: jdoe</li>
-                  <li>Dispatcher: ssmith</li>
-                  <li>Supervisor: mjohnson</li>
-                </ul>
-              </div>
             </CardContent>
             <CardFooter>
               <Button

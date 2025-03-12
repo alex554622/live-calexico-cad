@@ -1,28 +1,13 @@
-
 import { Officer, Incident, Notification, User } from '../types';
 
 export const mockUsers: User[] = [
   {
     id: '1',
-    username: 'jdoe',
-    name: 'John Doe',
+    username: 'alexvalla',
+    name: 'Administrator',
     role: 'admin',
-    avatar: 'https://ui-avatars.com/api/?name=John+Doe&background=1E40AF&color=fff',
-  },
-  {
-    id: '2',
-    username: 'ssmith',
-    name: 'Sarah Smith',
-    role: 'dispatcher',
-    avatar: 'https://ui-avatars.com/api/?name=Sarah+Smith&background=1E40AF&color=fff',
-  },
-  {
-    id: '3',
-    username: 'mjohnson',
-    name: 'Mike Johnson',
-    role: 'supervisor',
-    avatar: 'https://ui-avatars.com/api/?name=Mike+Johnson&background=1E40AF&color=fff',
-  },
+    avatar: 'https://ui-avatars.com/api/?name=Administrator&background=1E40AF&color=fff',
+  }
 ];
 
 export const mockOfficers: Officer[] = [

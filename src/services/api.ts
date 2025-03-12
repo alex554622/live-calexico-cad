@@ -1,3 +1,4 @@
+
 import { Officer, Incident, Notification, User, OfficerStatus } from '../types';
 import { mockOfficers, mockIncidents, mockNotifications, mockUsers } from './mockData';
 
@@ -5,17 +6,24 @@ import { mockOfficers, mockIncidents, mockNotifications, mockUsers } from './moc
 let officers = [...mockOfficers];
 let incidents = [...mockIncidents];
 let notifications = [...mockNotifications];
-let users = [...mockUsers];
+let users = [
+  {
+    id: '1',
+    username: 'alexvalla',
+    name: 'Administrator',
+    role: 'admin',
+    avatar: 'https://ui-avatars.com/api/?name=Administrator&background=1E40AF&color=fff',
+  }
+];
 let currentUser: User | null = null;
 
 // Simulated authentication
 export const login = (username: string, password: string): Promise<User | null> => {
   return new Promise((resolve) => {
     setTimeout(() => {
-      // This is a mock authentication - in a real app, you would validate credentials properly
-      // For simplicity, we'll accept any password for the mock users
-      const user = users.find(u => u.username === username);
-      if (user) {
+      // Check for our administrator account
+      if (username === 'alexvalla' && password === '!345660312') {
+        const user = users[0];
         currentUser = user;
         resolve(user);
       } else {

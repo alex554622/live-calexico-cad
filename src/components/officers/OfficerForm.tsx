@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -30,18 +29,7 @@ const OfficerForm: React.FC<OfficerFormProps> = ({
   const { hasPermission } = useAuth();
   const { toast } = useToast();
   
-  const [formData, setFormData] = useState<{
-    name: string;
-    badgeNumber: string;
-    rank: string;
-    department: string;
-    status: OfficerStatus;
-    contactInfo: {
-      phone: string;
-      email: string;
-    };
-    shiftSchedule: string;
-  }>({
+  const [formData, setFormData] = useState({
     name: initialData?.name || '',
     badgeNumber: initialData?.badgeNumber || '',
     rank: initialData?.rank || '',
@@ -103,10 +91,13 @@ const OfficerForm: React.FC<OfficerFormProps> = ({
       if (initialData) {
         // Update existing officer
         const updatedOfficer = await updateOfficer(initialData.id, {
-          ...formData,
-          id: initialData.id,
-          lastUpdated: new Date().toISOString(),
-          location: initialData.location
+          name: formData.name,
+          badgeNumber: formData.badgeNumber,
+          rank: formData.rank,
+          department: formData.department,
+          status: formData.status as OfficerStatus,
+          contactInfo: formData.contactInfo,
+          shiftSchedule: formData.shiftSchedule
         });
         
         toast({
@@ -118,12 +109,17 @@ const OfficerForm: React.FC<OfficerFormProps> = ({
       } else {
         // Create new officer
         const newOfficer = await createOfficer({
-          ...formData,
+          name: formData.name,
+          badgeNumber: formData.badgeNumber,
+          rank: formData.rank,
+          department: formData.department,
+          status: formData.status as OfficerStatus,
+          contactInfo: formData.contactInfo,
+          shiftSchedule: formData.shiftSchedule,
           location: {
             lat: 0,
             lng: 0,
-          },
-          lastUpdated: new Date().toISOString()
+          }
         });
         
         toast({
