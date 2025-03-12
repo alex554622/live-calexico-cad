@@ -9,7 +9,138 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      incidents: {
+        Row: {
+          assigned_officers: string[] | null
+          description: string | null
+          id: string
+          location: Json
+          priority: string
+          reported_at: string | null
+          reported_by: string
+          status: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          assigned_officers?: string[] | null
+          description?: string | null
+          id?: string
+          location: Json
+          priority: string
+          reported_at?: string | null
+          reported_by: string
+          status: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          assigned_officers?: string[] | null
+          description?: string | null
+          id?: string
+          location?: Json
+          priority?: string
+          reported_at?: string | null
+          reported_by?: string
+          status?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          message: string
+          read: boolean | null
+          related_to: Json | null
+          timestamp: string | null
+          title: string
+          type: string
+        }
+        Insert: {
+          id?: string
+          message: string
+          read?: boolean | null
+          related_to?: Json | null
+          timestamp?: string | null
+          title: string
+          type: string
+        }
+        Update: {
+          id?: string
+          message?: string
+          read?: boolean | null
+          related_to?: Json | null
+          timestamp?: string | null
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      officers: {
+        Row: {
+          badge_number: string
+          contact_info: Json | null
+          current_incident_id: string | null
+          department: string
+          id: string
+          last_updated: string | null
+          name: string
+          rank: string
+          status: string
+        }
+        Insert: {
+          badge_number: string
+          contact_info?: Json | null
+          current_incident_id?: string | null
+          department: string
+          id?: string
+          last_updated?: string | null
+          name: string
+          rank: string
+          status: string
+        }
+        Update: {
+          badge_number?: string
+          contact_info?: Json | null
+          current_incident_id?: string | null
+          department?: string
+          id?: string
+          last_updated?: string | null
+          name?: string
+          rank?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          avatar: string | null
+          created_at: string | null
+          id: string
+          name: string | null
+          role: string
+          username: string | null
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string | null
+          id: string
+          name?: string | null
+          role: string
+          username?: string | null
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string | null
+          role?: string
+          username?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
