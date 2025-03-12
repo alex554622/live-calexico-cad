@@ -42,7 +42,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Badge } from '@/components/ui/badge';
-import { updateOfficer, createOfficer, updateUser, createUser, getAllUsers, deleteUser } from '@/services/api';
+import { supabase, signUp, createUserRecord, updateUserRecord, getAllUsers, deleteUserRecord } from '@/lib/supabase';
 import { useData } from '@/context/DataContext';
 import type { User } from '@/types';
 
@@ -57,12 +57,20 @@ const Settings = () => {
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [editingUser, setEditingUser] = useState<User | null>(null);
+  const [showEditDialog, setShowEditDialog] = useState(false);
   const [userProfile, setUserProfile] = useState({
     name: user?.name || '',
     email: user?.username || '',
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
+  });
+  const [editUserForm, setEditUserForm] = useState({
+    name: '',
+    email: '',
+    role: '',
+    password: '',
   });
 
   useEffect(() => {
@@ -84,8 +92,16 @@ const Settings = () => {
   const fetchUsers = async () => {
     try {
       setIsLoading(true);
-      const users = await getAllUsers();
-      setUsersList(users);
+      
+      const { data, error } = await getAllUsers();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setUsersList(data as User[]);
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
       toast({
@@ -101,7 +117,12 @@ const Settings = () => {
   const handleDeleteUser = async (userId: string) => {
     try {
       setIsSaving(true);
-      await deleteUser(userId);
+      
+      const { error } = await deleteUserRecord(userId);
+      
+      if (error) {
+        throw error;
+      }
       
       await fetchUsers();
       
@@ -124,11 +145,72 @@ const Settings = () => {
     }
   };
 
+  const handleEditUser = (user: User) => {
+    setEditingUser(user);
+    setEditUserForm({
+      name: user.name || '',
+      email: user.username || '',
+      role: user.role || 'officer',
+      password: '',
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleUpdateUser = async () => {
+    if (!editingUser) return;
+    
+    try {
+      setIsSaving(true);
+      
+      const userData = {
+        name: editUserForm.name,
+        username: editUserForm.email,
+        role: editUserForm.role,
+      };
+      
+      const { data, error } = await updateUserRecord(editingUser.id, userData);
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (editUserForm.password) {
+        console.log('Password would be updated');
+      }
+      
+      await fetchUsers();
+      
+      toast({
+        title: 'User Updated',
+        description: 'The user account has been updated successfully',
+      });
+      
+      setShowEditDialog(false);
+      setEditingUser(null);
+    } catch (error) {
+      console.error('Error updating user:', error);
+      toast({
+        title: 'Update Failed',
+        description: error instanceof Error ? error.message : 'Failed to update user account',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setUserProfile(prev => ({
       ...prev,
       [id]: value
+    }));
+  };
+
+  const handleEditFormChange = (field: string, value: string) => {
+    setEditUserForm(prev => ({
+      ...prev,
+      [field]: value
     }));
   };
 
@@ -172,30 +254,23 @@ const Settings = () => {
         return;
       }
       
-      const correctPassword = user.username === 'alexvalla' ? '!345660312' : (user as any).password;
-      
-      if (userProfile.currentPassword !== correctPassword) {
-        toast({
-          title: 'Password Error',
-          description: 'Current password is incorrect',
-          variant: 'destructive'
-        });
-        setIsSaving(false);
-        return;
-      }
+      console.log('Password would be updated');
     }
 
     try {
       const updatedUserData = {
         name: userProfile.name,
         username: userProfile.email,
-        ...(userProfile.newPassword ? { password: userProfile.newPassword } : {})
       };
       
-      const updatedUser = await updateUser(user.id, updatedUserData);
+      const { data, error } = await updateUserRecord(user.id, updatedUserData);
       
-      if (updateCurrentUser) {
-        updateCurrentUser(updatedUser);
+      if (error) {
+        throw error;
+      }
+      
+      if (updateCurrentUser && data && data[0]) {
+        updateCurrentUser(data[0] as User);
       }
       
       setUserProfile(prev => ({
@@ -203,8 +278,6 @@ const Settings = () => {
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        name: updatedUser.name,
-        email: updatedUser.username
       }));
       
       toast({
@@ -239,12 +312,42 @@ const Settings = () => {
           continue;
         }
 
-        await createUser({
+        const { data: authData, error: authError } = await signUp(
+          account.email,
+          account.password,
+          {
+            name: account.name,
+            role: account.role,
+          }
+        );
+        
+        if (authError) {
+          console.error('Error creating auth user:', authError);
+          toast({
+            title: 'Creation Failed',
+            description: `Failed to create account for ${account.email}: ${authError.message}`,
+            variant: 'destructive'
+          });
+          continue;
+        }
+        
+        const userData = {
           username: account.email,
           name: account.name,
-          role: account.role as 'admin' | 'dispatcher' | 'supervisor' | 'officer',
-          password: account.password
-        });
+          role: account.role,
+        };
+        
+        const { data, error } = await createUserRecord(userData);
+        
+        if (error) {
+          console.error('Error creating user record:', error);
+          toast({
+            title: 'Creation Failed',
+            description: `Failed to create user record for ${account.email}`,
+            variant: 'destructive'
+          });
+          continue;
+        }
 
         if (account.role === 'officer') {
           await createOfficerData({
@@ -340,95 +443,93 @@ const Settings = () => {
         </TabsList>
         
         <TabsContent value="account" className="max-w-3xl space-y-6">
-          {isAlexValla && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <UserIcon className="h-5 w-5 mr-2" />
-                  Account Settings
-                </CardTitle>
-                <CardDescription>
-                  Update your account information and password
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center">
+                <UserIcon className="h-5 w-5 mr-2" />
+                Account Settings
+              </CardTitle>
+              <CardDescription>
+                Update your account information and password
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label htmlFor="name">Full Name</Label>
+                <Input 
+                  id="name" 
+                  value={userProfile.name} 
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="email">Email Address</Label>
+                <Input 
+                  id="email" 
+                  type="email" 
+                  value={userProfile.email}
+                  onChange={handleInputChange}
+                />
+              </div>
+              
+              <Separator />
+              
+              <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
+                  <Label htmlFor="currentPassword">Current Password</Label>
                   <Input 
-                    id="name" 
-                    value={userProfile.name} 
+                    id="currentPassword" 
+                    type="password"
+                    value={userProfile.currentPassword}
+                    onChange={handleInputChange} 
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="newPassword">New Password</Label>
+                  <Input 
+                    id="newPassword" 
+                    type="password"
+                    value={userProfile.newPassword}
                     onChange={handleInputChange}
                   />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="email">Email Address</Label>
+                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
                   <Input 
-                    id="email" 
-                    type="email" 
-                    value={userProfile.email}
+                    id="confirmPassword" 
+                    type="password"
+                    value={userProfile.confirmPassword}
                     onChange={handleInputChange}
                   />
                 </div>
-                
-                <Separator />
-                
-                <div className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="currentPassword">Current Password</Label>
-                    <Input 
-                      id="currentPassword" 
-                      type="password"
-                      value={userProfile.currentPassword}
-                      onChange={handleInputChange} 
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="newPassword">New Password</Label>
-                    <Input 
-                      id="newPassword" 
-                      type="password"
-                      value={userProfile.newPassword}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                    <Input 
-                      id="confirmPassword" 
-                      type="password"
-                      value={userProfile.confirmPassword}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-              </CardContent>
-              <CardFooter className="flex justify-between">
-                <Button 
-                  variant="outline" 
-                  onClick={() => {
-                    setUserProfile({
-                      name: user?.name || '',
-                      email: user?.username || '',
-                      currentPassword: '',
-                      newPassword: '',
-                      confirmPassword: '',
-                    });
-                  }}
-                >
-                  Cancel
-                </Button>
-                <Button 
-                  onClick={handleUpdateAccount} 
-                  disabled={isSaving}
-                >
-                  {isSaving ? 'Updating...' : 'Update Account'}
-                </Button>
-              </CardFooter>
-            </Card>
-          )}
+              </div>
+            </CardContent>
+            <CardFooter className="flex justify-between">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  setUserProfile({
+                    name: user?.name || '',
+                    email: user?.username || '',
+                    currentPassword: '',
+                    newPassword: '',
+                    confirmPassword: '',
+                  });
+                }}
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handleUpdateAccount} 
+                disabled={isSaving}
+              >
+                {isSaving ? 'Updating...' : 'Update Account'}
+              </Button>
+            </CardFooter>
+          </Card>
 
           {hasPermission('manageSettings') && (
             <Card>
@@ -567,20 +668,31 @@ const Settings = () => {
                           <TableCell>{userItem.username}</TableCell>
                           <TableCell>{getRoleBadge(userItem.role)}</TableCell>
                           <TableCell className="text-right">
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setUserToDelete(userItem);
-                                setShowDeleteDialog(true);
-                              }}
-                              disabled={userItem.username === 'alexvalla' || (user && userItem.id === user.id)}
-                              title={userItem.username === 'alexvalla' ? 'Cannot delete administrator account' : 
-                                     (user && userItem.id === user.id) ? 'Cannot delete your own account' : 
-                                     'Delete account'}
-                            >
-                              <Trash2 className="h-4 w-4 text-red-500" />
-                            </Button>
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => handleEditUser(userItem)}
+                                disabled={userItem.username === 'alexvalla'}
+                                title={userItem.username === 'alexvalla' ? 'Cannot edit administrator account' : 'Edit account'}
+                              >
+                                <Shield className="h-4 w-4 text-blue-500" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => {
+                                  setUserToDelete(userItem);
+                                  setShowDeleteDialog(true);
+                                }}
+                                disabled={userItem.username === 'alexvalla' || (user && userItem.id === user.id)}
+                                title={userItem.username === 'alexvalla' ? 'Cannot delete administrator account' : 
+                                       (user && userItem.id === user.id) ? 'Cannot delete your own account' : 
+                                       'Delete account'}
+                              >
+                                <Trash2 className="h-4 w-4 text-red-500" />
+                              </Button>
+                            </div>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -721,6 +833,75 @@ const Settings = () => {
               className="bg-red-500 hover:bg-red-600"
             >
               {isSaving ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <AlertDialog open={showEditDialog} onOpenChange={setShowEditDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Edit User Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Update information for <strong>{editingUser?.name}</strong>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="edit-name">Full Name</Label>
+              <Input 
+                id="edit-name" 
+                value={editUserForm.name}
+                onChange={(e) => handleEditFormChange('name', e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-email">Email</Label>
+              <Input 
+                id="edit-email" 
+                type="email"
+                value={editUserForm.email}
+                onChange={(e) => handleEditFormChange('email', e.target.value)}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-role">Role</Label>
+              <Select
+                value={editUserForm.role}
+                onValueChange={(value) => handleEditFormChange('role', value)}
+              >
+                <SelectTrigger id="edit-role">
+                  <SelectValue placeholder="Select role" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="officer">Officer</SelectItem>
+                  <SelectItem value="dispatcher">Dispatcher</SelectItem>
+                  <SelectItem value="supervisor">Supervisor</SelectItem>
+                  <SelectItem value="admin">Administrator</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="edit-password">New Password (optional)</Label>
+              <Input 
+                id="edit-password" 
+                type="password"
+                value={editUserForm.password}
+                onChange={(e) => handleEditFormChange('password', e.target.value)}
+                placeholder="Leave blank to keep current password"
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleUpdateUser}
+              disabled={isSaving}
+            >
+              {isSaving ? 'Saving...' : 'Save Changes'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

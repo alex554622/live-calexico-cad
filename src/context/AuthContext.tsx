@@ -5,6 +5,7 @@ import { supabase } from '@/lib/supabase';
 import { AuthContextType, Permission } from '@/types/auth';
 import { usePermissions } from '@/hooks/use-permissions';
 import { useFetchUser } from '@/hooks/use-fetch-user';
+import { useToast } from '@/hooks/use-toast';
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -13,6 +14,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
   const { hasPermission } = usePermissions(user);
   const { fetchUserData } = useFetchUser();
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check current session
@@ -43,9 +45,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const fetchAndSetUser = async (email: string | undefined) => {
-    const userData = await fetchUserData(email);
-    if (userData) {
-      setUser(userData);
+    if (!email) return;
+    
+    try {
+      const userData = await fetchUserData(email);
+      if (userData) {
+        setUser(userData);
+      } else {
+        // If user exists in auth but not in our users table, create a record
+        const { data: authUser } = await supabase.auth.getUser();
+        if (authUser?.user) {
+          // Create a basic user record
+          const newUser: Partial<User> = {
+            username: email,
+            name: email.split('@')[0],
+            role: 'user',
+          };
+          
+          const { data, error } = await supabase
+            .from('users')
+            .insert([newUser])
+            .select();
+            
+          if (error) {
+            console.error("Failed to create user record:", error);
+          } else if (data && data[0]) {
+            setUser(data[0] as User);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching user data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load user data",
+        variant: "destructive",
+      });
     }
   };
 

@@ -49,7 +49,7 @@ export const useFetchUser = () => {
           avatar,
           user_permissions(permission)
         `)
-        .eq('email', email)
+        .eq('username', email)
         .maybeSingle();
 
       if (error) {

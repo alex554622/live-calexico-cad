@@ -7,3 +7,57 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 // Create supabase client
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+// Helper function to handle Supabase signup
+export const signUp = async (email: string, password: string, userData?: any) => {
+  const { data, error } = await supabase.auth.signUp({
+    email,
+    password,
+    options: {
+      data: userData,
+      emailRedirectTo: `${window.location.origin}/login`,
+    },
+  });
+  
+  return { data, error };
+};
+
+// Helper function to handle user data insertion
+export const createUserRecord = async (userData: any) => {
+  const { data, error } = await supabase
+    .from('users')
+    .insert([userData])
+    .select();
+  
+  return { data, error };
+};
+
+// Helper function to update user data
+export const updateUserRecord = async (id: string, userData: any) => {
+  const { data, error } = await supabase
+    .from('users')
+    .update(userData)
+    .eq('id', id)
+    .select();
+  
+  return { data, error };
+};
+
+// Helper function to get all users
+export const getAllUsers = async () => {
+  const { data, error } = await supabase
+    .from('users')
+    .select('*');
+  
+  return { data, error };
+};
+
+// Helper function to delete a user
+export const deleteUserRecord = async (id: string) => {
+  const { error } = await supabase
+    .from('users')
+    .delete()
+    .eq('id', id);
+  
+  return { error };
+};
