@@ -1,8 +1,6 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { supabase } from '@/lib/supabase';
-import { Session } from '@supabase/supabase-js';
 import { useToast } from '@/hooks/use-toast';
 
 // Define the permission types
@@ -24,7 +22,7 @@ export type Permission =
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string, retainData?: boolean) => Promise<boolean>;
+  login: (email: string, password: string, retainData?: boolean) => Promise<boolean>;
   logout: () => Promise<void>;
   hasPermission: (permission: Permission) => boolean;
   updateCurrentUser?: (updatedUser: User) => void;
@@ -38,115 +36,58 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
 
   useEffect(() => {
-    const checkAuth = async () => {
-      try {
-        setLoading(true);
-        
-        // Check if there's an active session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          // Fetch user data from the users table
-          const { data: userData, error } = await supabase
-            .from('users')
-            .select(`
-              id, 
-              username, 
-              name, 
-              role, 
-              avatar, 
-              user_permissions(permission)
-            `)
-            .eq('username', session.user.email)
-            .single();
-          
-          if (error) {
-            console.error('Error fetching user data:', error);
-            return;
-          }
-          
-          if (userData) {
-            // Transform permissions from array of objects to object with boolean values
-            const permissions: Record<string, boolean> = {};
-            if (userData.user_permissions) {
-              userData.user_permissions.forEach((p: { permission: string }) => {
-                permissions[p.permission] = true;
-              });
-            }
-            
-            setUser({
-              id: userData.id,
-              username: userData.username,
-              name: userData.name,
-              role: userData.role,
-              avatar: userData.avatar,
-              permissions
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Error checking auth status:', error);
-      } finally {
-        setLoading(false);
+    // Check current session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        fetchUserData(session.user.id);
       }
-    };
+      setLoading(false);
+    });
 
-    // Initial check
-    checkAuth();
-    
-    // Subscribe to auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN') {
-          checkAuth();
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-        }
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (session?.user) {
+        await fetchUserData(session.user.id);
+      } else {
+        setUser(null);
       }
-    );
+      setLoading(false);
+    });
 
     return () => {
       subscription.unsubscribe();
     };
   }, []);
 
-  const login = async (username: string, password: string, retainData = false) => {
-    try {
-      // For now, we're using a custom login that matches our existing users table
-      // In a real implementation, you'd want to use Supabase Auth properly
-      const { data, error } = await supabase
-        .from('users')
-        .select(`
-          id, 
-          username, 
-          name, 
-          role, 
-          avatar, 
-          password,
-          user_permissions(permission)
-        `)
-        .eq('username', username)
-        .single();
-      
-      if (error || !data) {
-        console.error('Login error:', error);
-        return false;
-      }
-      
-      // Check password (this is a simple check, in a real app you'd use proper hashing)
-      if (data.password !== password) {
-        return false;
-      }
-      
-      // Transform permissions from array of objects to object with boolean values
+  const fetchUserData = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('users')
+      .select(`
+        id,
+        username,
+        name,
+        role,
+        avatar,
+        user_permissions(permission)
+      `)
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (error) {
+      console.error('Error fetching user data:', error);
+      return;
+    }
+
+    if (data) {
       const permissions: Record<string, boolean> = {};
       if (data.user_permissions) {
         data.user_permissions.forEach((p: { permission: string }) => {
           permissions[p.permission] = true;
         });
       }
-      
-      // Set user in state
+
       setUser({
         id: data.id,
         username: data.username,
@@ -155,19 +96,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         avatar: data.avatar,
         permissions
       });
+    }
+  };
+
+  const login = async (email: string, password: string, retainData = false) => {
+    try {
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password
+      });
+
+      if (error) throw error;
       
-      // Store data retention preference
+      // Store retention preference
       localStorage.setItem('dataRetention', retainData ? 'true' : 'false');
-      
-      // Create a session for the user (in a real app, this would be handled by Supabase Auth)
-      localStorage.setItem('supabase.auth.token', JSON.stringify({
-        currentSession: {
-          user: {
-            id: data.id,
-            email: data.username
-          }
-        }
-      }));
       
       return true;
     } catch (error) {
@@ -178,19 +120,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      // Clear local storage and state
+      await supabase.auth.signOut();
+      setUser(null);
+      
+      // Clear local storage if data retention is not enabled
       const retainData = localStorage.getItem('dataRetention') === 'true';
       if (!retainData) {
-        localStorage.removeItem('supabase.auth.token');
+        localStorage.clear();
       }
-      
-      setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
     }
   };
 
-  // Add a function to update the current user in the context
   const updateCurrentUser = (updatedUser: User) => {
     setUser(updatedUser);
   };

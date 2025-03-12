@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -21,7 +20,6 @@ const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -30,72 +28,38 @@ const Login = () => {
     setLoading(true);
     
     try {
-      console.log("Login attempt with:", { username });
+      console.log("Attempting Supabase auth login with:", { email: username });
       
-      // Query the users table to check the credentials
-      const { data, error } = await supabase
-        .from('users')
-        .select(`
-          id, 
-          username, 
-          name, 
-          role, 
-          avatar, 
-          password,
-          user_permissions(permission)
-        `)
-        .eq('username', username)
-        .maybeSingle();
+      // Use Supabase Auth for login
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: username,
+        password: password,
+      });
       
-      console.log("Supabase query response:", { data, error });
+      console.log("Auth response:", { authData, authError });
       
-      if (error) {
-        console.error('Supabase error:', error);
-        throw new Error(`Database error: ${error.message}`);
+      if (authError) {
+        throw new Error(authError.message);
       }
       
-      if (!data) {
-        console.error('User not found:', username);
-        throw new Error('User not found. Please check your username.');
+      if (!authData.user) {
+        throw new Error('Login failed. Please check your credentials.');
       }
+
+      // Successful login
+      toast({
+        title: "Login Successful",
+        description: "Welcome back!",
+        variant: "default"
+      });
       
-      // Simple password validation
-      if (data.password !== password) {
-        console.error('Password mismatch for user:', username);
-        throw new Error('Incorrect password. Please try again.');
-      }
+      navigate('/');
       
-      // Data retention preference
-      const retainData = localStorage.getItem('dataRetention') === 'true';
-      
-      // Format permissions from the join query
-      const permissions: Record<string, boolean> = {};
-      if (data.user_permissions) {
-        data.user_permissions.forEach((p: { permission: string }) => {
-          permissions[p.permission] = true;
-        });
-      }
-      
-      console.log("User authenticated, calling login function with permissions:", permissions);
-      
-      // Call the login function from AuthContext
-      const success = await login(username, password, retainData);
-      
-      if (success) {
-        toast({
-          title: "Login Successful",
-          description: `Welcome back, ${data.name}!`,
-          variant: "default"
-        });
-        navigate('/');
-      } else {
-        throw new Error('Authentication failed in context. Please try again.');
-      }
     } catch (error) {
       console.error('Login error:', error);
       toast({
         title: "Login Failed",
-        description: error instanceof Error ? error.message : "Invalid username or password. Please try again.",
+        description: error instanceof Error ? error.message : "Invalid username or password",
         variant: "destructive"
       });
     } finally {
