@@ -82,7 +82,6 @@ const Login = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">Admin: avalladolid@calexico.ca.gov</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -94,7 +93,6 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">Default password: 1992</p>
               </div>
             </CardContent>
             <CardFooter>
