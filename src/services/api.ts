@@ -197,6 +197,76 @@ const getDefaultPermissionsForRole = (role: 'admin' | 'dispatcher' | 'supervisor
   }
 };
 
+// New function to delete a user account
+export const deleteUser = (id: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      // Cannot delete the current user
+      if (currentUser && currentUser.id === id) {
+        reject(new Error('Cannot delete the currently logged in user'));
+        return;
+      }
+
+      // Cannot delete the admin account (alexvalla)
+      const userToDelete = users.find(u => u.id === id);
+      if (userToDelete && userToDelete.username === 'alexvalla') {
+        reject(new Error('The administrator account cannot be deleted'));
+        return;
+      }
+
+      const userIndex = users.findIndex(u => u.id === id);
+      if (userIndex !== -1) {
+        // Get user before deletion for notification
+        const deletedUser = users[userIndex];
+        
+        // Remove user from data store
+        users = users.filter(u => u.id !== id);
+        
+        // If user is an officer, delete the corresponding officer record
+        if (deletedUser.role === 'officer') {
+          const officerToDelete = officers.find(o => 
+            o.contactInfo?.email === deletedUser.username
+          );
+          
+          if (officerToDelete) {
+            deleteOfficer(officerToDelete.id)
+              .catch(error => console.error('Error deleting officer record:', error));
+          }
+        }
+        
+        // Create a notification
+        const newNotification: Notification = {
+          id: String(notifications.length + 1),
+          title: 'User Deleted',
+          message: `${deletedUser.name} has been removed from the system`,
+          type: 'warning',
+          timestamp: new Date().toISOString(),
+          read: false,
+          relatedTo: {
+            type: 'user',
+            id
+          }
+        };
+        
+        notifications = [newNotification, ...notifications];
+        
+        resolve();
+      } else {
+        reject(new Error('User not found'));
+      }
+    }, 300);
+  });
+};
+
+// New function to get all users
+export const getAllUsers = (): Promise<User[]> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      resolve([...users]);
+    }, 300);
+  });
+};
+
 // Officer related API
 export const getOfficers = (): Promise<Officer[]> => {
   return new Promise((resolve) => {
@@ -342,7 +412,7 @@ export const deleteOfficer = (id: string): Promise<void> => {
           read: false,
           relatedTo: {
             type: 'officer',
-            id
+            id: officerToDelete.id
           }
         };
         

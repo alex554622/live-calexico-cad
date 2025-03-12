@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, User, UserPlus, X, Save, Database } from 'lucide-react';
+import { Shield, User as UserIcon, UserPlus, X, Save, Database, UserX, Users, Trash2 } from 'lucide-react';
 import { 
   Select,
   SelectContent,
@@ -24,8 +24,28 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { updateOfficer, createOfficer, updateUser, createUser } from '@/services/api';
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Badge } from '@/components/ui/badge';
+import { updateOfficer, createOfficer, updateUser, createUser, getAllUsers, deleteUser } from '@/services/api';
 import { useData } from '@/context/DataContext';
+import { User } from '@/types';
 
 const Settings = () => {
   const { user, hasPermission, updateCurrentUser } = useAuth();
@@ -34,6 +54,10 @@ const Settings = () => {
   const [isSaving, setIsSaving] = useState(false);
   const [newAccounts, setNewAccounts] = useState<Array<{name: string; email: string; role: string; password: string}>>([]);
   const [dataRetention, setDataRetention] = useState("5"); // Default 5 days
+  const [usersList, setUsersList] = useState<User[]>([]);
+  const [userToDelete, setUserToDelete] = useState<User | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [userProfile, setUserProfile] = useState({
     name: user?.name || '',
     email: user?.username || '',
@@ -51,6 +75,57 @@ const Settings = () => {
       }));
     }
   }, [user]);
+
+  // Fetch all users when the component mounts
+  useEffect(() => {
+    if (hasPermission('manageSettings')) {
+      fetchUsers();
+    }
+  }, [hasPermission]);
+
+  const fetchUsers = async () => {
+    try {
+      setIsLoading(true);
+      const users = await getAllUsers();
+      setUsersList(users);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load user accounts',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      setIsSaving(true);
+      await deleteUser(userId);
+      
+      // Refresh the users list
+      await fetchUsers();
+      
+      toast({
+        title: 'User Deleted',
+        description: 'The user account has been deleted successfully',
+      });
+      
+      setShowDeleteDialog(false);
+      setUserToDelete(null);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      toast({
+        title: 'Delete Failed',
+        description: error instanceof Error ? error.message : 'Failed to delete user account',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
@@ -202,6 +277,9 @@ const Settings = () => {
       });
       
       setNewAccounts([]);
+      
+      // Refresh users list after creating new accounts
+      fetchUsers();
     } catch (error) {
       console.error('Error creating accounts:', error);
       toast({
@@ -232,6 +310,21 @@ const Settings = () => {
 
   const isAlexValla = user?.username === 'alexvalla';
 
+  const getRoleBadge = (role: string) => {
+    switch (role) {
+      case 'admin':
+        return <Badge className="bg-red-500">Administrator</Badge>;
+      case 'supervisor':
+        return <Badge className="bg-amber-500">Supervisor</Badge>;
+      case 'dispatcher':
+        return <Badge className="bg-blue-500">Dispatcher</Badge>;
+      case 'officer':
+        return <Badge className="bg-green-500">Officer</Badge>;
+      default:
+        return <Badge>{role}</Badge>;
+    }
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -242,10 +335,13 @@ const Settings = () => {
       </div>
 
       <Tabs defaultValue="account">
-        <TabsList className="grid grid-cols-2 w-full max-w-3xl">
+        <TabsList className="grid w-full max-w-3xl" style={{ gridTemplateColumns: hasPermission('manageSettings') ? "repeat(3, 1fr)" : "repeat(2, 1fr)" }}>
           <TabsTrigger value="account">Account</TabsTrigger>
           {hasPermission('manageSettings') && (
-            <TabsTrigger value="system">System</TabsTrigger>
+            <>
+              <TabsTrigger value="users">Users</TabsTrigger>
+              <TabsTrigger value="system">System</TabsTrigger>
+            </>
           )}
         </TabsList>
         
@@ -437,6 +533,82 @@ const Settings = () => {
         </TabsContent>
         
         {hasPermission('manageSettings') && (
+          <TabsContent value="users" className="max-w-3xl">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Users className="h-5 w-5 mr-2" />
+                  All User Accounts
+                </CardTitle>
+                <CardDescription>
+                  View and manage all user accounts in the system
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoading ? (
+                  <div className="text-center py-4">Loading accounts...</div>
+                ) : usersList.length === 0 ? (
+                  <div className="text-center py-4">No user accounts found</div>
+                ) : (
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Name</TableHead>
+                        <TableHead>Email</TableHead>
+                        <TableHead>Role</TableHead>
+                        <TableHead className="text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {usersList.map((userItem) => (
+                        <TableRow key={userItem.id}>
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {userItem.avatar && (
+                                <img src={userItem.avatar} alt={userItem.name} className="w-8 h-8 rounded-full" />
+                              )}
+                              <span>{userItem.name}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell>{userItem.username}</TableCell>
+                          <TableCell>{getRoleBadge(userItem.role)}</TableCell>
+                          <TableCell className="text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setUserToDelete(userItem);
+                                setShowDeleteDialog(true);
+                              }}
+                              disabled={userItem.username === 'alexvalla' || (user && userItem.id === user.id)}
+                              title={userItem.username === 'alexvalla' ? 'Cannot delete administrator account' : 
+                                     (user && userItem.id === user.id) ? 'Cannot delete your own account' : 
+                                     'Delete account'}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  variant="outline" 
+                  onClick={fetchUsers} 
+                  disabled={isLoading}
+                  className="ml-auto"
+                >
+                  Refresh List
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+        )}
+        
+        {hasPermission('manageSettings') && (
           <TabsContent value="system" className="max-w-3xl">
             <Card>
               <CardHeader>
@@ -530,6 +702,36 @@ const Settings = () => {
           </TabsContent>
         )}
       </Tabs>
+
+      {/* Delete User Confirmation Dialog */}
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete User Account</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the account for <strong>{userToDelete?.name}</strong>?
+              {userToDelete?.role === 'officer' && (
+                <p className="mt-2 text-amber-500">
+                  Note: This will also delete the associated officer record.
+                </p>
+              )}
+              <p className="mt-2">
+                This action cannot be undone.
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => userToDelete && handleDeleteUser(userToDelete.id)}
+              disabled={isSaving}
+              className="bg-red-500 hover:bg-red-600"
+            >
+              {isSaving ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 };
