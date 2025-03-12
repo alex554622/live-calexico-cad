@@ -1,4 +1,3 @@
-
 import { Officer, Incident, Notification, User, OfficerStatus } from '../types';
 import { mockOfficers, mockIncidents, mockNotifications, mockUsers } from './mockData';
 
@@ -14,7 +13,7 @@ let users = [
     role: 'admin' as const,
     avatar: 'https://ui-avatars.com/api/?name=Administrator&background=1E40AF&color=fff',
   }
-];
+] as User[];
 let currentUser: User | null = null;
 
 // Simulated authentication
@@ -415,7 +414,8 @@ export const createViewOnlyUser = (username: string, password: string, name: str
           createUser: false,
           editUser: false,
           createOfficer: false,
-          editOfficer: false
+          editOfficer: false,
+          assignIncidentToOfficer: false
         }
       };
       
