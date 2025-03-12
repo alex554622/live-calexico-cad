@@ -16,7 +16,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, User, UserPlus, X } from 'lucide-react';
+import { Shield, User, UserPlus, X, Save, Database } from 'lucide-react';
 import { 
   Select,
   SelectContent,
@@ -30,6 +30,7 @@ const Settings = () => {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [newAccounts, setNewAccounts] = useState<Array<{name: string; email: string; role: string; password: string}>>([]);
+  const [dataRetention, setDataRetention] = useState("5"); // Default 5 days
 
   const handleSaveSettings = () => {
     setIsSaving(true);
@@ -41,6 +42,9 @@ const Settings = () => {
         title: 'Settings Saved',
         description: 'Your settings have been saved successfully',
       });
+      
+      // Store data retention setting in localStorage
+      localStorage.setItem('dataRetention', dataRetention);
     }, 1000);
   };
 
@@ -263,11 +267,44 @@ const Settings = () => {
                 
                 <div className="space-y-2">
                   <Label htmlFor="dataRetention">Data Retention (days)</Label>
-                  <Input id="dataRetention" type="number" defaultValue="90" />
+                  <Input 
+                    id="dataRetention" 
+                    type="number" 
+                    min="1" 
+                    max="30"
+                    value={dataRetention}
+                    onChange={(e) => setDataRetention(e.target.value)}
+                  />
                   <p className="text-sm text-muted-foreground">
-                    How long to keep incident data before archiving
+                    How long to keep incident data before automatic deletion (1-30 days, default: 5)
                   </p>
                 </div>
+
+                <Card className="bg-muted/30 border-dashed">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base flex items-center">
+                      <Database className="h-4 w-4 mr-2" />
+                      Data Management
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <p className="text-sm mb-4">
+                      Incidents older than the data retention period will be automatically deleted.
+                      Make sure to download important data before it expires.
+                    </p>
+                    <div className="flex flex-col gap-2">
+                      <div className="flex items-center justify-between">
+                        <div className="space-y-0.5">
+                          <p className="text-sm font-medium">Auto-Delete Old Incidents</p>
+                          <p className="text-sm text-muted-foreground">
+                            Automatically delete incidents after retention period
+                          </p>
+                        </div>
+                        <Switch defaultChecked={true} />
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
                 
                 <Separator />
                 

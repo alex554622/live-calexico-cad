@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import { Incident, Officer } from '@/types';
@@ -21,7 +20,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertTriangle, Search, Filter, MapPin, Clock, FileText, Plus, ExternalLink, CheckSquare, Trash2 } from 'lucide-react';
+import { AlertTriangle, Search, Filter, MapPin, Clock, FileText, Plus, ExternalLink, CheckSquare, Trash2, Download } from 'lucide-react';
 import IncidentStatusBadge from '@/components/common/IncidentStatusBadge';
 import IncidentPriorityBadge from '@/components/common/IncidentPriorityBadge';
 import IncidentForm from '@/components/incidents/IncidentForm';
@@ -46,6 +45,29 @@ const Incidents = () => {
   const [selectedIncidents, setSelectedIncidents] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
+  useEffect(() => {
+    const checkDataRetention = () => {
+      const dataRetention = parseInt(localStorage.getItem('dataRetention') || '5');
+      const now = new Date();
+      
+      const outdatedIncidents = incidents.filter(incident => {
+        const reportedAt = new Date(incident.reportedAt);
+        const daysDifference = Math.floor((now.getTime() - reportedAt.getTime()) / (1000 * 60 * 60 * 24));
+        return daysDifference > dataRetention;
+      });
+
+      if (outdatedIncidents.length > 0) {
+        toast({
+          title: 'Data Retention Notice',
+          description: `${outdatedIncidents.length} incident(s) are older than ${dataRetention} days and will be deleted soon.`,
+          variant: 'destructive',
+        });
+      }
+    };
+
+    checkDataRetention();
+  }, [incidents, toast]);
 
   const filteredIncidents = incidents.filter(incident => {
     const matchesSearch = 
@@ -166,6 +188,39 @@ const Incidents = () => {
     }
   };
 
+  const handleDownloadAllIncidents = () => {
+    try {
+      const incidentsData = JSON.stringify(incidents, null, 2);
+      
+      const blob = new Blob([incidentsData], { type: 'application/json' });
+      
+      const url = URL.createObjectURL(blob);
+      
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `incidents_export_${format(new Date(), 'yyyy-MM-dd')}.json`;
+      
+      document.body.appendChild(a);
+      
+      a.click();
+      
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      toast({
+        title: 'Export Complete',
+        description: 'All incidents have been exported successfully',
+      });
+    } catch (error) {
+      console.error('Error exporting incidents:', error);
+      toast({
+        title: 'Export Failed',
+        description: 'Failed to export incidents',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const availableOfficers = officers.filter(officer => 
     (officer.status === 'available' || !officer.currentIncidentId) && 
     officer.status !== 'offDuty'
@@ -181,6 +236,14 @@ const Incidents = () => {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleDownloadAllIncidents}
+            className="flex items-center"
+          >
+            <Download className="h-4 w-4 mr-2" /> Export All
+          </Button>
+          
           {hasPermission('createIncident') && (
             <Button onClick={() => setIsCreating(true)}>
               <Plus className="h-4 w-4 mr-1" /> New Incident
