@@ -8,9 +8,13 @@ import { cn } from '@/lib/utils';
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
+  const toggleSidebar = () => {
+    setSidebarCollapsed(prev => !prev);
+  };
+  
   return (
     <div className="min-h-screen flex flex-col bg-background">
-      <Header />
+      <Header toggleSidebar={toggleSidebar} />
       <div className="flex flex-1 overflow-hidden">
         <Sidebar 
           collapsed={sidebarCollapsed} 
