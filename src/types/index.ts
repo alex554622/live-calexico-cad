@@ -69,7 +69,7 @@ export interface Notification {
   timestamp: string;
   read: boolean;
   relatedTo?: {
-    type: 'officer' | 'incident';
+    type: 'officer' | 'incident' | 'user';
     id: string;
   };
 }
