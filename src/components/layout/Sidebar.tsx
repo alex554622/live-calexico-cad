@@ -10,7 +10,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { useMobile } from '@/hooks/use-mobile';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 
 export function Sidebar({ collapsed, setCollapsed }: { 
@@ -18,7 +18,7 @@ export function Sidebar({ collapsed, setCollapsed }: {
   setCollapsed: (collapsed: boolean) => void;
 }) {
   const location = useLocation();
-  const isMobile = useMobile();
+  const isMobile = useIsMobile();
   const { user } = useAuth();
   
   const isActivePath = (path: string) => {
