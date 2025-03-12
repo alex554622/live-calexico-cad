@@ -404,7 +404,7 @@ export const createViewOnlyUser = (username: string, password: string, name: str
         id: String(users.length + 1),
         username,
         name,
-        role: 'officer' as const, // Use officer role with limited permissions
+        role: 'officer',
         avatar: `https://ui-avatars.com/api/?name=${name.replace(/ /g, '+')}&background=1E40AF&color=fff`,
       };
       

@@ -4,6 +4,7 @@ import { useLocation, Link } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
+import { Permission } from '@/context/AuthContext';
 import { 
   LayoutDashboard, 
   Shield, 
@@ -12,6 +13,11 @@ import {
   Settings,
   Users
 } from 'lucide-react';
+
+interface SidebarProps {
+  collapsed?: boolean;
+  setCollapsed?: React.Dispatch<React.SetStateAction<boolean>>;
+}
 
 const navItems = [
   {
@@ -43,18 +49,18 @@ const navItems = [
     href: '/settings',
     icon: Settings,
     requiresPermission: true,
-    permission: 'manageSettings'
+    permission: 'manageSettings' as Permission
   },
   {
     title: 'User Management',
     href: '/users',
     icon: Users,
     requiresPermission: true,
-    permission: 'manageSettings'
+    permission: 'manageSettings' as Permission
   }
 ];
 
-export function Sidebar() {
+export function Sidebar({ collapsed, setCollapsed }: SidebarProps) {
   const location = useLocation();
   const { hasPermission } = useAuth();
   

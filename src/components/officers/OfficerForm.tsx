@@ -25,9 +25,11 @@ import {
 type OfficerFormProps = {
   initialData?: Officer;
   onClose: () => void;
+  onSuccess?: (officer: Officer) => void;
+  onCancel?: () => void;
 };
 
-const OfficerForm = ({ initialData, onClose }: OfficerFormProps) => {
+const OfficerForm = ({ initialData, onClose, onSuccess, onCancel = onClose }: OfficerFormProps) => {
   const { createOfficer, updateOfficer } = useData();
   const { hasPermission } = useAuth();
   const { toast } = useToast();
@@ -96,6 +98,7 @@ const OfficerForm = ({ initialData, onClose }: OfficerFormProps) => {
           description: `${updatedOfficer.name}'s information has been updated`,
         });
         
+        if (onSuccess) onSuccess(updatedOfficer);
         onClose();
       } else {
         // Create new officer
@@ -118,6 +121,7 @@ const OfficerForm = ({ initialData, onClose }: OfficerFormProps) => {
           description: `${newOfficer.name} has been added to the system`,
         });
         
+        if (onSuccess) onSuccess(newOfficer);
         onClose();
       }
     } catch (error) {
@@ -231,7 +235,7 @@ const OfficerForm = ({ initialData, onClose }: OfficerFormProps) => {
           <Button 
             type="button" 
             variant="outline" 
-            onClick={onClose}
+            onClick={onCancel}
           >
             Cancel
           </Button>

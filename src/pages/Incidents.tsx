@@ -29,12 +29,13 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { IncidentStatusBadge } from '@/components/common/IncidentStatusBadge';
-import { IncidentPriorityBadge } from '@/components/common/IncidentPriorityBadge';
+import IncidentStatusBadge from '@/components/common/IncidentStatusBadge';
+import IncidentPriorityBadge from '@/components/common/IncidentPriorityBadge';
 import { PlusCircle, MoreHorizontal, Info } from 'lucide-react';
 import IncidentForm from '@/components/incidents/IncidentForm';
 import ExportIncidentsButton from '@/components/incidents/ExportIncidentsButton';
 import { format } from 'date-fns';
+import { Incident } from '@/types';
 
 const Incidents = () => {
   const { incidents, loadingIncidents } = useData();
@@ -149,7 +150,7 @@ const Incidents = () => {
         <DialogTrigger className="hidden" />
         <DialogContent className="max-w-3xl">
           <IncidentForm 
-            incidentId={selectedIncident} 
+            incidentId={selectedIncident || undefined} 
             onClose={handleCloseDialog} 
           />
         </DialogContent>
