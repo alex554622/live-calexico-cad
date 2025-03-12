@@ -13,10 +13,13 @@ import { UserPlus } from 'lucide-react';
 import { useCreateUser } from '@/hooks/use-create-user';
 import { NewAccountFormData } from '@/types/user';
 import NewAccountFormItem from './NewAccountFormItem';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 const CreateUserForm = () => {
   const { createAccounts, isSaving } = useCreateUser();
   const [newAccounts, setNewAccounts] = useState<NewAccountFormData[]>([]);
+  const isMobile = useIsMobile();
 
   const handleAddAccount = () => {
     setNewAccounts([...newAccounts, { name: '', email: '', role: 'officer', password: '' }]);
@@ -42,7 +45,9 @@ const CreateUserForm = () => {
   };
 
   return (
-    <Card>
+    <Card className={cn(
+      isMobile ? "overflow-hidden" : ""
+    )}>
       <CardHeader>
         <CardTitle className="flex items-center">
           <UserPlus className="h-5 w-5 mr-2" />
@@ -52,7 +57,10 @@ const CreateUserForm = () => {
           Add and manage user accounts
         </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-6">
+      <CardContent className={cn(
+        "space-y-6",
+        isMobile ? "px-3" : ""
+      )}>
         {newAccounts.map((account, index) => (
           <NewAccountFormItem 
             key={index}
@@ -72,11 +80,15 @@ const CreateUserForm = () => {
           Add New Account
         </Button>
       </CardContent>
-      <CardFooter>
+      <CardFooter className={cn(
+        isMobile ? "flex-col space-y-2" : ""
+      )}>
         <Button 
           onClick={handleCreateAccounts} 
           disabled={isSaving || newAccounts.length === 0}
-          className="ml-auto"
+          className={cn(
+            isMobile ? "w-full" : "ml-auto"
+          )}
         >
           {isSaving ? 'Creating...' : 'Create Accounts'}
         </Button>

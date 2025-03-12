@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Bell, Search, Trash2 } from 'lucide-react';
 import NotificationItem from '@/components/common/NotificationItem';
 import { useToast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   Select,
   SelectContent,
@@ -13,6 +14,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { cn } from '@/lib/utils';
 
 const Notifications = () => {
   const { notifications, loadingNotifications, markNotificationAsRead, deleteReadNotifications } = useData();
@@ -20,6 +22,7 @@ const Notifications = () => {
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   // Filter notifications based on search and filters
   const filteredNotifications = notifications.filter(notification => {
@@ -80,7 +83,10 @@ const Notifications = () => {
       </div>
 
       {/* Search and filters */}
-      <div className="flex flex-col sm:flex-row gap-4">
+      <div className={cn(
+        "flex gap-4",
+        isMobile ? "flex-col" : "flex-row"
+      )}>
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
           <Input
@@ -90,12 +96,17 @@ const Notifications = () => {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="flex gap-2">
+        <div className={cn(
+          "flex gap-2",
+          isMobile ? "flex-wrap" : ""
+        )}>
           <Select
             value={typeFilter}
             onValueChange={setTypeFilter}
           >
-            <SelectTrigger className="w-[130px]">
+            <SelectTrigger className={cn(
+              isMobile ? "w-full" : "w-[130px]"
+            )}>
               <Bell className="h-4 w-4 mr-2" />
               <SelectValue placeholder="Type" />
             </SelectTrigger>
@@ -111,18 +122,32 @@ const Notifications = () => {
           <Button 
             variant="outline" 
             onClick={() => setShowUnreadOnly(!showUnreadOnly)}
-            className={showUnreadOnly ? "bg-blue-50" : ""}
+            className={cn(
+              showUnreadOnly ? "bg-blue-50" : "",
+              isMobile ? "flex-1" : ""
+            )}
           >
-            {showUnreadOnly ? "Unread Only" : "All Notifications"}
+            {showUnreadOnly ? "Unread Only" : "All"}
           </Button>
           
-          <Button variant="outline" onClick={markAllAsRead}>
+          <Button 
+            variant="outline" 
+            onClick={markAllAsRead}
+            className={isMobile ? "flex-1" : ""}
+          >
             Mark All Read
           </Button>
           
-          <Button variant="outline" onClick={handleDeleteReadNotifications} className="gap-2">
+          <Button 
+            variant="outline" 
+            onClick={handleDeleteReadNotifications} 
+            className={cn(
+              "gap-2",
+              isMobile ? "flex-1" : ""
+            )}
+          >
             <Trash2 className="h-4 w-4" />
-            Delete Read
+            {isMobile ? "" : "Delete Read"}
           </Button>
         </div>
       </div>

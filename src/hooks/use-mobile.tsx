@@ -17,8 +17,20 @@ export function useIsMobile() {
     // Add event listener
     window.addEventListener("resize", handleResize)
     
-    // Ensure body has proper scroll settings on mobile
+    // Apply mobile-specific styles
     if (window.innerWidth < MOBILE_BREAKPOINT) {
+      // Set viewport meta tag to prevent zooming
+      const viewportMeta = document.querySelector('meta[name="viewport"]');
+      if (!viewportMeta) {
+        const meta = document.createElement('meta');
+        meta.name = 'viewport';
+        meta.content = 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0';
+        document.head.appendChild(meta);
+      } else {
+        viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=0');
+      }
+
+      // Apply mobile scrolling styles
       document.body.style.overflowY = "auto";
       // Use proper TypeScript compatible way to set webkit property
       (document.body.style as any)["-webkit-overflow-scrolling"] = "touch";
