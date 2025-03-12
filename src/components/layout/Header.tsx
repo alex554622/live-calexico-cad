@@ -4,6 +4,7 @@ import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
+import ThemeToggle from '@/components/common/ThemeToggle';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -23,9 +24,10 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
       <div className="ml-auto flex items-center space-x-2">
         {user && (
           <span className="text-sm text-muted-foreground">
-            {user.name || user.email}
+            {user.name || user.username}
           </span>
         )}
+        <ThemeToggle />
       </div>
     </header>
   );
