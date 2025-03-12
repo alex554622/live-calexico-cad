@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
-import { Officer } from '@/types';
+import { Officer, OfficerStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
@@ -20,7 +20,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Filter, Plus, Phone, Mail, CheckSquare, Trash2 } from 'lucide-react';
+import { Search, Filter, Plus, Phone, Mail, CheckSquare, Trash2, AlertCircle } from 'lucide-react';
 import OfficerStatusBadge from '@/components/common/OfficerStatusBadge';
 import OfficerForm from '@/components/officers/OfficerForm';
 import { format } from 'date-fns';
@@ -28,7 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const Officers = () => {
-  const { officers, incidents, loadingOfficers, updateOfficer, deleteOfficer } = useData();
+  const { officers, incidents, loadingOfficers, updateOfficer, deleteOfficer, updateOfficerStatus } = useData();
   const { hasPermission } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,6 +41,10 @@ const Officers = () => {
   const [selectedOfficers, setSelectedOfficers] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+  
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const [statusUpdateOfficer, setStatusUpdateOfficer] = useState<Officer | null>(null);
+  const [newStatus, setNewStatus] = useState<OfficerStatus>('available');
 
   const uniqueRanks = useMemo(() => {
     const ranks = officers.map(officer => officer.rank);
@@ -136,6 +140,44 @@ const Officers = () => {
         variant: 'destructive',
       });
     }
+  };
+
+  const handleUpdateOfficerStatus = async () => {
+    if (!statusUpdateOfficer) return;
+    
+    try {
+      const updatedOfficer = await updateOfficerStatus(
+        statusUpdateOfficer.id, 
+        newStatus, 
+        newStatus === 'responding' ? statusUpdateOfficer.currentIncidentId : undefined
+      );
+      
+      toast({
+        title: 'Status Updated',
+        description: `${updatedOfficer.name}'s status updated to ${newStatus}`,
+      });
+      
+      setIsUpdatingStatus(false);
+      setStatusUpdateOfficer(null);
+      
+      if (selectedOfficer && selectedOfficer.id === updatedOfficer.id) {
+        setSelectedOfficer(updatedOfficer);
+      }
+    } catch (error) {
+      console.error('Error updating officer status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update officer status',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const openStatusUpdateDialog = (officer: Officer, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setStatusUpdateOfficer(officer);
+    setNewStatus(officer.status);
+    setIsUpdatingStatus(true);
   };
 
   return (
@@ -251,7 +293,19 @@ const Officers = () => {
                         <p className="text-sm text-muted-foreground">{officer.rank} • Badge #{officer.badgeNumber}</p>
                       </div>
                     </div>
-                    <OfficerStatusBadge status={officer.status} />
+                    <div className="flex flex-col items-end gap-2">
+                      <OfficerStatusBadge status={officer.status} />
+                      {hasPermission('editOfficer') && (
+                        <Button 
+                          variant="outline" 
+                          size="sm" 
+                          className="text-xs h-7"
+                          onClick={(e) => openStatusUpdateDialog(officer, e)}
+                        >
+                          Update Status
+                        </Button>
+                      )}
+                    </div>
                   </div>
                   
                   <div className="mt-4 space-y-2">
@@ -439,6 +493,58 @@ const Officers = () => {
             </Button>
             <Button variant="destructive" onClick={handleDeleteSelected}>
               Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isUpdatingStatus} onOpenChange={setIsUpdatingStatus}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Update Officer Status</DialogTitle>
+            <DialogDescription>
+              Change the status of {statusUpdateOfficer?.name}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <Select
+              value={newStatus}
+              onValueChange={(value) => setNewStatus(value as OfficerStatus)}
+            >
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Select status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="responding">Responding</SelectItem>
+                <SelectItem value="busy">Busy</SelectItem>
+                <SelectItem value="offDuty">Off Duty</SelectItem>
+              </SelectContent>
+            </Select>
+            
+            {newStatus === 'responding' && !statusUpdateOfficer?.currentIncidentId && (
+              <div className="mt-4 p-3 border rounded-md bg-amber-50 flex items-start gap-2">
+                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-sm text-amber-700">
+                  This officer is not assigned to any incident. They will be marked as responding, 
+                  but without an incident assignment.
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsUpdatingStatus(false)}>
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleUpdateOfficerStatus}
+              variant={newStatus === 'available' ? 'success' : 
+                      newStatus === 'responding' ? 'info' : 
+                      newStatus === 'busy' ? 'warning' : 'secondary'}
+            >
+              Update Status
             </Button>
           </DialogFooter>
         </DialogContent>
