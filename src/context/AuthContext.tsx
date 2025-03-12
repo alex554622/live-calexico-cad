@@ -16,6 +16,7 @@ export type Permission =
   | 'assignOfficer'
   | 'manageSettings'
   | 'viewReports'
+  | 'viewSettings'
   | 'deleteIncident';  // Added deleteIncident permission
 
 interface AuthContextType {
@@ -85,9 +86,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'editIncident',
         'assignOfficer',
         'viewReports',
-        'deleteIncident'  // Added deleteIncident permission for dispatchers
+        'deleteIncident',
+        'viewSettings'  // Dispatchers can view settings
       ];
       return dispatcherPermissions.includes(permission);
+    }
+    
+    // Supervisor permissions
+    if (user.role === 'supervisor') {
+      const supervisorPermissions: Permission[] = [
+        'viewOfficerDetails',
+        'viewIncidentDetails',
+        'createIncident',
+        'editIncident',
+        'assignOfficer',
+        'viewReports',
+        'deleteIncident',
+        'viewSettings',
+        'manageSettings'  // Supervisors can manage settings
+      ];
+      return supervisorPermissions.includes(permission);
     }
     
     // Officer permissions
@@ -96,6 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'viewOfficerDetails',
         'viewIncidentDetails',
         'createIncident'
+        // Note: 'viewSettings' is not included for officers
       ];
       return officerPermissions.includes(permission);
     }

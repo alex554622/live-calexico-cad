@@ -32,6 +32,17 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+// Settings route component that requires viewSettings permission
+const SettingsRoute = () => {
+  const { hasPermission } = useAuth();
+  
+  if (!hasPermission('viewSettings')) {
+    return <Navigate to="/" replace />;
+  }
+  
+  return <Settings />;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
@@ -50,7 +61,7 @@ const App = () => (
                       <Route path="/officers" element={<Officers />} />
                       <Route path="/incidents" element={<Incidents />} />
                       <Route path="/notifications" element={<Notifications />} />
-                      <Route path="/settings" element={<Settings />} />
+                      <Route path="/settings" element={<SettingsRoute />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>
                   </AppLayout>

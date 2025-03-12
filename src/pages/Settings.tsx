@@ -17,12 +17,19 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
 import { Shield, User, UserPlus, X } from 'lucide-react';
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 
 const Settings = () => {
   const { user, hasPermission } = useAuth();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
-  const [newAccounts, setNewAccounts] = useState<Array<{name: string; email: string; role: string}>>([]);
+  const [newAccounts, setNewAccounts] = useState<Array<{name: string; email: string; role: string; password: string}>>([]);
 
   const handleSaveSettings = () => {
     setIsSaving(true);
@@ -37,8 +44,24 @@ const Settings = () => {
     }, 1000);
   };
 
+  const handleCreateAccounts = () => {
+    if (newAccounts.length === 0) return;
+    
+    setIsSaving(true);
+    
+    // Simulate account creation process
+    setTimeout(() => {
+      setIsSaving(false);
+      toast({
+        title: 'Accounts Created',
+        description: `Successfully created ${newAccounts.length} new account(s)`,
+      });
+      setNewAccounts([]);
+    }, 1500);
+  };
+
   const handleAddAccount = () => {
-    setNewAccounts([...newAccounts, { name: '', email: '', role: 'officer' }]);
+    setNewAccounts([...newAccounts, { name: '', email: '', role: 'officer', password: '' }]);
   };
 
   const handleRemoveAccount = (index: number) => {
@@ -167,20 +190,33 @@ const Settings = () => {
                         onChange={(e) => handleAccountChange(index, 'email', e.target.value)}
                       />
                     </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor={`account-password-${index}`}>Password</Label>
+                      <Input 
+                        id={`account-password-${index}`} 
+                        type="password"
+                        value={account.password}
+                        onChange={(e) => handleAccountChange(index, 'password', e.target.value)}
+                      />
+                    </div>
                     
                     <div className="space-y-2">
                       <Label htmlFor={`account-role-${index}`}>Role</Label>
-                      <select
-                        id={`account-role-${index}`}
+                      <Select
                         value={account.role}
-                        onChange={(e) => handleAccountChange(index, 'role', e.target.value)}
-                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                        onValueChange={(value) => handleAccountChange(index, 'role', value)}
                       >
-                        <option value="officer">Officer</option>
-                        <option value="dispatcher">Dispatcher</option>
-                        <option value="supervisor">Supervisor</option>
-                        <option value="admin">Administrator</option>
-                      </select>
+                        <SelectTrigger id={`account-role-${index}`}>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="officer">Officer</SelectItem>
+                          <SelectItem value="dispatcher">Dispatcher</SelectItem>
+                          <SelectItem value="supervisor">Supervisor</SelectItem>
+                          <SelectItem value="admin">Administrator</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </div>
                   </div>
                 ))}
@@ -196,11 +232,11 @@ const Settings = () => {
               </CardContent>
               <CardFooter>
                 <Button 
-                  onClick={handleSaveSettings} 
+                  onClick={handleCreateAccounts} 
                   disabled={isSaving || newAccounts.length === 0}
                   className="ml-auto"
                 >
-                  {isSaving ? 'Saving...' : 'Create Accounts'}
+                  {isSaving ? 'Creating...' : 'Create Accounts'}
                 </Button>
               </CardFooter>
             </Card>
