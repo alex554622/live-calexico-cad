@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Officer, Incident, Notification } from '../types';
 import { 
@@ -10,7 +9,9 @@ import {
   createIncident, 
   assignOfficerToIncident,
   markNotificationAsRead,
-  simulateRealTimeUpdates
+  simulateRealTimeUpdates,
+  createOfficer as apiCreateOfficer,
+  updateOfficer as apiUpdateOfficer
 } from '../services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthContext';
@@ -28,6 +29,8 @@ interface DataContextType {
   createIncident: (incident: Omit<Incident, 'id' | 'reportedAt' | 'updatedAt'>) => Promise<Incident>;
   assignOfficerToIncident: (incidentId: string, officerId: string) => Promise<{ incident: Incident; officer: Officer }>;
   markNotificationAsRead: (notificationId: string) => Promise<Notification>;
+  createOfficer: (officer: Omit<Officer, 'id' | 'lastUpdated'>) => Promise<Officer>;
+  updateOfficer: (officerId: string, updates: Partial<Officer>) => Promise<Officer>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -103,14 +106,12 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     ]);
   }, [fetchOfficers, fetchIncidents, fetchNotifications]);
 
-  // Initial data fetch
   useEffect(() => {
     if (user) {
       refreshData();
     }
   }, [user, refreshData]);
 
-  // Handle real-time updates simulation
   useEffect(() => {
     if (!user) return;
     
@@ -154,7 +155,6 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return cleanup;
   }, [user, toast]);
 
-  // API function wrappers
   const updateOfficerStatusWrapper = async (officerId: string, status: Officer['status'], incidentId?: string) => {
     try {
       const updatedOfficer = await updateOfficerStatus(officerId, status, incidentId);
@@ -244,6 +244,40 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const createOfficerWrapper = async (officerData: Omit<Officer, 'id' | 'lastUpdated'>) => {
+    try {
+      const newOfficer = await apiCreateOfficer(officerData);
+      setOfficers(prev => [newOfficer, ...prev]);
+      return newOfficer;
+    } catch (error) {
+      console.error('Error creating officer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create officer',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const updateOfficerWrapper = async (officerId: string, updates: Partial<Officer>) => {
+    try {
+      const updatedOfficer = await apiUpdateOfficer(officerId, updates);
+      setOfficers(prev => 
+        prev.map(officer => officer.id === updatedOfficer.id ? updatedOfficer : officer)
+      );
+      return updatedOfficer;
+    } catch (error) {
+      console.error('Error updating officer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update officer',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   return (
     <DataContext.Provider value={{
       officers,
@@ -258,6 +292,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       createIncident: createIncidentWrapper,
       assignOfficerToIncident: assignOfficerToIncidentWrapper,
       markNotificationAsRead: markNotificationAsReadWrapper,
+      createOfficer: createOfficerWrapper,
+      updateOfficer: updateOfficerWrapper,
     }}>
       {children}
     </DataContext.Provider>

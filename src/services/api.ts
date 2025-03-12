@@ -1,4 +1,3 @@
-
 import { Officer, Incident, Notification, User, OfficerStatus } from '../types';
 import { mockOfficers, mockIncidents, mockNotifications, mockUsers } from './mockData';
 
@@ -92,6 +91,73 @@ export const updateOfficerStatus = (
         };
         
         notifications = [newNotification, ...notifications];
+        resolve(officers[officerIndex]);
+      } else {
+        throw new Error('Officer not found');
+      }
+    }, 300);
+  });
+};
+
+export const createOfficer = (officer: Omit<Officer, 'id' | 'lastUpdated'>): Promise<Officer> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const newOfficer: Officer = {
+        ...officer,
+        id: String(officers.length + 1),
+        lastUpdated: new Date().toISOString()
+      };
+      
+      officers = [newOfficer, ...officers];
+      
+      // Create a notification
+      const newNotification: Notification = {
+        id: String(notifications.length + 1),
+        title: 'New Officer Added',
+        message: `${newOfficer.name} has been added to the system`,
+        type: 'info',
+        timestamp: new Date().toISOString(),
+        read: false,
+        relatedTo: {
+          type: 'officer',
+          id: newOfficer.id
+        }
+      };
+      
+      notifications = [newNotification, ...notifications];
+      
+      resolve(newOfficer);
+    }, 500);
+  });
+};
+
+export const updateOfficer = (id: string, updates: Partial<Officer>): Promise<Officer> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const officerIndex = officers.findIndex(o => o.id === id);
+      if (officerIndex !== -1) {
+        officers[officerIndex] = {
+          ...officers[officerIndex],
+          ...updates,
+          lastUpdated: new Date().toISOString()
+        };
+        
+        // Create a notification
+        const newNotification: Notification = {
+          id: String(notifications.length + 1),
+          title: 'Officer Updated',
+          message: `${officers[officerIndex].name}'s information has been updated`,
+          type: 'info',
+          timestamp: new Date().toISOString(),
+          read: false,
+          relatedTo: {
+            type: 'officer',
+            id
+          }
+        };
+        
+        notifications = [newNotification, ...notifications];
+        
         resolve(officers[officerIndex]);
       } else {
         throw new Error('Officer not found');
