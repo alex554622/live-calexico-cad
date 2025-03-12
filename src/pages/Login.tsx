@@ -93,12 +93,12 @@ const Login = () => {
         </Card>
       </div>
       
-      {/* Valladolid Software Logo */}
+      {/* Valladolid Software Engineering Logo */}
       <div className="mt-6 text-center">
         <div className="flex items-center justify-center">
           <div className="bg-white p-2 rounded-md shadow-sm">
             <p className="text-sm text-gray-500">by</p>
-            <p className="text-lg font-semibold text-police">Valladolid Software</p>
+            <p className="text-lg font-semibold text-police">Valladolid Software Engineering</p>
           </div>
         </div>
       </div>
