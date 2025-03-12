@@ -53,6 +53,9 @@ const Settings = () => {
     setNewAccounts(updatedAccounts);
   };
 
+  // Check if current user is alexvalla
+  const isAlexValla = user?.username === 'alexvalla';
+
   return (
     <div className="space-y-6">
       <div>
@@ -71,53 +74,55 @@ const Settings = () => {
         </TabsList>
         
         <TabsContent value="account" className="max-w-3xl space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <User className="h-5 w-5 mr-2" />
-                Account Settings
-              </CardTitle>
-              <CardDescription>
-                Update your account information and password
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="space-y-2">
-                <Label htmlFor="name">Full Name</Label>
-                <Input id="name" defaultValue={user?.name || ''} />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="email">Email Address</Label>
-                <Input id="email" type="email" defaultValue={user?.username || ''} />
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-4">
+          {isAlexValla && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <User className="h-5 w-5 mr-2" />
+                  Account Settings
+                </CardTitle>
+                <CardDescription>
+                  Update your account information and password
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
                 <div className="space-y-2">
-                  <Label htmlFor="currentPassword">Current Password</Label>
-                  <Input id="currentPassword" type="password" />
+                  <Label htmlFor="name">Full Name</Label>
+                  <Input id="name" defaultValue={user?.name || ''} />
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="newPassword">New Password</Label>
-                  <Input id="newPassword" type="password" />
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input id="email" type="email" defaultValue={user?.username || ''} />
                 </div>
                 
-                <div className="space-y-2">
-                  <Label htmlFor="confirmPassword">Confirm New Password</Label>
-                  <Input id="confirmPassword" type="password" />
+                <Separator />
+                
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="currentPassword">Current Password</Label>
+                    <Input id="currentPassword" type="password" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="newPassword">New Password</Label>
+                    <Input id="newPassword" type="password" />
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                    <Input id="confirmPassword" type="password" />
+                  </div>
                 </div>
-              </div>
-            </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline">Cancel</Button>
-              <Button onClick={handleSaveSettings} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Update Account'}
-              </Button>
-            </CardFooter>
-          </Card>
+              </CardContent>
+              <CardFooter className="flex justify-between">
+                <Button variant="outline">Cancel</Button>
+                <Button onClick={handleSaveSettings} disabled={isSaving}>
+                  {isSaving ? 'Saving...' : 'Update Account'}
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
 
           {hasPermission('manageSettings') && (
             <Card>
