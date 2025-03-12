@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -51,13 +50,19 @@ const OfficerForm: React.FC<OfficerFormProps> = ({
     if (name.includes('.')) {
       // Handle nested properties like contactInfo.phone
       const [parent, child] = name.split('.');
-      setFormData(prev => ({
-        ...prev,
-        [parent]: {
-          ...prev[parent as keyof typeof prev],
-          [child]: value,
+      setFormData(prev => {
+        // Create a proper copy of the nested object before modifying it
+        if (parent === 'contactInfo') {
+          return {
+            ...prev,
+            contactInfo: {
+              ...prev.contactInfo,
+              [child]: value
+            }
+          };
         }
-      }));
+        return prev;
+      });
     } else {
       setFormData(prev => ({
         ...prev,
