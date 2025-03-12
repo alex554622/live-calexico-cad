@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -24,11 +23,13 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { updateOfficer } from '@/services/api';
+import { updateOfficer, createOfficer, updateUser } from '@/services/api';
+import { useData } from '@/context/DataContext';
 
 const Settings = () => {
   const { user, hasPermission } = useAuth();
   const { toast } = useToast();
+  const { createOfficer: createOfficerData } = useData();
   const [isSaving, setIsSaving] = useState(false);
   const [newAccounts, setNewAccounts] = useState<Array<{name: string; email: string; role: string; password: string}>>([]);
   const [dataRetention, setDataRetention] = useState("5"); // Default 5 days
@@ -75,7 +76,7 @@ const Settings = () => {
     }, 1000);
   };
 
-  const handleUpdateAccount = () => {
+  const handleUpdateAccount = async () => {
     if (!user) return;
     
     setIsSaving(true);
@@ -115,42 +116,94 @@ const Settings = () => {
       }
     }
 
-    // Simulate API call to update user profile
-    setTimeout(() => {
-      // Update user info if we had a real API
-      // For now we'll just simulate success
-      
-      setIsSaving(false);
+    try {
+      // Call the API to update user profile
+      const updatedUser = await updateUser(user.id, {
+        name: userProfile.name,
+        username: userProfile.email,
+        ...(userProfile.newPassword ? { password: userProfile.newPassword } : {})
+      });
       
       // Reset password fields
       setUserProfile(prev => ({
         ...prev,
         currentPassword: '',
         newPassword: '',
-        confirmPassword: ''
+        confirmPassword: '',
+        // Update with the values from the response
+        name: updatedUser.name,
+        email: updatedUser.username
       }));
       
       toast({
         title: 'Account Updated',
         description: 'Your account information has been updated successfully',
       });
-    }, 1500);
+    } catch (error) {
+      console.error('Error updating account:', error);
+      toast({
+        title: 'Update Failed',
+        description: 'Failed to update account information',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  const handleCreateAccounts = () => {
+  const handleCreateAccounts = async () => {
     if (newAccounts.length === 0) return;
     
     setIsSaving(true);
-    
-    // Simulate account creation process
-    setTimeout(() => {
-      setIsSaving(false);
+
+    try {
+      // Process each account creation sequentially
+      for (const account of newAccounts) {
+        if (!account.name || !account.email || !account.password || !account.role) {
+          toast({
+            title: 'Validation Error',
+            description: 'All fields are required for new accounts',
+            variant: 'destructive'
+          });
+          continue;
+        }
+
+        // Create a new officer based on the account information
+        await createOfficerData({
+          badgeNumber: `CPD-${Math.floor(1000 + Math.random() * 9000)}`,
+          name: account.name,
+          rank: 'Patrol Officer',
+          department: 'Central',
+          status: 'available',
+          contactInfo: {
+            phone: '',
+            email: account.email,
+          },
+          shiftSchedule: 'Mon-Fri 8am-4pm',
+          location: {
+            lat: 32.6789,
+            lng: -115.4989,
+          }
+        });
+      }
+
       toast({
         title: 'Accounts Created',
         description: `Successfully created ${newAccounts.length} new account(s)`,
       });
+      
+      // Clear the form after successful creation
       setNewAccounts([]);
-    }, 1500);
+    } catch (error) {
+      console.error('Error creating accounts:', error);
+      toast({
+        title: 'Creation Failed',
+        description: 'Failed to create one or more accounts',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAddAccount = () => {

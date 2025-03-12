@@ -49,6 +49,46 @@ export const getCurrentUser = (): Promise<User | null> => {
   });
 };
 
+// New function to update user information
+export const updateUser = (id: string, updates: Partial<User>): Promise<User> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const userIndex = users.findIndex(u => u.id === id);
+      if (userIndex !== -1) {
+        users[userIndex] = {
+          ...users[userIndex],
+          ...updates,
+        };
+        
+        // If this is the current user, update currentUser as well
+        if (currentUser && currentUser.id === id) {
+          currentUser = { ...users[userIndex] };
+        }
+        
+        // Create a notification
+        const newNotification: Notification = {
+          id: String(notifications.length + 1),
+          title: 'User Updated',
+          message: `${users[userIndex].name}'s information has been updated`,
+          type: 'info',
+          timestamp: new Date().toISOString(),
+          read: false,
+          relatedTo: {
+            type: 'user',
+            id
+          }
+        };
+        
+        notifications = [newNotification, ...notifications];
+        
+        resolve(users[userIndex]);
+      } else {
+        throw new Error('User not found');
+      }
+    }, 500);
+  });
+};
+
 // Officer related API
 export const getOfficers = (): Promise<Officer[]> => {
   return new Promise((resolve) => {
