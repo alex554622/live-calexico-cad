@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -21,15 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { AlertTriangle, Search, Filter, MapPin, Clock, FileText, Plus, ExternalLink } from 'lucide-react';
+import { AlertTriangle, Search, Filter, MapPin, Clock, FileText, Plus, ExternalLink, CheckSquare, Trash2 } from 'lucide-react';
 import IncidentStatusBadge from '@/components/common/IncidentStatusBadge';
 import IncidentPriorityBadge from '@/components/common/IncidentPriorityBadge';
 import IncidentForm from '@/components/incidents/IncidentForm';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Incidents = () => {
-  const { incidents, officers, loadingIncidents, loadingOfficers, assignOfficerToIncident } = useData();
+  const { incidents, officers, loadingIncidents, loadingOfficers, assignOfficerToIncident, updateIncident } = useData();
   const { hasPermission } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,8 +41,11 @@ const Incidents = () => {
   const [isAssigning, setIsAssigning] = useState(false);
   const [selectedOfficerId, setSelectedOfficerId] = useState<string>('');
   const [assigningInProgress, setAssigningInProgress] = useState(false);
+  
+  const [selectedIncidents, setSelectedIncidents] = useState<string[]>([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false);
+  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
-  // Filter incidents based on search term and filters
   const filteredIncidents = incidents.filter(incident => {
     const matchesSearch = 
       incident.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -97,7 +100,51 @@ const Incidents = () => {
     }
   };
 
-  // Get available officers (not on another incident and not off duty)
+  const toggleSelectionMode = () => {
+    setIsSelectionMode(!isSelectionMode);
+    if (isSelectionMode) {
+      setSelectedIncidents([]);
+    }
+  };
+
+  const toggleIncidentSelection = (id: string, e: React.MouseEvent) => {
+    if (!isSelectionMode) return;
+    
+    e.stopPropagation();
+    
+    setSelectedIncidents(prev => {
+      if (prev.includes(id)) {
+        return prev.filter(incidentId => incidentId !== id);
+      } else {
+        return [...prev, id];
+      }
+    });
+  };
+
+  const handleDeleteSelected = async () => {
+    try {
+      for (const id of selectedIncidents) {
+        await updateIncident(id, { status: 'archived' });
+      }
+      
+      toast({
+        title: 'Incidents Archived',
+        description: `${selectedIncidents.length} incident(s) have been archived`,
+      });
+      
+      setSelectedIncidents([]);
+      setIsSelectionMode(false);
+      setIsConfirmingDelete(false);
+    } catch (error) {
+      console.error('Error archiving incidents:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to archive selected incidents',
+        variant: 'destructive',
+      });
+    }
+  };
+
   const availableOfficers = officers.filter(officer => 
     (officer.status === 'available' || !officer.currentIncidentId) && 
     officer.status !== 'offDuty'
@@ -112,14 +159,32 @@ const Incidents = () => {
             View and manage all incidents in the system.
           </p>
         </div>
-        {hasPermission('createIncident') && (
-          <Button onClick={() => setIsCreating(true)}>
-            <Plus className="h-4 w-4 mr-1" /> New Incident
-          </Button>
-        )}
+        <div className="flex gap-2">
+          {hasPermission('createIncident') && (
+            <Button onClick={() => setIsCreating(true)}>
+              <Plus className="h-4 w-4 mr-1" /> New Incident
+            </Button>
+          )}
+          {hasPermission('editIncident') && (
+            <Button 
+              variant={isSelectionMode ? "secondary" : "outline"} 
+              onClick={toggleSelectionMode}
+            >
+              <CheckSquare className="h-4 w-4 mr-1" /> 
+              {isSelectionMode ? "Cancel Selection" : "Select Incidents"}
+            </Button>
+          )}
+          {isSelectionMode && selectedIncidents.length > 0 && (
+            <Button 
+              variant="destructive" 
+              onClick={() => setIsConfirmingDelete(true)}
+            >
+              <Trash2 className="h-4 w-4 mr-1" /> Delete Selected
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Search and filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -183,17 +248,29 @@ const Incidents = () => {
               {filteredIncidents.map((incident) => (
                 <div
                   key={incident.id}
-                  className="p-4 hover:bg-muted rounded-md cursor-pointer transition-colors"
-                  onClick={() => setSelectedIncident(incident)}
+                  className={`p-4 hover:bg-muted rounded-md ${isSelectionMode ? 'cursor-default' : 'cursor-pointer'} transition-colors ${
+                    selectedIncidents.includes(incident.id) ? 'bg-muted' : ''
+                  }`}
+                  onClick={() => !isSelectionMode && setSelectedIncident(incident)}
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="font-medium">{incident.title}</h3>
-                        <IncidentPriorityBadge priority={incident.priority} />
-                        <IncidentStatusBadge status={incident.status} />
+                    <div className="flex items-center gap-2">
+                      {isSelectionMode && (
+                        <Checkbox 
+                          checked={selectedIncidents.includes(incident.id)} 
+                          onCheckedChange={() => toggleIncidentSelection(incident.id, { stopPropagation: () => {} } as React.MouseEvent)}
+                          onClick={(e) => e.stopPropagation()}
+                          className="mr-2"
+                        />
+                      )}
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h3 className="font-medium">{incident.title}</h3>
+                          <IncidentPriorityBadge priority={incident.priority} />
+                          <IncidentStatusBadge status={incident.status} />
+                        </div>
+                        <p className="text-sm text-muted-foreground line-clamp-1">{incident.description}</p>
                       </div>
-                      <p className="text-sm text-muted-foreground line-clamp-1">{incident.description}</p>
                     </div>
                     <div className="flex items-center text-xs text-muted-foreground gap-4">
                       <div className="flex items-center">
@@ -219,7 +296,6 @@ const Incidents = () => {
         </div>
       )}
 
-      {/* Create Incident Dialog */}
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -236,7 +312,6 @@ const Incidents = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Incident Details Dialog */}
       <Dialog open={!!selectedIncident} onOpenChange={(open) => !open && setSelectedIncident(null)}>
         {selectedIncident && (
           <DialogContent className="sm:max-w-[600px]">
@@ -383,7 +458,6 @@ const Incidents = () => {
         )}
       </Dialog>
 
-      {/* Assign Officer Dialog */}
       <Dialog open={isAssigning} onOpenChange={setIsAssigning}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -431,6 +505,26 @@ const Incidents = () => {
               disabled={!selectedOfficerId || assigningInProgress}
             >
               {assigningInProgress ? 'Assigning...' : 'Assign'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Confirm Deletion</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedIncidents.length} selected incident(s)? 
+              This action will archive the incidents and cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsConfirmingDelete(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleDeleteSelected}>
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
