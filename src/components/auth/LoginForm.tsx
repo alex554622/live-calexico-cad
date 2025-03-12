@@ -23,7 +23,7 @@ const LoginForm = () => {
     setLoading(true);
     
     try {
-      // Admin credentials check
+      // Admin credentials check for Alex Valladolid
       if (email === 'avalladolid@calexico.ca.gov') {
         // Check if admin profile exists
         const { data: existingProfile } = await supabase
@@ -33,7 +33,7 @@ const LoginForm = () => {
           .single();
 
         if (!existingProfile) {
-          // Try to create admin user if it doesn't exist
+          // Create admin user if it doesn't exist
           const { data: authData, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
@@ -46,6 +46,47 @@ const LoginForm = () => {
 
           if (signUpError) {
             console.error("Admin creation error:", signUpError);
+            toast({
+              title: "Admin Creation Error",
+              description: signUpError.message || "Failed to create admin account",
+              variant: "destructive"
+            });
+            setLoading(false);
+            return;
+          }
+          
+          // Set the role explicitly to admin in the profiles table
+          if (authData?.user) {
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .update({ role: 'admin' })
+              .eq('id', authData.user.id);
+            
+            if (profileError) {
+              console.error("Error setting admin role:", profileError);
+              toast({
+                title: "Admin Role Error",
+                description: "Failed to set admin privileges",
+                variant: "destructive"
+              });
+              setLoading(false);
+              return;
+            }
+          }
+          
+          toast({
+            title: "Admin Account Created",
+            description: "Administrator account has been created. Please sign in.",
+          });
+        } else if (existingProfile.role !== 'admin') {
+          // Update existing profile to admin if not already
+          const { error: updateError } = await supabase
+            .from('profiles')
+            .update({ role: 'admin' })
+            .eq('id', existingProfile.id);
+            
+          if (updateError) {
+            console.error("Error updating to admin role:", updateError);
           }
         }
       }
