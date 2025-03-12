@@ -103,7 +103,10 @@ const OfficerForm: React.FC<OfficerFormProps> = ({
       if (initialData) {
         // Update existing officer
         const updatedOfficer = await updateOfficer(initialData.id, {
-          ...formData
+          ...formData,
+          id: initialData.id,
+          lastUpdated: new Date().toISOString(),
+          location: initialData.location
         });
         
         toast({
@@ -119,7 +122,8 @@ const OfficerForm: React.FC<OfficerFormProps> = ({
           location: {
             lat: 0,
             lng: 0,
-          }
+          },
+          lastUpdated: new Date().toISOString()
         });
         
         toast({

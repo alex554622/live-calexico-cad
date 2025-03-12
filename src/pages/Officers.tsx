@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import { Officer } from '@/types';
@@ -41,6 +41,12 @@ const Officers = () => {
   const [selectedOfficers, setSelectedOfficers] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
+
+  // Create a list of unique ranks for the rank filter
+  const uniqueRanks = useMemo(() => {
+    const ranks = officers.map(officer => officer.rank);
+    return [...new Set(ranks)];
+  }, [officers]);
 
   const filteredOfficers = officers.filter(officer => {
     const matchesSearch = 
