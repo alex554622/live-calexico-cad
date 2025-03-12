@@ -16,12 +16,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, User } from 'lucide-react';
+import { Shield, User, UserPlus, X } from 'lucide-react';
 
 const Settings = () => {
   const { user, hasPermission } = useAuth();
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
+  const [newAccounts, setNewAccounts] = useState<Array<{name: string; email: string; role: string}>>([]);
 
   const handleSaveSettings = () => {
     setIsSaving(true);
@@ -34,6 +35,22 @@ const Settings = () => {
         description: 'Your settings have been saved successfully',
       });
     }, 1000);
+  };
+
+  const handleAddAccount = () => {
+    setNewAccounts([...newAccounts, { name: '', email: '', role: 'officer' }]);
+  };
+
+  const handleRemoveAccount = (index: number) => {
+    const updatedAccounts = [...newAccounts];
+    updatedAccounts.splice(index, 1);
+    setNewAccounts(updatedAccounts);
+  };
+
+  const handleAccountChange = (index: number, field: string, value: string) => {
+    const updatedAccounts = [...newAccounts];
+    updatedAccounts[index] = { ...updatedAccounts[index], [field]: value };
+    setNewAccounts(updatedAccounts);
   };
 
   return (
@@ -53,7 +70,7 @@ const Settings = () => {
           )}
         </TabsList>
         
-        <TabsContent value="account" className="max-w-3xl">
+        <TabsContent value="account" className="max-w-3xl space-y-6">
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center">
@@ -101,6 +118,88 @@ const Settings = () => {
               </Button>
             </CardFooter>
           </Card>
+
+          {hasPermission('manageSettings') && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <UserPlus className="h-5 w-5 mr-2" />
+                  User Accounts
+                </CardTitle>
+                <CardDescription>
+                  Add and manage user accounts
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {newAccounts.map((account, index) => (
+                  <div key={index} className="p-4 border rounded-md bg-muted/30 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-medium">New Account</h4>
+                      <Button 
+                        variant="ghost" 
+                        size="icon" 
+                        onClick={() => handleRemoveAccount(index)}
+                      >
+                        <X className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor={`account-name-${index}`}>Full Name</Label>
+                      <Input 
+                        id={`account-name-${index}`} 
+                        value={account.name}
+                        onChange={(e) => handleAccountChange(index, 'name', e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor={`account-email-${index}`}>Email</Label>
+                      <Input 
+                        id={`account-email-${index}`} 
+                        type="email"
+                        value={account.email}
+                        onChange={(e) => handleAccountChange(index, 'email', e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor={`account-role-${index}`}>Role</Label>
+                      <select
+                        id={`account-role-${index}`}
+                        value={account.role}
+                        onChange={(e) => handleAccountChange(index, 'role', e.target.value)}
+                        className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="officer">Officer</option>
+                        <option value="dispatcher">Dispatcher</option>
+                        <option value="supervisor">Supervisor</option>
+                        <option value="admin">Administrator</option>
+                      </select>
+                    </div>
+                  </div>
+                ))}
+                
+                <Button 
+                  variant="outline" 
+                  className="w-full" 
+                  onClick={handleAddAccount}
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add New Account
+                </Button>
+              </CardContent>
+              <CardFooter>
+                <Button 
+                  onClick={handleSaveSettings} 
+                  disabled={isSaving || newAccounts.length === 0}
+                  className="ml-auto"
+                >
+                  {isSaving ? 'Saving...' : 'Create Accounts'}
+                </Button>
+              </CardFooter>
+            </Card>
+          )}
         </TabsContent>
         
         {hasPermission('manageSettings') && (
