@@ -24,6 +24,7 @@ import { AlertTriangle, Search, Filter, MapPin, Clock, FileText, Plus, ExternalL
 import IncidentStatusBadge from '@/components/common/IncidentStatusBadge';
 import IncidentPriorityBadge from '@/components/common/IncidentPriorityBadge';
 import IncidentForm from '@/components/incidents/IncidentForm';
+import ExportIncidents from '@/components/incidents/ExportIncidents';
 import { format } from 'date-fns';
 import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -236,13 +237,7 @@ const Incidents = () => {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button 
-            variant="outline" 
-            onClick={handleDownloadAllIncidents}
-            className="flex items-center"
-          >
-            <Download className="h-4 w-4 mr-2" /> Export All
-          </Button>
+          <ExportIncidents />
           
           {hasPermission('createIncident') && (
             <Button onClick={() => setIsCreating(true)}>

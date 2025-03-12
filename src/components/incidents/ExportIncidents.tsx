@@ -4,24 +4,35 @@ import { useData } from '@/context/DataContext';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import * as XLSX from 'xlsx';
-import { Incident } from '@/types';
+import { format } from 'date-fns';
 
 const ExportIncidents = () => {
-  const { incidents } = useData();
+  const { incidents, officers } = useData();
 
   const downloadAsExcel = () => {
     // Format incidents for Excel
-    const formattedIncidents = incidents.map(incident => ({
-      ID: incident.id,
-      Title: incident.title,
-      Description: incident.description,
-      Location: incident.location,
-      Priority: incident.priority,
-      Status: incident.status,
-      'Assigned Officer': incident.assignedOfficer?.name || 'None',
-      'Reported At': new Date(incident.reportedAt).toLocaleString(),
-      'Updated At': new Date(incident.updatedAt).toLocaleString(),
-    }));
+    const formattedIncidents = incidents.map(incident => {
+      // Get officer names for this incident
+      const assignedOfficerNames = incident.assignedOfficers
+        .map(officerId => {
+          const officer = officers.find(o => o.id === officerId);
+          return officer ? officer.name : 'Unknown Officer';
+        })
+        .join(', ');
+
+      return {
+        ID: incident.id,
+        Title: incident.title,
+        Description: incident.description,
+        Location: incident.location.address,
+        Priority: incident.priority,
+        Status: incident.status,
+        'Assigned Officers': assignedOfficerNames || 'None',
+        'Reported At': format(new Date(incident.reportedAt), 'MMM d, yyyy h:mm a'),
+        'Updated At': format(new Date(incident.updatedAt), 'MMM d, yyyy h:mm a'),
+        'Reported By': incident.reportedBy || 'Unknown'
+      };
+    });
 
     // Create worksheet
     const worksheet = XLSX.utils.json_to_sheet(formattedIncidents);
@@ -41,10 +52,10 @@ const ExportIncidents = () => {
   return (
     <Button 
       onClick={downloadAsExcel} 
-      variant="outline" 
+      variant="excel" 
       className="flex items-center gap-2"
     >
-      <Download size={16} />
+      <Download className="h-4 w-4" />
       Export to Excel
     </Button>
   );
