@@ -1,5 +1,91 @@
-import React from 'react';
+
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/auth';
+import { User } from '@/types';
+import { Badge } from '@/components/ui/badge';
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  CardFooter,
+} from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Input } from '@/components/ui/input';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+import { useToast } from '@/hooks/use-toast';
+import {
+  User as UserIcon,
+  UserPlus,
+  Users,
+  Database,
+  Shield,
+  Trash2,
+  X,
+} from 'lucide-react';
+
+// Mock API functions since they're not imported but used in the file
+const getAllUsers = async () => {
+  // This is a placeholder implementation
+  return [];
+};
+
+const deleteUser = async (userId: string) => {
+  // This is a placeholder implementation
+  console.log('Deleting user:', userId);
+};
+
+const updateUser = async (userId: string, userData: any) => {
+  // This is a placeholder implementation
+  console.log('Updating user:', userId, userData);
+  return userData;
+};
+
+const createUser = async (userData: any) => {
+  // This is a placeholder implementation
+  console.log('Creating user:', userData);
+  return { id: 'new-user-id', ...userData };
+};
+
+const createOfficerData = async (officerData: any) => {
+  // This is a placeholder implementation
+  console.log('Creating officer data:', officerData);
+  return { id: 'new-officer-id', ...officerData };
+};
 
 const Settings = () => {
   const { user, hasPermission, updateCurrentUser } = useAuth();
