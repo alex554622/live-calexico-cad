@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { useData } from '@/context/DataContext';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/AuthContext';
 import StatCard from '@/components/dashboard/StatCard';
 import OfficerCard from '@/components/dashboard/OfficerCard';
 import IncidentCard from '@/components/dashboard/IncidentCard';

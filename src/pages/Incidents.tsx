@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/AuthContext';
 import { Incident, Officer } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

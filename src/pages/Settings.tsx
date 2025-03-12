@@ -1,33 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/auth';
-import { User } from '@/types';
-import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/context/AuthContext';
+import { Button } from '@/components/ui/button';
 import {
   Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
 } from '@/components/ui/card';
-import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import {
+import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Separator } from '@/components/ui/separator';
+import { Switch } from '@/components/ui/switch';
+import { useToast } from '@/hooks/use-toast';
+import { Shield, User as UserIcon, UserPlus, X, Save, Database, UserX, Users, Trash2 } from 'lucide-react';
+import { 
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Button } from '@/components/ui/button';
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
+import { 
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -37,52 +40,16 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import { useToast } from '@/hooks/use-toast';
-import {
-  User as UserIcon,
-  UserPlus,
-  Users,
-  Database,
-  Shield,
-  Trash2,
-  X,
-} from 'lucide-react';
-
-const getAllUsers = async () => {
-  return [];
-};
-
-const deleteUser = async (userId: string) => {
-  console.log('Deleting user:', userId);
-};
-
-const updateUser = async (userId: string, userData: any) => {
-  console.log('Updating user:', userId, userData);
-  return userData;
-};
-
-const createUser = async (userData: any) => {
-  console.log('Creating user:', userData);
-  return { id: 'new-user-id', ...userData };
-};
-
-const createOfficerData = async (officerData: any) => {
-  console.log('Creating officer data:', officerData);
-  return { id: 'new-officer-id', ...officerData };
-};
+} from "@/components/ui/alert-dialog";
+import { Badge } from '@/components/ui/badge';
+import { updateOfficer, createOfficer, updateUser, createUser, getAllUsers, deleteUser } from '@/services/api';
+import { useData } from '@/context/DataContext';
+import type { User } from '@/types';
 
 const Settings = () => {
   const { user, hasPermission, updateCurrentUser } = useAuth();
   const { toast } = useToast();
+  const { createOfficer: createOfficerData } = useData();
   const [isSaving, setIsSaving] = useState(false);
   const [newAccounts, setNewAccounts] = useState<Array<{name: string; email: string; role: string; password: string}>>([]);
   const [dataRetention, setDataRetention] = useState("5"); // Default 5 days

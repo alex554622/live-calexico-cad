@@ -4,7 +4,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import { AuthProvider, useAuth } from "./context/auth";
+import { AuthProvider, useAuth } from "./context/AuthContext";
 import { DataProvider } from "./context/DataContext";
 import AppLayout from "./components/layout/AppLayout";
 import Login from "./pages/Login";
@@ -53,42 +53,20 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/" element={
+              <Route path="/*" element={
                 <ProtectedRoute>
                   <AppLayout>
-                    <Dashboard />
+                    <Routes>
+                      <Route path="/" element={<Dashboard />} />
+                      <Route path="/officers" element={<Officers />} />
+                      <Route path="/incidents" element={<Incidents />} />
+                      <Route path="/notifications" element={<Notifications />} />
+                      <Route path="/settings" element={<SettingsRoute />} />
+                      <Route path="*" element={<NotFound />} />
+                    </Routes>
                   </AppLayout>
                 </ProtectedRoute>
               } />
-              <Route path="/officers" element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Officers />
-                  </AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/incidents" element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Incidents />
-                  </AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/notifications" element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Notifications />
-                  </AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="/settings" element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <SettingsRoute />
-                  </AppLayout>
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
             </Routes>
           </BrowserRouter>
         </DataProvider>

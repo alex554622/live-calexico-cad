@@ -1,7 +1,6 @@
-
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/AuthContext';
 import { Officer, OfficerStatus } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

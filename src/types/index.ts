@@ -42,7 +42,6 @@ export interface Officer {
 
 export type IncidentPriority = 'high' | 'medium' | 'low';
 export type IncidentStatus = 'active' | 'pending' | 'resolved' | 'archived';
-export type IncidentType = 'traffic' | 'emergency' | 'assistance' | 'criminal' | 'other';
 
 export interface Incident {
   id: string;
@@ -60,7 +59,6 @@ export interface Incident {
   updatedAt: string;
   reportedBy: string;
   documentLink?: string;
-  type: IncidentType;
 }
 
 export interface Notification {

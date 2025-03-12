@@ -1,12 +1,23 @@
-
-import React, { createContext, useContext, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Officer, Incident, Notification } from '../types';
-import { useAuth } from './auth';
-import { useOfficers } from '@/hooks/use-officers';
-import { useIncidents } from '@/hooks/use-incidents';
-import { useNotifications } from '@/hooks/use-notifications';
-import { supabase } from '@/lib/supabase';
-import { mapDbIncidentToAppIncident, mapDbNotificationToAppNotification, mapDbOfficerToAppOfficer } from '@/utils/mappers';
+import { 
+  getOfficers, 
+  getIncidents, 
+  getNotifications, 
+  updateOfficerStatus, 
+  updateIncident, 
+  createIncident, 
+  assignOfficerToIncident,
+  markNotificationAsRead,
+  simulateRealTimeUpdates,
+  createOfficer as apiCreateOfficer,
+  updateOfficer as apiUpdateOfficer,
+  deleteOfficer as apiDeleteOfficer,
+  deleteIncident as apiDeleteIncident,
+  deleteReadNotifications as apiDeleteReadNotifications
+} from '../services/api';
+import { useToast } from '@/hooks/use-toast';
+import { useAuth } from './AuthContext';
 
 interface DataContextType {
   officers: Officer[];
@@ -31,194 +42,301 @@ interface DataContextType {
 const DataContext = createContext<DataContextType | undefined>(undefined);
 
 export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  const [officers, setOfficers] = useState<Officer[]>([]);
+  const [incidents, setIncidents] = useState<Incident[]>([]);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
+  
+  const [loadingOfficers, setLoadingOfficers] = useState(true);
+  const [loadingIncidents, setLoadingIncidents] = useState(true);
+  const [loadingNotifications, setLoadingNotifications] = useState(true);
+  
+  const { toast } = useToast();
   const { user } = useAuth();
-  const { 
-    officers, loadingOfficers, fetchOfficers,
-    createOfficer, updateOfficer, deleteOfficer 
-  } = useOfficers();
-  
-  const {
-    incidents, loadingIncidents, fetchIncidents,
-    createIncident, updateIncident, deleteIncident
-  } = useIncidents();
-  
-  const {
-    notifications, loadingNotifications, fetchNotifications,
-    markNotificationAsRead, deleteReadNotifications
-  } = useNotifications();
 
-  const refreshData = async () => {
+  const fetchOfficers = useCallback(async () => {
+    try {
+      setLoadingOfficers(true);
+      const data = await getOfficers();
+      setOfficers(data);
+    } catch (error) {
+      console.error('Error fetching officers:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch officers data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingOfficers(false);
+    }
+  }, [toast]);
+
+  const fetchIncidents = useCallback(async () => {
+    try {
+      setLoadingIncidents(true);
+      const data = await getIncidents();
+      setIncidents(data);
+    } catch (error) {
+      console.error('Error fetching incidents:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch incidents data',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingIncidents(false);
+    }
+  }, [toast]);
+
+  const fetchNotifications = useCallback(async () => {
+    try {
+      setLoadingNotifications(true);
+      const data = await getNotifications();
+      setNotifications(data);
+    } catch (error) {
+      console.error('Error fetching notifications:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to fetch notifications',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingNotifications(false);
+    }
+  }, [toast]);
+
+  const refreshData = useCallback(async () => {
     await Promise.all([
       fetchOfficers(),
       fetchIncidents(),
       fetchNotifications()
     ]);
-  };
-
-  const updateOfficerStatus = async (officerId: string, status: Officer['status'], incidentId?: string) => {
-    try {
-      const now = new Date().toISOString();
-      
-      const { data, error } = await supabase
-        .from('officers')
-        .update({
-          status,
-          current_incident_id: incidentId,
-          last_updated: now
-        })
-        .eq('id', officerId)
-        .select()
-        .single();
-        
-      if (error) throw error;
-      
-      const updatedOfficer = mapDbOfficerToAppOfficer(data);
-      
-      await supabase.from('notifications').insert({
-        title: 'Officer Status Updated',
-        message: `${updatedOfficer.name} is now ${status}`,
-        type: 'info',
-        timestamp: now,
-        read: false,
-        related_to: {
-          type: 'officer',
-          id: officerId
-        }
-      });
-      
-      return updatedOfficer;
-    } catch (error) {
-      console.error('Error updating officer status:', error);
-      throw error;
-    }
-  };
-
-  const assignOfficerToIncident = async (incidentId: string, officerId: string) => {
-    try {
-      const now = new Date().toISOString();
-      
-      const { data: incidentData, error: incidentError } = await supabase
-        .from('incidents')
-        .select()
-        .eq('id', incidentId)
-        .single();
-        
-      if (incidentError) throw incidentError;
-      
-      const assignedOfficers = [...(incidentData.assigned_officers || [])];
-      if (!assignedOfficers.includes(officerId)) {
-        assignedOfficers.push(officerId);
-      }
-      
-      const { data: updatedIncidentData, error: updateIncidentError } = await supabase
-        .from('incidents')
-        .update({
-          assigned_officers: assignedOfficers,
-          updated_at: now
-        })
-        .eq('id', incidentId)
-        .select()
-        .single();
-        
-      if (updateIncidentError) throw updateIncidentError;
-      
-      const { data: updatedOfficerData, error: updateOfficerError } = await supabase
-        .from('officers')
-        .update({
-          status: 'responding',
-          current_incident_id: incidentId,
-          last_updated: now
-        })
-        .eq('id', officerId)
-        .select()
-        .single();
-        
-      if (updateOfficerError) throw updateOfficerError;
-      
-      const incident = mapDbIncidentToAppIncident(updatedIncidentData);
-      const officer = mapDbOfficerToAppOfficer(updatedOfficerData);
-      
-      await supabase.from('notifications').insert({
-        title: 'Officer Assigned',
-        message: `${officer.name} assigned to ${incident.title}`,
-        type: 'success',
-        timestamp: now,
-        read: false,
-        related_to: {
-          type: 'incident',
-          id: incidentId
-        }
-      });
-      
-      return { incident, officer };
-    } catch (error) {
-      console.error('Error assigning officer to incident:', error);
-      throw error;
-    }
-  };
+  }, [fetchOfficers, fetchIncidents, fetchNotifications]);
 
   useEffect(() => {
     if (user) {
       refreshData();
-      
-      const officersSubscription = supabase
-        .channel('public:officers')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'officers' 
-        }, payload => {
-          if (payload.eventType === 'INSERT') {
-            fetchOfficers();
-          } else if (payload.eventType === 'UPDATE') {
-            fetchOfficers();
-          } else if (payload.eventType === 'DELETE') {
-            fetchOfficers();
-          }
-        })
-        .subscribe();
-        
-      const incidentsSubscription = supabase
-        .channel('public:incidents')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'incidents' 
-        }, payload => {
-          if (payload.eventType === 'INSERT') {
-            fetchIncidents();
-          } else if (payload.eventType === 'UPDATE') {
-            fetchIncidents();
-          } else if (payload.eventType === 'DELETE') {
-            fetchIncidents();
-          }
-        })
-        .subscribe();
-        
-      const notificationsSubscription = supabase
-        .channel('public:notifications')
-        .on('postgres_changes', { 
-          event: '*', 
-          schema: 'public', 
-          table: 'notifications' 
-        }, payload => {
-          if (payload.eventType === 'INSERT') {
-            fetchNotifications();
-          } else if (payload.eventType === 'UPDATE') {
-            fetchNotifications();
-          } else if (payload.eventType === 'DELETE') {
-            fetchNotifications();
-          }
-        })
-        .subscribe();
-      
-      return () => {
-        supabase.removeChannel(officersSubscription);
-        supabase.removeChannel(incidentsSubscription);
-        supabase.removeChannel(notificationsSubscription);
-      };
     }
-  }, [user, fetchOfficers, fetchIncidents, fetchNotifications]);
+  }, [user, refreshData]);
+
+  useEffect(() => {
+    if (!user) return;
+    
+    const handleOfficerUpdate = (updatedOfficer: Officer) => {
+      setOfficers(prev => 
+        prev.map(officer => officer.id === updatedOfficer.id ? updatedOfficer : officer)
+      );
+      
+      toast({
+        title: 'Officer Status Updated',
+        description: `${updatedOfficer.name} is now ${updatedOfficer.status}`,
+      });
+    };
+    
+    const handleIncidentUpdate = (updatedIncident: Incident) => {
+      setIncidents(prev => 
+        prev.map(incident => incident.id === updatedIncident.id ? updatedIncident : incident)
+      );
+      
+      toast({
+        title: 'Incident Updated',
+        description: `${updatedIncident.title} status: ${updatedIncident.status}`,
+      });
+    };
+    
+    const handleNewNotification = (newNotification: Notification) => {
+      setNotifications(prev => [newNotification, ...prev]);
+      
+      toast({
+        title: newNotification.title,
+        description: newNotification.message,
+      });
+    };
+    
+    const cleanup = simulateRealTimeUpdates(
+      handleOfficerUpdate,
+      handleIncidentUpdate,
+      handleNewNotification
+    );
+    
+    return cleanup;
+  }, [user, toast]);
+
+  const updateOfficerStatusWrapper = async (officerId: string, status: Officer['status'], incidentId?: string) => {
+    try {
+      const updatedOfficer = await updateOfficerStatus(officerId, status, incidentId);
+      setOfficers(prev => 
+        prev.map(officer => officer.id === updatedOfficer.id ? updatedOfficer : officer)
+      );
+      return updatedOfficer;
+    } catch (error) {
+      console.error('Error updating officer status:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update officer status',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const updateIncidentWrapper = async (incidentId: string, updates: Partial<Incident>) => {
+    try {
+      const updatedIncident = await updateIncident(incidentId, updates);
+      setIncidents(prev => 
+        prev.map(incident => incident.id === updatedIncident.id ? updatedIncident : incident)
+      );
+      return updatedIncident;
+    } catch (error) {
+      console.error('Error updating incident:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update incident',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const createIncidentWrapper = async (incidentData: Omit<Incident, 'id' | 'reportedAt' | 'updatedAt'>) => {
+    try {
+      const newIncident = await createIncident(incidentData);
+      setIncidents(prev => [newIncident, ...prev]);
+      return newIncident;
+    } catch (error) {
+      console.error('Error creating incident:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create incident',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const assignOfficerToIncidentWrapper = async (incidentId: string, officerId: string) => {
+    try {
+      const { incident, officer } = await assignOfficerToIncident(incidentId, officerId);
+      
+      setIncidents(prev => 
+        prev.map(i => i.id === incident.id ? incident : i)
+      );
+      
+      setOfficers(prev => 
+        prev.map(o => o.id === officer.id ? officer : o)
+      );
+      
+      return { incident, officer };
+    } catch (error) {
+      console.error('Error assigning officer to incident:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to assign officer to incident',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const markNotificationAsReadWrapper = async (notificationId: string) => {
+    try {
+      const updatedNotification = await markNotificationAsRead(notificationId);
+      setNotifications(prev => 
+        prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+      );
+      return updatedNotification;
+    } catch (error) {
+      console.error('Error marking notification as read:', error);
+      throw error;
+    }
+  };
+
+  const createOfficerWrapper = async (officerData: Omit<Officer, 'id' | 'lastUpdated'>) => {
+    try {
+      const newOfficer = await apiCreateOfficer(officerData);
+      setOfficers(prev => [newOfficer, ...prev]);
+      return newOfficer;
+    } catch (error) {
+      console.error('Error creating officer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to create officer',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const updateOfficerWrapper = async (officerId: string, updates: Partial<Officer>) => {
+    try {
+      const updatedOfficer = await apiUpdateOfficer(officerId, updates);
+      setOfficers(prev => 
+        prev.map(officer => officer.id === updatedOfficer.id ? updatedOfficer : officer)
+      );
+      return updatedOfficer;
+    } catch (error) {
+      console.error('Error updating officer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to update officer',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const deleteOfficerWrapper = async (officerId: string) => {
+    try {
+      await apiDeleteOfficer(officerId);
+      setOfficers(prev => prev.filter(officer => officer.id !== officerId));
+      return;
+    } catch (error) {
+      console.error('Error deleting officer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete officer',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const deleteIncidentWrapper = async (incidentId: string) => {
+    try {
+      await apiDeleteIncident(incidentId);
+      setIncidents(prev => prev.filter(incident => incident.id !== incidentId));
+      
+      const assignedOfficers = officers.filter(officer => officer.currentIncidentId === incidentId);
+      for (const officer of assignedOfficers) {
+        await updateOfficerStatus(officer.id, 'available');
+      }
+      
+      return;
+    } catch (error) {
+      console.error('Error deleting incident:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete incident',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const deleteReadNotificationsWrapper = async () => {
+    try {
+      const deletedCount = await apiDeleteReadNotifications();
+      setNotifications(prev => prev.filter(n => !n.read));
+      return deletedCount;
+    } catch (error) {
+      console.error('Error deleting read notifications:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete read notifications',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
 
   return (
     <DataContext.Provider value={{
@@ -229,16 +347,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loadingIncidents,
       loadingNotifications,
       refreshData,
-      updateOfficerStatus,
-      updateIncident,
-      createIncident,
-      assignOfficerToIncident,
-      markNotificationAsRead,
-      createOfficer,
-      updateOfficer,
-      deleteOfficer,
-      deleteIncident,
-      deleteReadNotifications,
+      updateOfficerStatus: updateOfficerStatusWrapper,
+      updateIncident: updateIncidentWrapper,
+      createIncident: createIncidentWrapper,
+      assignOfficerToIncident: assignOfficerToIncidentWrapper,
+      markNotificationAsRead: markNotificationAsReadWrapper,
+      createOfficer: createOfficerWrapper,
+      updateOfficer: updateOfficerWrapper,
+      deleteOfficer: deleteOfficerWrapper,
+      deleteIncident: deleteIncidentWrapper,
+      deleteReadNotifications: deleteReadNotificationsWrapper,
     }}>
       {children}
     </DataContext.Provider>

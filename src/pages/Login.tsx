@@ -1,6 +1,6 @@
 
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/auth';
+import React, { useState } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { 
   Card,
@@ -17,65 +17,28 @@ import { Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { login, loading, user } = useAuth();
+  const { login, loading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  useEffect(() => {
-    // Redirect if already logged in
-    if (user) {
-      console.log('User already logged in, redirecting to dashboard');
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    // Check if data retention was previously enabled
+    const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
+    
+    // When logging in, pass the retention status
+    const success = await login(username, password, retentionEnabled);
+    if (success) {
       navigate('/');
-    }
-  }, [user, navigate]);
-
-  const handleLogin = async () => {
-    console.log('Login function called directly');
-    
-    if (!email || !password) {
-      console.log('Missing email or password');
+    } else {
       toast({
-        title: "Missing Information",
-        description: "Please enter both email and password.",
+        title: "Login Failed",
+        description: "Invalid username or password. Please try again.",
         variant: "destructive"
       });
-      return;
-    }
-    
-    setIsSubmitting(true);
-    
-    try {
-      // Check if data retention was previously enabled
-      const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
-      
-      console.log('Attempting login with email:', email);
-      
-      // When logging in, pass the retention status
-      const success = await login(email, password, retentionEnabled);
-      
-      if (success) {
-        console.log('Login successful, redirecting to dashboard');
-        navigate('/');
-      } else {
-        console.error('Login failed');
-        toast({
-          title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
-          variant: "destructive"
-        });
-      }
-    } catch (error) {
-      console.error('Login error:', error);
-      toast({
-        title: "Login Error",
-        description: "An error occurred during login. Please try again.",
-        variant: "destructive"
-      });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -92,42 +55,41 @@ const Login = () => {
               Real-Time Officer Activity Display
             </CardDescription>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="Enter your email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="password">Password</Label>
-              <Input
-                id="password"
-                type="password"
-                placeholder="Enter your password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-              />
-            </div>
-            <Button
-              className="w-full mt-6 bg-police hover:bg-police-dark"
-              onClick={handleLogin}
-              disabled={loading || isSubmitting}
-            >
-              {loading || isSubmitting ? "Logging in..." : "Login"}
-            </Button>
-          </CardContent>
-          <CardFooter className="flex justify-center">
-            <p className="text-sm text-gray-500">
-              Log in with your authorized account credentials
-            </p>
-          </CardFooter>
+          <form onSubmit={handleSubmit}>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="username">Username</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  placeholder="Enter your username"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="Enter your password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                />
+              </div>
+            </CardContent>
+            <CardFooter>
+              <Button
+                className="w-full bg-police hover:bg-police-dark"
+                type="submit"
+                disabled={loading}
+              >
+                {loading ? "Logging in..." : "Login"}
+              </Button>
+            </CardFooter>
+          </form>
         </Card>
       </div>
       
