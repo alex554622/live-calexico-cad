@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useAuth } from '@/context/AuthContext';
+import { useAuth } from '@/context/auth';
 import { useData } from '@/context/DataContext';
 import NotificationItem from '@/components/common/NotificationItem';
 import { Badge } from '@/components/ui/badge';
