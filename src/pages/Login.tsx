@@ -19,6 +19,7 @@ import { useToast } from '@/hooks/use-toast';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login, loading, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -26,6 +27,7 @@ const Login = () => {
   useEffect(() => {
     // Redirect if already logged in
     if (user) {
+      console.log('User already logged in, redirecting to dashboard');
       navigate('/');
     }
   }, [user, navigate]);
@@ -33,9 +35,22 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!email || !password) {
+      toast({
+        title: "Missing Information",
+        description: "Please enter both email and password.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSubmitting(true);
+    
     try {
       // Check if data retention was previously enabled
       const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
+      
+      console.log('Attempting login with:', email);
       
       // When logging in, pass the retention status
       const success = await login(email, password, retentionEnabled);
@@ -58,6 +73,8 @@ const Login = () => {
         description: "An error occurred during login. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -103,9 +120,9 @@ const Login = () => {
               <Button
                 className="w-full bg-police hover:bg-police-dark"
                 type="submit"
-                disabled={loading}
+                disabled={loading || isSubmitting}
               >
-                {loading ? "Logging in..." : "Login"}
+                {loading || isSubmitting ? "Logging in..." : "Login"}
               </Button>
             </CardFooter>
           </form>

@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { supabase } from '../lib/supabase';
@@ -38,6 +39,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkAuth = async () => {
       try {
+        setLoading(true);
+        
         // Get current user from Supabase
         const { data: { session }, error } = await supabase.auth.getSession();
         
@@ -47,7 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
         
         if (session) {
-          // Get user profile from our user_profiles table
+          console.log('Session found:', session.user.id);
+          
+          // Get user profile from our profiles table
           const { data: profile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
@@ -60,6 +65,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
           
           if (profile) {
+            console.log('User profile found:', profile.name);
             setUser({
               id: profile.id,
               username: profile.username,
@@ -71,7 +77,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           }
         }
       } catch (error) {
-        console.error('Error checking auth status:', error);
+        console.error('Error in checkAuth:', error);
       } finally {
         setLoading(false);
       }
@@ -79,8 +85,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state changed:', event, session?.user?.id);
+      
       if (event === 'SIGNED_IN' && session) {
-        // Get user profile from our user_profiles table
+        setLoading(true);
+        
+        // Get user profile from our profiles table
         const { data: profile, error: profileError } = await supabase
           .from('profiles')
           .select('*')
@@ -89,10 +99,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           
         if (profileError) {
           console.error('Error fetching user profile:', profileError);
+          setLoading(false);
           return;
         }
         
         if (profile) {
+          console.log('Profile data on sign in:', profile);
           setUser({
             id: profile.id,
             username: profile.username,
@@ -102,6 +114,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             permissions: profile.permissions as any
           });
         }
+        setLoading(false);
       }
       
       if (event === 'SIGNED_OUT') {
@@ -119,6 +132,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string, retainData = false) => {
     try {
       setLoading(true);
+      console.log('Attempting login with:', email);
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email, 
         password
@@ -126,10 +141,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) {
         console.error('Login error:', error);
+        toast({
+          title: "Login Failed",
+          description: error.message,
+          variant: "destructive"
+        });
         return false;
       }
       
       if (data.session) {
+        console.log('Login successful, session:', data.session.user.id);
+        
         // Store data retention preference
         localStorage.setItem('dataRetention', retainData ? 'true' : 'false');
         return true;
