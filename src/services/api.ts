@@ -5,7 +5,7 @@ import { mockOfficers, mockIncidents, mockNotifications, mockUsers } from './moc
 let officers = [...mockOfficers];
 let incidents = [...mockIncidents];
 let notifications = [...mockNotifications];
-let users = [
+let users: User[] = [
   {
     id: '1',
     username: 'alexvalla',

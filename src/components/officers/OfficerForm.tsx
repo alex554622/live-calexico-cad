@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -76,7 +77,7 @@ const OfficerForm: React.FC<OfficerFormProps> = ({
     e.preventDefault();
     
     const permissionNeeded = initialData ? 'editOfficer' : 'createOfficer';
-    if (!hasPermission(permissionNeeded as any)) {
+    if (!hasPermission(permissionNeeded)) {
       toast({
         title: 'Permission Denied',
         description: `You do not have permission to ${initialData ? 'edit' : 'create'} officers`,

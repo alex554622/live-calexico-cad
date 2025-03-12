@@ -15,7 +15,8 @@ export type Permission =
   | 'closeIncident'
   | 'assignOfficer'
   | 'manageSettings'
-  | 'viewReports';
+  | 'viewReports'
+  | 'deleteIncident';  // Added deleteIncident permission
 
 interface AuthContextType {
   user: User | null;
@@ -83,7 +84,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'createIncident',
         'editIncident',
         'assignOfficer',
-        'viewReports'
+        'viewReports',
+        'deleteIncident'  // Added deleteIncident permission for dispatchers
       ];
       return dispatcherPermissions.includes(permission);
     }
