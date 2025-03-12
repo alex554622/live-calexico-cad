@@ -52,8 +52,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
-import { updateOfficer, createOfficer } from '@/services/officers';
-import { updateUser, createUser, getAllUsers, deleteUser, resetUserPassword } from '@/services/users';
+import { updateOfficer, createOfficer, updateUser, createUser, getAllUsers, deleteUser, resetUserPassword } from '@/services/api';
 import { useData } from '@/context/DataContext';
 import type { User } from '@/types';
 

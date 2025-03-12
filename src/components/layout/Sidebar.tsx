@@ -1,3 +1,4 @@
+
 import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
@@ -10,7 +11,7 @@ import {
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { useAuth } from '@/context/auth';
+import { useAuth } from '@/context/AuthContext';
 
 export function Sidebar({ collapsed, setCollapsed }: { 
   collapsed: boolean; 
