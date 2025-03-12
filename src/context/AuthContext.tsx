@@ -59,7 +59,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           const newUser: Partial<User> = {
             username: email,
             name: email.split('@')[0],
-            role: 'officer', // Fixed the type here to match allowed values
+            role: 'officer', // Default role
+            password: 'placeholder', // Adding a placeholder password to satisfy the not-null constraint
           };
           
           const { data, error } = await supabase

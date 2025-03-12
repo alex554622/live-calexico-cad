@@ -24,6 +24,11 @@ export const signUp = async (email: string, password: string, userData?: any) =>
 
 // Helper function to handle user data insertion
 export const createUserRecord = async (userData: any) => {
+  // Handle password requirement - this was causing the error in logs
+  if (!userData.password) {
+    userData.password = 'placeholder'; // Adding a placeholder password to satisfy the not-null constraint
+  }
+  
   const { data, error } = await supabase
     .from('users')
     .insert([userData])

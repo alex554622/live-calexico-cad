@@ -17,7 +17,7 @@ export const useFetchUser = () => {
       if (email.toLowerCase() === 'avalladolid@calexico.ca.gov') {
         return {
           id: 'admin-id',
-          username: 'avalladolid',
+          username: 'avalladolid@calexico.ca.gov',
           name: 'Alex Valladolid',
           role: 'admin',
           permissions: {
@@ -61,6 +61,48 @@ export const useFetchUser = () => {
 
       if (data) {
         const permissions: Record<string, boolean> = {};
+        
+        // Set default permissions based on role
+        if (data.role === 'admin') {
+          permissions.viewOfficerDetails = true;
+          permissions.createOfficer = true;
+          permissions.editOfficer = true;
+          permissions.deleteOfficer = true;
+          permissions.viewIncidentDetails = true;
+          permissions.createIncident = true;
+          permissions.editIncident = true;
+          permissions.closeIncident = true;
+          permissions.assignOfficer = true;
+          permissions.manageSettings = true;
+          permissions.viewReports = true;
+          permissions.viewSettings = true;
+          permissions.deleteIncident = true;
+        } else if (data.role === 'supervisor') {
+          permissions.viewOfficerDetails = true;
+          permissions.createOfficer = true;
+          permissions.editOfficer = true;
+          permissions.viewIncidentDetails = true;
+          permissions.createIncident = true;
+          permissions.editIncident = true;
+          permissions.closeIncident = true;
+          permissions.assignOfficer = true;
+          permissions.viewReports = true;
+          permissions.viewSettings = true;
+          permissions.manageSettings = true;
+        } else if (data.role === 'dispatcher') {
+          permissions.viewOfficerDetails = true;
+          permissions.viewIncidentDetails = true;
+          permissions.createIncident = true;
+          permissions.editIncident = true;
+          permissions.assignOfficer = true;
+          permissions.viewSettings = true;
+        } else if (data.role === 'officer') {
+          permissions.viewOfficerDetails = true;
+          permissions.viewIncidentDetails = true;
+          permissions.createIncident = true;
+        }
+        
+        // Add any custom permissions from the database
         if (data.user_permissions) {
           data.user_permissions.forEach((p: { permission: string }) => {
             permissions[p.permission] = true;

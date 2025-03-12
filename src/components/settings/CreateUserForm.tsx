@@ -68,6 +68,16 @@ const CreateUserForm = () => {
           continue;
         }
 
+        // Make sure the password meets Supabase requirements (min 6 chars)
+        if (account.password.length < 6) {
+          toast({
+            title: 'Password Error',
+            description: 'Password should be at least 6 characters long',
+            variant: 'destructive'
+          });
+          continue;
+        }
+
         const { data: authData, error: authError } = await signUp(
           account.email,
           account.password,
@@ -91,6 +101,7 @@ const CreateUserForm = () => {
           username: account.email,
           name: account.name,
           role: account.role,
+          password: account.password, // Store the password in our users table
         };
         
         const { data, error } = await createUserRecord(userData);
@@ -99,7 +110,7 @@ const CreateUserForm = () => {
           console.error('Error creating user record:', error);
           toast({
             title: 'Creation Failed',
-            description: `Failed to create user record for ${account.email}`,
+            description: `Failed to create user record for ${account.email}: ${error.message}`,
             variant: 'destructive'
           });
           continue;
@@ -123,12 +134,12 @@ const CreateUserForm = () => {
             }
           });
         }
+        
+        toast({
+          title: 'Account Created',
+          description: `Successfully created account for ${account.email}`,
+        });
       }
-
-      toast({
-        title: 'Accounts Created',
-        description: `Successfully created ${newAccounts.length} new account(s)`,
-      });
       
       setNewAccounts([]);
     } catch (error) {
@@ -194,7 +205,9 @@ const CreateUserForm = () => {
                 type="password"
                 value={account.password}
                 onChange={(e) => handleAccountChange(index, 'password', e.target.value)}
+                minLength={6}
               />
+              <p className="text-xs text-muted-foreground">Password must be at least 6 characters</p>
             </div>
             
             <div className="space-y-2">
