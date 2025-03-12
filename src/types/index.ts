@@ -1,4 +1,3 @@
-
 export interface User {
   id: string;
   username: string;
@@ -6,15 +5,19 @@ export interface User {
   role: 'admin' | 'dispatcher' | 'supervisor' | 'officer';
   avatar?: string;
   permissions?: {
+    viewOfficerDetails?: boolean;
+    createOfficer?: boolean;
+    editOfficer?: boolean;
+    deleteOfficer?: boolean;
+    viewIncidentDetails?: boolean;
     createIncident?: boolean;
     editIncident?: boolean;
+    closeIncident?: boolean;
     assignOfficer?: boolean;
-    createUser?: boolean;
-    editUser?: boolean;
-    editOfficer?: boolean;
-    createOfficer?: boolean;
-    viewOfficerDetails?: boolean;
-    assignIncidentToOfficer?: boolean;
+    manageSettings?: boolean;
+    viewReports?: boolean;
+    viewSettings?: boolean;
+    deleteIncident?: boolean;
   };
 }
 
