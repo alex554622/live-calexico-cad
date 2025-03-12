@@ -23,18 +23,21 @@ const LoginForm = () => {
     setLoading(true);
     
     try {
-      // Admin credentials check for Alex Valladolid
-      if (email === 'avalladolid@calexico.ca.gov') {
-        // Check if admin profile exists
-        const { data: existingProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('username', email)
-          .single();
-
-        if (!existingProfile) {
-          // Create admin user if it doesn't exist
-          const { data: authData, error: signUpError } = await supabase.auth.signUp({
+      // Special admin check
+      if (email === 'admin@calexico.ca.gov' || email === 'avalladolid@calexico.ca.gov') {
+        console.log("Attempting admin login for:", email);
+        
+        // Try to sign in first
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
+        
+        if (signInError) {
+          console.log("Admin sign-in failed, creating admin account:", signInError.message);
+          
+          // Create admin account if login fails
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
             email,
             password,
             options: {
@@ -43,7 +46,7 @@ const LoginForm = () => {
               }
             }
           });
-
+          
           if (signUpError) {
             console.error("Admin creation error:", signUpError);
             toast({
@@ -55,12 +58,14 @@ const LoginForm = () => {
             return;
           }
           
-          // Set the role explicitly to admin in the profiles table
-          if (authData?.user) {
+          if (signUpData?.user) {
+            console.log("Admin user created, setting role:", signUpData.user.id);
+            
+            // Set the role explicitly to admin in the profiles table
             const { error: profileError } = await supabase
               .from('profiles')
               .update({ role: 'admin' })
-              .eq('id', authData.user.id);
+              .eq('id', signUpData.user.id);
             
             if (profileError) {
               console.error("Error setting admin role:", profileError);
@@ -72,26 +77,68 @@ const LoginForm = () => {
               setLoading(false);
               return;
             }
+            
+            // Now attempt to sign in with the newly created account
+            const { error: newSignInError } = await supabase.auth.signInWithPassword({
+              email,
+              password
+            });
+            
+            if (newSignInError) {
+              toast({
+                title: "Login Failed",
+                description: "Created admin account but couldn't sign in. Please try again.",
+                variant: "destructive"
+              });
+              setLoading(false);
+              return;
+            }
+            
+            toast({
+              title: "Admin Account Created",
+              description: "Administrator account has been created and you're now signed in.",
+            });
+            navigate('/');
+            setLoading(false);
+            return;
+          }
+        } else if (signInData?.user) {
+          console.log("Admin signed in successfully:", signInData.user.id);
+          
+          // Check if admin role is set
+          const { data: existingProfile, error: profileFetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', signInData.user.id)
+            .single();
+          
+          if (profileFetchError) {
+            console.error("Error fetching profile:", profileFetchError);
+          } else if (existingProfile && existingProfile.role !== 'admin') {
+            console.log("Updating role to admin for existing user");
+            
+            // Update to admin role if not already
+            const { error: updateError } = await supabase
+              .from('profiles')
+              .update({ role: 'admin' })
+              .eq('id', signInData.user.id);
+            
+            if (updateError) {
+              console.error("Error updating to admin role:", updateError);
+            }
           }
           
           toast({
-            title: "Admin Account Created",
-            description: "Administrator account has been created. Please sign in.",
+            title: "Login successful",
+            description: "Welcome back, Administrator!",
           });
-        } else if (existingProfile.role !== 'admin') {
-          // Update existing profile to admin if not already
-          const { error: updateError } = await supabase
-            .from('profiles')
-            .update({ role: 'admin' })
-            .eq('id', existingProfile.id);
-            
-          if (updateError) {
-            console.error("Error updating to admin role:", updateError);
-          }
+          navigate('/');
+          setLoading(false);
+          return;
         }
       }
 
-      // Regular login attempt
+      // Regular login attempt for non-admin users
       const success = await login(email, password, false);
       if (success) {
         toast({
