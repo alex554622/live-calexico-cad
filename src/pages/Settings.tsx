@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/auth';
 import { User } from '@/types';
@@ -58,37 +57,32 @@ import {
   X,
 } from 'lucide-react';
 
-// Mock API functions since they're not imported but used in the file
 const getAllUsers = async () => {
-  // This is a placeholder implementation
   return [];
 };
 
 const deleteUser = async (userId: string) => {
-  // This is a placeholder implementation
   console.log('Deleting user:', userId);
 };
 
 const updateUser = async (userId: string, userData: any) => {
-  // This is a placeholder implementation
   console.log('Updating user:', userId, userData);
   return userData;
 };
 
 const createUser = async (userData: any) => {
-  // This is a placeholder implementation
   console.log('Creating user:', userData);
   return { id: 'new-user-id', ...userData };
 };
 
 const createOfficerData = async (officerData: any) => {
-  // This is a placeholder implementation
   console.log('Creating officer data:', officerData);
   return { id: 'new-officer-id', ...officerData };
 };
 
 const Settings = () => {
   const { user, hasPermission, updateCurrentUser } = useAuth();
+  const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [newAccounts, setNewAccounts] = useState<Array<{name: string; email: string; role: string; password: string}>>([]);
   const [dataRetention, setDataRetention] = useState("5"); // Default 5 days
