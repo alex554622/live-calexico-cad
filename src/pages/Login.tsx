@@ -25,32 +25,77 @@ const Login = () => {
   const [signupEmail, setSignupEmail] = useState('');
   const [signupPassword, setSignupPassword] = useState('');
   const [activeTab, setActiveTab] = useState('login');
+  const [loading, setLoading] = useState(false);
   
-  const { login, loading } = useAuth();
+  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
-    // Check if data retention was previously enabled
-    const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
-    
-    // When logging in, pass the retention status
-    const success = await login(email, password, retentionEnabled);
-    if (success) {
-      navigate('/');
-    } else {
+    try {
+      // Special case for administrator login
+      if (email === 'avalladolid@calexico.ca.gov' && password === '1992') {
+        // Try to create the admin user if it doesn't exist already
+        const { data: existingUser, error: checkError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('username', email)
+          .single();
+          
+        if (checkError && !existingUser) {
+          // Attempt to sign up the admin user
+          const { data: authUser, error: signupError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                name: 'Administrator'
+              }
+            }
+          });
+          
+          if (signupError) {
+            console.error("Admin creation error:", signupError);
+          }
+        }
+      }
+      
+      // Check if data retention was previously enabled
+      const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
+      
+      // When logging in, pass the retention status
+      const success = await login(email, password, retentionEnabled);
+      if (success) {
+        toast({
+          title: "Login successful",
+          description: "Welcome back!",
+        });
+        navigate('/');
+      } else {
+        toast({
+          title: "Login Failed",
+          description: "Invalid email or password. Please try again.",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      console.error("Login error:", error);
       toast({
-        title: "Login Failed",
-        description: "Invalid email or password. Please try again.",
+        title: "Login Error",
+        description: "An unexpected error occurred. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
     try {
       const { data, error } = await supabase.auth.signUp({
@@ -85,6 +130,8 @@ const Login = () => {
         description: error.message || "An error occurred during signup",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -193,7 +240,7 @@ const Login = () => {
                     type="submit"
                     disabled={loading}
                   >
-                    Create Account
+                    {loading ? "Creating Account..." : "Create Account"}
                   </Button>
                 </CardFooter>
               </form>
