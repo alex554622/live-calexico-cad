@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -18,15 +17,19 @@ import { useToast } from '@/hooks/use-toast';
 import { FileText } from 'lucide-react';
 
 interface IncidentFormProps {
+  incidentId?: string;
   initialData?: Incident;
   onSuccess?: (incident: Incident) => void;
+  onClose: () => void;
   onCancel?: () => void;
 }
 
 const IncidentForm: React.FC<IncidentFormProps> = ({ 
+  incidentId,
   initialData, 
   onSuccess, 
-  onCancel 
+  onClose,
+  onCancel = onClose
 }) => {
   const { createIncident, updateIncident } = useData();
   const { user, hasPermission } = useAuth();
@@ -89,15 +92,19 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
     try {
       setIsSubmitting(true);
       
-      if (initialData) {
-        // Update existing incident
-        const updatedIncident = await updateIncident(initialData.id, {
+      if (initialData || incidentId) {
+        const idToUpdate = initialData?.id || incidentId;
+        if (!idToUpdate) {
+          throw new Error('No incident ID provided for update');
+        }
+        
+        const updatedIncident = await updateIncident(idToUpdate, {
           title: formData.title,
           description: formData.description,
           priority: formData.priority,
           status: formData.status,
           location: {
-            ...initialData.location,
+            ...(initialData?.location || { lat: 0, lng: 0 }),
             address: formData.address,
           },
           documentLink: formData.documentLink,
@@ -109,8 +116,8 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
         });
         
         if (onSuccess) onSuccess(updatedIncident);
+        onClose();
       } else {
-        // Create new incident
         const newIncident = await createIncident({
           title: formData.title,
           description: formData.description,
@@ -132,6 +139,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
         });
         
         if (onSuccess) onSuccess(newIncident);
+        onClose();
       }
     } catch (error) {
       console.error('Error saving incident:', error);
@@ -247,7 +255,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
           </Button>
         )}
         <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? 'Saving...' : initialData ? 'Update Incident' : 'Create Incident'}
+          {isSubmitting ? 'Saving...' : initialData || incidentId ? 'Update Incident' : 'Create Incident'}
         </Button>
       </div>
     </form>

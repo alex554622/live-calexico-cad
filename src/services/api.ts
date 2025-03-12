@@ -404,13 +404,22 @@ export const createViewOnlyUser = (username: string, password: string, name: str
         id: String(users.length + 1),
         username,
         name,
-        role: 'officer',
+        role: 'officer' as const,
         avatar: `https://ui-avatars.com/api/?name=${name.replace(/ /g, '+')}&background=1E40AF&color=fff`,
+        permissions: {
+          viewOfficerDetails: true,
+          viewIncidentDetails: true,
+          createIncident: false,
+          editIncident: false,
+          assignOfficer: false,
+          createUser: false,
+          editUser: false,
+        }
       };
       
       users.push(newUser);
       
-      // Create a notification for new user
+      // Create a notification
       const newNotification: Notification = {
         id: String(notifications.length + 1),
         title: 'New User Added',

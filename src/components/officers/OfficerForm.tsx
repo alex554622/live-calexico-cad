@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -82,7 +81,6 @@ const OfficerForm = ({ initialData, onClose, onSuccess, onCancel = onClose }: Of
       setLoading(true);
       
       if (initialData) {
-        // Update existing officer
         const updatedOfficer = await updateOfficer(initialData.id, {
           name: formData.name,
           badgeNumber: formData.badgeNumber,
@@ -101,7 +99,6 @@ const OfficerForm = ({ initialData, onClose, onSuccess, onCancel = onClose }: Of
         if (onSuccess) onSuccess(updatedOfficer);
         onClose();
       } else {
-        // Create new officer
         const newOfficer = await createOfficer({
           name: formData.name,
           badgeNumber: formData.badgeNumber,
