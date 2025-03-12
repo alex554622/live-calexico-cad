@@ -23,7 +23,12 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login(username, password);
+    
+    // Check if data retention was previously enabled
+    const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
+    
+    // When logging in, pass the retention status
+    const success = await login(username, password, retentionEnabled);
     if (success) {
       navigate('/');
     }

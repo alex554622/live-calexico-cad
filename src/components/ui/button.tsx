@@ -22,6 +22,7 @@ const buttonVariants = cva(
         success: "bg-green-600 text-white hover:bg-green-700",
         warning: "bg-amber-500 text-white hover:bg-amber-600",
         info: "bg-blue-500 text-white hover:bg-blue-600",
+        excel: "bg-green-700 text-white hover:bg-green-800", // New variant for Excel exports
       },
       size: {
         default: "h-10 px-4 py-2",

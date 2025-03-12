@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { login as apiLogin, logout as apiLogout, getCurrentUser } from '../services/api';
@@ -22,7 +21,7 @@ export type Permission =
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (username: string, password: string) => Promise<boolean>;
+  login: (username: string, password: string, retainData?: boolean) => Promise<boolean>;
   logout: () => Promise<void>;
   hasPermission: (permission: Permission) => boolean;
 }
@@ -48,11 +47,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  const login = async (username: string, password: string) => {
+  const login = async (username: string, password: string, retainData = false) => {
     try {
       const user = await apiLogin(username, password);
       if (user) {
         setUser(user);
+        
+        // Store data retention preference
+        localStorage.setItem('dataRetention', retainData ? 'true' : 'false');
+        
         return true;
       }
       return false;
@@ -66,6 +69,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       await apiLogout();
       setUser(null);
+      
+      // If data retention is not enabled, clear local storage
+      const retainData = localStorage.getItem('dataRetention') === 'true';
+      if (!retainData) {
+        // Clear only authentication data, not all settings
+        localStorage.removeItem('authToken');
+        // Keep retentionSettings, dataRetention, etc.
+      }
     } catch (error) {
       console.error('Logout error:', error);
     }
