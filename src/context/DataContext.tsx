@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Officer, Incident, Notification } from '../types';
 import { useToast } from '@/hooks/use-toast';
@@ -67,7 +66,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       reportedAt: dbIncident.reported_at,
       updatedAt: dbIncident.updated_at,
       assignedOfficers: dbIncident.assigned_officers,
-      type: dbIncident.type
+      type: dbIncident.type,
+      reportedBy: dbIncident.reported_by || 'Unknown'
     };
   };
 
