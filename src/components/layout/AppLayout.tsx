@@ -5,7 +5,7 @@ import Header from './Header';
 import { Sidebar } from './Sidebar';
 import { cn } from '@/lib/utils';
 
-const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+const AppLayout: React.FC = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   
   const toggleSidebar = () => {
@@ -28,7 +28,7 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
           )}
         >
           <div className="container mx-auto px-4 py-6">
-            {children}
+            <Outlet />
           </div>
         </main>
       </div>

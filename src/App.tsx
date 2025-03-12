@@ -58,25 +58,23 @@ const App = () => (
           <BrowserRouter>
             <Routes>
               <Route path="/login" element={<Login />} />
-              <Route path="/*" element={
+              <Route path="/" element={
                 <ProtectedRoute>
-                  <AppLayout>
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/officers" element={<Officers />} />
-                      <Route path="/incidents" element={<Incidents />} />
-                      <Route path="/notifications" element={<Notifications />} />
-                      <Route path="/settings" element={<Settings />} />
-                      <Route path="/users" element={
-                        <AdminRoute>
-                          <UserManagement />
-                        </AdminRoute>
-                      } />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </AppLayout>
+                  <AppLayout />
                 </ProtectedRoute>
-              } />
+              }>
+                <Route index element={<Dashboard />} />
+                <Route path="/officers" element={<Officers />} />
+                <Route path="/incidents" element={<Incidents />} />
+                <Route path="/notifications" element={<Notifications />} />
+                <Route path="/settings" element={<Settings />} />
+                <Route path="/users" element={
+                  <AdminRoute>
+                    <UserManagement />
+                  </AdminRoute>
+                } />
+                <Route path="*" element={<NotFound />} />
+              </Route>
             </Routes>
           </BrowserRouter>
         </DataProvider>
