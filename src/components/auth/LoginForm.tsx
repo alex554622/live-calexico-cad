@@ -18,33 +18,90 @@ const LoginForm = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  const isAdminEmail = (email: string) => {
+    return email === 'avalladolid@calexico.ca.gov' || email === 'admin@calexico.ca.gov';
+  };
+
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     
     try {
-      // Special case for administrator login
-      if (email === 'avalladolid@calexico.ca.gov' && password === '1992') {
-        await handleAdminLogin();
-      }
-      
-      // Check if data retention was previously enabled
-      const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
-      
-      // When logging in, pass the retention status
-      const success = await login(email, password, retentionEnabled);
-      if (success) {
-        toast({
-          title: "Login successful",
-          description: "Welcome back!",
+      // Special case for administrator login with hardcoded credentials
+      if (isAdminEmail(email) && password === '1992') {
+        console.log("Admin login attempt with email:", email);
+        
+        // Try to sign in first
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password
         });
-        navigate('/');
+        
+        if (signInError && signInError.message.includes('Invalid login credentials')) {
+          console.log("Admin user doesn't exist yet, creating account");
+          
+          // If login fails, try to create the admin user
+          const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                name: 'Administrator'
+              }
+            }
+          });
+          
+          if (signUpError) {
+            console.error("Admin creation error:", signUpError);
+            throw signUpError;
+          }
+          
+          // User was created, now try to login
+          console.log("Admin user created, attempting login");
+          const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
+          const success = await login(email, password, retentionEnabled);
+          
+          if (success) {
+            toast({
+              title: "Admin Login Successful",
+              description: "Welcome, Administrator!",
+            });
+            navigate('/');
+          } else {
+            throw new Error("Failed to log in as admin after creating account");
+          }
+        } else if (signInData) {
+          // Login successful, make sure retention status is passed
+          console.log("Admin user exists, login successful");
+          const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
+          await login(email, password, retentionEnabled);
+          
+          toast({
+            title: "Admin Login Successful",
+            description: "Welcome back, Administrator!",
+          });
+          navigate('/');
+        }
       } else {
-        toast({
-          title: "Login Failed",
-          description: "Invalid email or password. Please try again.",
-          variant: "destructive"
-        });
+        // Regular login flow
+        // Check if data retention was previously enabled
+        const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
+        
+        // When logging in, pass the retention status
+        const success = await login(email, password, retentionEnabled);
+        if (success) {
+          toast({
+            title: "Login successful",
+            description: "Welcome back!",
+          });
+          navigate('/');
+        } else {
+          toast({
+            title: "Login Failed",
+            description: "Invalid email or password. Please try again.",
+            variant: "destructive"
+          });
+        }
       }
     } catch (error) {
       console.error("Login error:", error);
@@ -55,32 +112,6 @@ const LoginForm = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAdminLogin = async () => {
-    // Try to create the admin user if it doesn't exist already
-    const { data: existingUser, error: checkError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('username', email)
-      .single();
-      
-    if (checkError && !existingUser) {
-      // Attempt to sign up the admin user
-      const { data: authUser, error: signupError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: 'Administrator'
-          }
-        }
-      });
-      
-      if (signupError) {
-        console.error("Admin creation error:", signupError);
-      }
     }
   };
 
