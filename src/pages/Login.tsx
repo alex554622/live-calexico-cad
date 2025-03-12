@@ -15,30 +15,93 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 const Login = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading } = useAuth();
+  const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoading(true);
     
-    // Check if data retention was previously enabled
-    const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
-    
-    // When logging in, pass the retention status
-    const success = await login(username, password, retentionEnabled);
-    if (success) {
-      navigate('/');
-    } else {
+    try {
+      // Check if data retention was previously enabled
+      const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
+      
+      // Query the users table to find the matching user
+      const { data, error } = await supabase
+        .from('users')
+        .select(`
+          id, 
+          username, 
+          name, 
+          role, 
+          avatar, 
+          password,
+          user_permissions(permission)
+        `)
+        .eq('username', username)
+        .single();
+      
+      if (error) {
+        console.error('Login error:', error);
+        throw new Error('Invalid username or password');
+      }
+      
+      // Check password (in a real app this would use proper hashing)
+      if (!data || data.password !== password) {
+        throw new Error('Invalid username or password');
+      }
+      
+      // Sign in with Supabase auth (in this case we're using a custom JWT)
+      // We create a session in localStorage to simulate auth
+      localStorage.setItem('supabase.auth.token', JSON.stringify({
+        currentSession: {
+          user: {
+            id: data.id,
+            email: data.username
+          }
+        }
+      }));
+      
+      // Store data retention preference
+      localStorage.setItem('dataRetention', retentionEnabled ? 'true' : 'false');
+      
+      // Transform permissions from array of objects to object with boolean values
+      const permissions: Record<string, boolean> = {};
+      if (data.user_permissions) {
+        data.user_permissions.forEach((p: { permission: string }) => {
+          permissions[p.permission] = true;
+        });
+      }
+      
+      // Call the login function from AuthContext
+      const success = await login(username, password, retentionEnabled);
+      
+      if (success) {
+        toast({
+          title: "Login Successful",
+          description: `Welcome back, ${data.name}!`,
+          variant: "default"
+        });
+        navigate('/');
+      } else {
+        throw new Error('Authentication failed');
+      }
+    } catch (error) {
+      console.error('Login error:', error);
       toast({
         title: "Login Failed",
-        description: "Invalid username or password. Please try again.",
+        description: error instanceof Error ? error.message : "Invalid username or password. Please try again.",
         variant: "destructive"
       });
+    } finally {
+      setLoading(false);
     }
   };
 
