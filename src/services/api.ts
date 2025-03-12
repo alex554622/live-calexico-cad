@@ -1,3 +1,4 @@
+
 import { Officer, Incident, Notification, User, OfficerStatus } from '../types';
 import { mockOfficers, mockIncidents, mockNotifications, mockUsers } from './mockData';
 
@@ -10,10 +11,10 @@ let users = [
     id: '1',
     username: 'alexvalla',
     name: 'Administrator',
-    role: 'admin' as const,
+    role: 'admin',
     avatar: 'https://ui-avatars.com/api/?name=Administrator&background=1E40AF&color=fff',
   }
-] as User[];
+];
 let currentUser: User | null = null;
 
 // Simulated authentication
@@ -333,117 +334,6 @@ export const markNotificationAsRead = (id: string): Promise<Notification> => {
         throw new Error('Notification not found');
       }
     }, 200);
-  });
-};
-
-// Data retention policy - automatically removes incidents older than 3 days
-const applyDataRetentionPolicy = () => {
-  const threeDAysAgo = new Date();
-  threeDAysAgo.setDate(threeDAysAgo.getDate() - 3);
-  
-  incidents = incidents.filter(incident => {
-    const reportedAt = new Date(incident.reportedAt);
-    return reportedAt >= threeDAysAgo;
-  });
-};
-
-// Apply data retention policy every 12 hours
-setInterval(applyDataRetentionPolicy, 12 * 60 * 60 * 1000);
-
-// Function to export incidents to CSV format (for Google Sheets)
-export const exportIncidentsToCSV = (): string => {
-  // Define CSV headers
-  const headers = ['ID', 'Title', 'Description', 'Address', 'Priority', 'Status', 'Reported At', 'Updated At'];
-  
-  // Convert incidents to CSV rows
-  const rows = incidents.map(incident => [
-    incident.id,
-    `"${incident.title.replace(/"/g, '""')}"`,
-    `"${incident.description.replace(/"/g, '""')}"`,
-    `"${incident.location.address.replace(/"/g, '""')}"`,
-    incident.priority,
-    incident.status,
-    incident.reportedAt,
-    incident.updatedAt
-  ]);
-  
-  // Combine headers and rows
-  const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.join(','))
-  ].join('\n');
-  
-  return csvContent;
-};
-
-// Function to export incidents to a simple format that can be used in Google Docs
-export const exportIncidentsToDoc = (): string => {
-  let docContent = 'INCIDENT REPORT\n\n';
-  
-  incidents.forEach(incident => {
-    docContent += `Incident ID: ${incident.id}\n`;
-    docContent += `Title: ${incident.title}\n`;
-    docContent += `Description: ${incident.description}\n`;
-    docContent += `Location: ${incident.location.address}\n`;
-    docContent += `Priority: ${incident.priority}\n`;
-    docContent += `Status: ${incident.status}\n`;
-    docContent += `Reported At: ${new Date(incident.reportedAt).toLocaleString()}\n`;
-    docContent += `Updated At: ${new Date(incident.updatedAt).toLocaleString()}\n`;
-    docContent += `Assigned Officers: ${incident.assignedOfficers.length}\n\n`;
-    docContent += '-----------------------------\n\n';
-  });
-  
-  return docContent;
-};
-
-// Create a new user with limited viewing permissions
-export const createViewOnlyUser = (username: string, password: string, name: string): Promise<User> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      const newUser: User = {
-        id: String(users.length + 1),
-        username,
-        name,
-        role: 'officer' as const,
-        avatar: `https://ui-avatars.com/api/?name=${name.replace(/ /g, '+')}&background=1E40AF&color=fff`,
-        permissions: {
-          viewOfficerDetails: true,
-          createIncident: false,
-          editIncident: false,
-          assignOfficer: false,
-          createUser: false,
-          editUser: false,
-          createOfficer: false,
-          editOfficer: false,
-          assignIncidentToOfficer: false
-        }
-      };
-      
-      users.push(newUser);
-      
-      // Create a notification
-      const newNotification: Notification = {
-        id: String(notifications.length + 1),
-        title: 'New User Added',
-        message: `${name} has been added as a view-only user`,
-        type: 'info',
-        timestamp: new Date().toISOString(),
-        read: false,
-      };
-      
-      notifications = [newNotification, ...notifications];
-      
-      resolve(newUser);
-    }, 500);
-  });
-};
-
-// Get all users (for admin only)
-export const getUsers = (): Promise<User[]> => {
-  return new Promise((resolve) => {
-    setTimeout(() => {
-      resolve([...users]);
-    }, 300);
   });
 };
 

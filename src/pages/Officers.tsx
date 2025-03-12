@@ -42,6 +42,7 @@ const Officers = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
+  // Create a list of unique ranks for the rank filter
   const uniqueRanks = useMemo(() => {
     const ranks = officers.map(officer => officer.rank);
     return [...new Set(ranks)];
@@ -270,7 +271,6 @@ const Officers = () => {
           
           <OfficerForm 
             onSuccess={handleCreateSuccess}
-            onClose={() => setIsCreating(false)}
             onCancel={() => setIsCreating(false)}
           />
         </DialogContent>
@@ -305,7 +305,6 @@ const Officers = () => {
               <OfficerForm 
                 initialData={selectedOfficer}
                 onSuccess={handleEditSuccess}
-                onClose={() => setIsEditing(false)}
                 onCancel={() => setIsEditing(false)}
               />
             ) : (
