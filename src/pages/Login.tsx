@@ -15,7 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import { supabase } from '@/lib/supabase';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 const Login = () => {
   const [email, setEmail] = useState('');
@@ -24,6 +24,7 @@ const Login = () => {
   const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,8 +59,8 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
-      <div className="w-full max-w-md p-4">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 bg-gray-100">
+      <div className={`w-full ${isMobile ? 'max-w-sm' : 'max-w-md'} p-2`}>
         <Card className="border-2 border-police">
           <CardHeader className="space-y-1 flex flex-col items-center">
             <div className="w-12 h-12 bg-police rounded-full flex items-center justify-center mb-2">

@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/context/AuthContext';
 import ThemeToggle from '@/components/common/ThemeToggle';
 import { useNavigate } from 'react-router-dom';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -14,6 +15,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const isMobile = useIsMobile();
   
   const handleLogout = async () => {
     await logout();
@@ -26,14 +28,18 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
         <Menu className="h-5 w-5" />
       </Button>
       
-      <div className="font-semibold">Calexico Police CAD</div>
+      <div className={cn("font-semibold", isMobile ? "text-sm truncate" : "")}>
+        Calexico Police CAD
+      </div>
       
       <div className="ml-auto flex items-center space-x-2">
         {user && (
           <>
-            <span className="text-sm text-muted-foreground">
-              {user.name || user.username}
-            </span>
+            {!isMobile && (
+              <span className="text-sm text-muted-foreground">
+                {user.name || user.username}
+              </span>
+            )}
             <Button 
               variant="ghost" 
               size="icon"
@@ -45,7 +51,7 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
             </Button>
           </>
         )}
-        <ThemeToggle />
+        {!isMobile && <ThemeToggle />}
       </div>
     </header>
   );

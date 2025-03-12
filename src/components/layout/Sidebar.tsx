@@ -6,7 +6,8 @@ import {
   FileText, 
   Bell, 
   Settings,
-  Menu
+  Menu,
+  X
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -38,8 +39,9 @@ export function Sidebar({ collapsed, setCollapsed }: {
   return (
     <div 
       className={cn(
-        "group flex flex-col h-full border-r bg-background transition-all duration-300",
-        collapsed ? "w-[60px]" : "w-[240px]"
+        "group flex flex-col h-full border-r bg-background transition-all duration-300 z-20",
+        collapsed ? "w-[60px]" : "w-[240px]",
+        isMobile && !collapsed ? "absolute left-0 top-0 h-screen shadow-lg" : ""
       )}
     >
       <div className="flex items-center justify-between px-4 h-14">
@@ -52,7 +54,7 @@ export function Sidebar({ collapsed, setCollapsed }: {
           onClick={() => setCollapsed(!collapsed)}
           className={cn(collapsed ? "mx-auto" : "")}
         >
-          <Menu className="h-4 w-4" />
+          {collapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
         </Button>
       </div>
       
@@ -69,6 +71,7 @@ export function Sidebar({ collapsed, setCollapsed }: {
                   : "hover:bg-accent text-muted-foreground hover:text-foreground",
                 collapsed && "justify-center px-0"
               )}
+              onClick={() => isMobile && setCollapsed(true)}
             >
               <item.icon className={cn("h-5 w-5", collapsed ? "mx-auto" : "mr-3")} />
               {!collapsed && <span>{item.label}</span>}
