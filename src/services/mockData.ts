@@ -33,6 +33,11 @@ export const mockOfficers: Officer[] = [
     rank: 'Patrol Officer',
     department: 'Central',
     status: 'available',
+    contactInfo: {
+      phone: '555-123-4567',
+      email: 'rodriguez@calexicopd.gov',
+    },
+    shiftSchedule: 'Mon-Fri 8am-4pm',
     location: {
       lat: 32.6789,
       lng: -115.4989,
@@ -46,6 +51,11 @@ export const mockOfficers: Officer[] = [
     rank: 'Sergeant',
     department: 'East',
     status: 'busy',
+    contactInfo: {
+      phone: '555-234-5678',
+      email: 'martinez@calexicopd.gov',
+    },
+    shiftSchedule: 'Tue-Sat 10am-6pm',
     location: {
       lat: 32.6795,
       lng: -115.4930,
@@ -60,6 +70,11 @@ export const mockOfficers: Officer[] = [
     rank: 'Patrol Officer',
     department: 'West',
     status: 'responding',
+    contactInfo: {
+      phone: '555-345-6789',
+      email: 'peterson@calexicopd.gov',
+    },
+    shiftSchedule: 'Wed-Sun 4pm-12am',
     location: {
       lat: 32.6748,
       lng: -115.5010,
@@ -74,6 +89,11 @@ export const mockOfficers: Officer[] = [
     rank: 'Detective',
     department: 'Criminal Investigations',
     status: 'busy',
+    contactInfo: {
+      phone: '555-456-7890',
+      email: 'thompson@calexicopd.gov',
+    },
+    shiftSchedule: 'Mon-Fri 9am-5pm',
     location: {
       lat: 32.6770,
       lng: -115.4950,
@@ -87,6 +107,11 @@ export const mockOfficers: Officer[] = [
     rank: 'Patrol Officer',
     department: 'South',
     status: 'available',
+    contactInfo: {
+      phone: '555-567-8901',
+      email: 'garcia@calexicopd.gov',
+    },
+    shiftSchedule: 'Thu-Mon 12am-8am',
     location: {
       lat: 32.6720,
       lng: -115.4970,
@@ -100,6 +125,11 @@ export const mockOfficers: Officer[] = [
     rank: 'Lieutenant',
     department: 'North',
     status: 'offDuty',
+    contactInfo: {
+      phone: '555-678-9012',
+      email: 'williams@calexicopd.gov',
+    },
+    shiftSchedule: 'On call',
     lastUpdated: new Date().toISOString(),
   },
 ];

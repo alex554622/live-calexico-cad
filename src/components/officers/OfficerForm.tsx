@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -35,22 +36,45 @@ const OfficerForm: React.FC<OfficerFormProps> = ({
     rank: string;
     department: string;
     status: OfficerStatus;
+    contactInfo: {
+      phone: string;
+      email: string;
+    };
+    shiftSchedule: string;
   }>({
     name: initialData?.name || '',
     badgeNumber: initialData?.badgeNumber || '',
     rank: initialData?.rank || '',
     department: initialData?.department || 'Calexico PD',
     status: initialData?.status || 'available',
+    contactInfo: {
+      phone: initialData?.contactInfo?.phone || '',
+      email: initialData?.contactInfo?.email || '',
+    },
+    shiftSchedule: initialData?.shiftSchedule || '',
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }));
+    
+    if (name.includes('.')) {
+      // Handle nested properties like contactInfo.phone
+      const [parent, child] = name.split('.');
+      setFormData(prev => ({
+        ...prev,
+        [parent]: {
+          ...prev[parent as keyof typeof prev],
+          [child]: value,
+        }
+      }));
+    } else {
+      setFormData(prev => ({
+        ...prev,
+        [name]: value
+      }));
+    }
   };
   
   const handleSelectChange = (name: string, value: string) => {
@@ -167,6 +191,39 @@ const OfficerForm: React.FC<OfficerFormProps> = ({
             required
           />
         </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="contactInfo.phone">Phone</Label>
+        <Input
+          id="contactInfo.phone"
+          name="contactInfo.phone"
+          value={formData.contactInfo.phone}
+          onChange={handleChange}
+          placeholder="Enter phone number"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="contactInfo.email">Email</Label>
+        <Input
+          id="contactInfo.email"
+          name="contactInfo.email"
+          value={formData.contactInfo.email}
+          onChange={handleChange}
+          placeholder="Enter email address"
+        />
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="shiftSchedule">Shift Schedule</Label>
+        <Input
+          id="shiftSchedule"
+          name="shiftSchedule"
+          value={formData.shiftSchedule}
+          onChange={handleChange}
+          placeholder="Enter shift schedule"
+        />
       </div>
       
       <div className="space-y-2">

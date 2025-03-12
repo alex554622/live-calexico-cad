@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -39,12 +38,10 @@ const Officers = () => {
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   
-  // Selection and deletion
   const [selectedOfficers, setSelectedOfficers] = useState<string[]>([]);
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
-  // Filter officers based on search term and filters
   const filteredOfficers = officers.filter(officer => {
     const matchesSearch = 
       officer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -56,9 +53,6 @@ const Officers = () => {
     
     return matchesSearch && matchesStatus && matchesRank;
   });
-
-  // Get unique ranks for filter
-  const uniqueRanks = Array.from(new Set(officers.map(officer => officer.rank)));
 
   const getOfficerIncident = (officer: Officer) => {
     if (!officer.currentIncidentId) return null;
@@ -75,7 +69,6 @@ const Officers = () => {
     setSelectedOfficer(updatedOfficer);
   };
 
-  // Selection and Deletion handlers
   const toggleSelectionMode = () => {
     setIsSelectionMode(!isSelectionMode);
     if (isSelectionMode) {
@@ -86,8 +79,7 @@ const Officers = () => {
   const toggleOfficerSelection = (id: string, e: React.MouseEvent) => {
     if (!isSelectionMode) return;
     
-    e.stopPropagation(); // Prevent opening the officer detail dialog
-    
+    e.stopPropagation();
     setSelectedOfficers(prev => {
       if (prev.includes(id)) {
         return prev.filter(officerId => officerId !== id);
@@ -99,8 +91,6 @@ const Officers = () => {
 
   const handleDeleteSelected = async () => {
     try {
-      // In a real app, you would delete these from your API
-      // Here we'll just mark them as off duty since we're using mock data
       for (const id of selectedOfficers) {
         await updateOfficer(id, { status: 'offDuty' });
       }
@@ -158,7 +148,6 @@ const Officers = () => {
         </div>
       </div>
 
-      {/* Search and filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="relative flex-1">
           <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
@@ -243,11 +232,11 @@ const Officers = () => {
                   <div className="mt-4 space-y-2">
                     <div className="flex items-center text-sm">
                       <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span>{officer.contactInfo.phone}</span>
+                      <span>{officer.contactInfo?.phone || 'No phone available'}</span>
                     </div>
                     <div className="flex items-center text-sm">
                       <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span>{officer.contactInfo.email}</span>
+                      <span>{officer.contactInfo?.email || 'No email available'}</span>
                     </div>
                   </div>
                   
@@ -265,7 +254,6 @@ const Officers = () => {
         </div>
       )}
 
-      {/* Create Officer Dialog */}
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -282,7 +270,6 @@ const Officers = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Officer Details Dialog */}
       <Dialog open={!!selectedOfficer} onOpenChange={(open) => !open && setSelectedOfficer(null)}>
         {selectedOfficer && (
           <DialogContent className="sm:max-w-[600px]">
@@ -327,11 +314,11 @@ const Officers = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <div>
                         <p className="text-xs text-muted-foreground">Phone</p>
-                        <p className="text-sm">{selectedOfficer.contactInfo.phone}</p>
+                        <p className="text-sm">{selectedOfficer.contactInfo?.phone || 'Not available'}</p>
                       </div>
                       <div>
                         <p className="text-xs text-muted-foreground">Email</p>
-                        <p className="text-sm">{selectedOfficer.contactInfo.email}</p>
+                        <p className="text-sm">{selectedOfficer.contactInfo?.email || 'Not available'}</p>
                       </div>
                     </div>
                   </div>
@@ -398,7 +385,6 @@ const Officers = () => {
         )}
       </Dialog>
 
-      {/* Confirm Delete Dialog */}
       <Dialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>

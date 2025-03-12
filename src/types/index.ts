@@ -1,3 +1,4 @@
+
 export interface User {
   id: string;
   username: string;
@@ -26,6 +27,11 @@ export interface Officer {
   rank: string;
   department: string;
   status: OfficerStatus;
+  contactInfo?: {
+    phone: string;
+    email: string;
+  };
+  shiftSchedule?: string;
   location?: {
     lat: number;
     lng: number;
