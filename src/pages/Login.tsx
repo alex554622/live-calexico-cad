@@ -43,7 +43,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex flex-col items-center justify-center bg-gray-100">
       <div className="w-full max-w-md p-4">
         <Card className="border-2 border-police">
           <CardHeader className="space-y-1 flex flex-col items-center">
@@ -91,6 +91,16 @@ const Login = () => {
             </CardFooter>
           </form>
         </Card>
+      </div>
+      
+      {/* Valladolid Software Logo */}
+      <div className="mt-6 text-center">
+        <div className="flex items-center justify-center">
+          <div className="bg-white p-2 rounded-md shadow-sm">
+            <p className="text-sm text-gray-500">by</p>
+            <p className="text-lg font-semibold text-police">Valladolid Software</p>
+          </div>
+        </div>
       </div>
     </div>
   );
