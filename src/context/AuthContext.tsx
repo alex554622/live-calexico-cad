@@ -17,8 +17,7 @@ export type Permission =
   | 'manageSettings'
   | 'viewReports'
   | 'viewSettings'
-  | 'deleteIncident'
-  | 'updateOfficerStatus';  // Added a new permission for officers to update their status
+  | 'deleteIncident';  // Added deleteIncident permission
 
 interface AuthContextType {
   user: User | null;
@@ -127,14 +126,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return supervisorPermissions.includes(permission);
     }
     
-    // Officer permissions - expanded to allow creating incidents and updating status
+    // Officer permissions
     if (user.role === 'officer') {
       const officerPermissions: Permission[] = [
         'viewOfficerDetails',
         'viewIncidentDetails',
-        'createIncident',
-        'updateOfficerStatus', // Allow officers to update their own status
-        'editIncident'        // Allow officers to edit incidents
+        'createIncident'
+        // Note: 'viewSettings' is not included for officers
       ];
       return officerPermissions.includes(permission);
     }

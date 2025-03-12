@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -16,7 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Shield, UserIcon, UserPlus, X, Save, Database, UserX, Users, Trash2, KeyRound, Edit } from 'lucide-react';
+import { Shield, User as UserIcon, UserPlus, X, Save, Database, UserX, Users, Trash2 } from 'lucide-react';
 import { 
   Select,
   SelectContent,
@@ -42,17 +41,8 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
 import { Badge } from '@/components/ui/badge';
-import { updateOfficer, createOfficer, updateUser, createUser, getAllUsers, deleteUser, resetUserPassword } from '@/services/api';
+import { updateOfficer, createOfficer, updateUser, createUser, getAllUsers, deleteUser } from '@/services/api';
 import { useData } from '@/context/DataContext';
 import type { User } from '@/types';
 
@@ -65,18 +55,8 @@ const Settings = () => {
   const [dataRetention, setDataRetention] = useState("5"); // Default 5 days
   const [usersList, setUsersList] = useState<User[]>([]);
   const [userToDelete, setUserToDelete] = useState<User | null>(null);
-  const [userToEdit, setUserToEdit] = useState<User | null>(null);
-  const [userToResetPassword, setUserToResetPassword] = useState<User | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
-  const [showEditDialog, setShowEditDialog] = useState(false);
-  const [showResetPasswordDialog, setShowResetPasswordDialog] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [newPassword, setNewPassword] = useState('');
-  const [editUserData, setEditUserData] = useState({
-    name: '',
-    email: '',
-    role: '',
-  });
   const [userProfile, setUserProfile] = useState({
     name: user?.name || '',
     email: user?.username || '',
@@ -100,16 +80,6 @@ const Settings = () => {
       fetchUsers();
     }
   }, [hasPermission]);
-
-  useEffect(() => {
-    if (userToEdit) {
-      setEditUserData({
-        name: userToEdit.name || '',
-        email: userToEdit.username || '',
-        role: userToEdit.role || 'officer',
-      });
-    }
-  }, [userToEdit]);
 
   const fetchUsers = async () => {
     try {
@@ -154,82 +124,11 @@ const Settings = () => {
     }
   };
 
-  const handleEditUser = async () => {
-    if (!userToEdit) return;
-    
-    try {
-      setIsSaving(true);
-      
-      const updatedUserData = {
-        name: editUserData.name,
-        username: editUserData.email,
-        role: editUserData.role as 'admin' | 'dispatcher' | 'supervisor' | 'officer',
-      };
-      
-      await updateUser(userToEdit.id, updatedUserData);
-      
-      await fetchUsers();
-      
-      toast({
-        title: 'User Updated',
-        description: 'The user account has been updated successfully',
-      });
-      
-      setShowEditDialog(false);
-      setUserToEdit(null);
-    } catch (error) {
-      console.error('Error updating user:', error);
-      toast({
-        title: 'Update Failed',
-        description: 'Failed to update user account',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleResetPassword = async () => {
-    if (!userToResetPassword || !newPassword) return;
-    
-    try {
-      setIsSaving(true);
-      
-      await resetUserPassword(userToResetPassword.id, newPassword);
-      
-      toast({
-        title: 'Password Reset',
-        description: 'The user password has been reset successfully',
-      });
-      
-      setShowResetPasswordDialog(false);
-      setUserToResetPassword(null);
-      setNewPassword('');
-    } catch (error) {
-      console.error('Error resetting password:', error);
-      toast({
-        title: 'Reset Failed',
-        description: 'Failed to reset user password',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { id, value } = e.target;
     setUserProfile(prev => ({
       ...prev,
       [id]: value
-    }));
-  };
-
-  const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target;
-    setEditUserData(prev => ({
-      ...prev,
-      [id === 'username' ? 'email' : id]: value
     }));
   };
 
@@ -668,46 +567,20 @@ const Settings = () => {
                           <TableCell>{userItem.username}</TableCell>
                           <TableCell>{getRoleBadge(userItem.role)}</TableCell>
                           <TableCell className="text-right">
-                            <div className="flex justify-end space-x-2">
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setUserToEdit(userItem);
-                                  setShowEditDialog(true);
-                                }}
-                                disabled={userItem.username === 'alexvalla'}
-                                title={userItem.username === 'alexvalla' ? 'Cannot edit administrator account' : 'Edit account'}
-                              >
-                                <Edit className="h-4 w-4 text-blue-500" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setUserToResetPassword(userItem);
-                                  setShowResetPasswordDialog(true);
-                                }}
-                                disabled={userItem.username === 'alexvalla'}
-                                title={userItem.username === 'alexvalla' ? 'Cannot reset administrator password' : 'Reset password'}
-                              >
-                                <KeyRound className="h-4 w-4 text-amber-500" />
-                              </Button>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                onClick={() => {
-                                  setUserToDelete(userItem);
-                                  setShowDeleteDialog(true);
-                                }}
-                                disabled={userItem.username === 'alexvalla' || (user && userItem.id === user.id)}
-                                title={userItem.username === 'alexvalla' ? 'Cannot delete administrator account' : 
-                                      (user && userItem.id === user.id) ? 'Cannot delete your own account' : 
-                                      'Delete account'}
-                              >
-                                <Trash2 className="h-4 w-4 text-red-500" />
-                              </Button>
-                            </div>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setUserToDelete(userItem);
+                                setShowDeleteDialog(true);
+                              }}
+                              disabled={userItem.username === 'alexvalla' || (user && userItem.id === user.id)}
+                              title={userItem.username === 'alexvalla' ? 'Cannot delete administrator account' : 
+                                     (user && userItem.id === user.id) ? 'Cannot delete your own account' : 
+                                     'Delete account'}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
                           </TableCell>
                         </TableRow>
                       ))}
@@ -824,7 +697,6 @@ const Settings = () => {
         )}
       </Tabs>
 
-      {/* Delete User Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -853,98 +725,8 @@ const Settings = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      {/* Edit User Dialog */}
-      <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Edit User Account</DialogTitle>
-            <DialogDescription>
-              Update account details for {userToEdit?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="name">Full Name</Label>
-              <Input 
-                id="name" 
-                value={editUserData.name} 
-                onChange={handleEditInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="username">Email Address</Label>
-              <Input 
-                id="username" 
-                type="email" 
-                value={editUserData.email}
-                onChange={handleEditInputChange}
-              />
-            </div>
-            
-            <div className="space-y-2">
-              <Label htmlFor="role">Role</Label>
-              <Select
-                value={editUserData.role}
-                onValueChange={(value) => setEditUserData(prev => ({ ...prev, role: value }))}
-              >
-                <SelectTrigger id="role">
-                  <SelectValue placeholder="Select role" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="officer">Officer</SelectItem>
-                  <SelectItem value="dispatcher">Dispatcher</SelectItem>
-                  <SelectItem value="supervisor">Supervisor</SelectItem>
-                  <SelectItem value="admin">Administrator</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowEditDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleEditUser} disabled={isSaving}>
-              {isSaving ? 'Saving...' : 'Save Changes'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      {/* Reset Password Dialog */}
-      <Dialog open={showResetPasswordDialog} onOpenChange={setShowResetPasswordDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Reset User Password</DialogTitle>
-            <DialogDescription>
-              Set a new password for {userToResetPassword?.name}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4 py-4">
-            <div className="space-y-2">
-              <Label htmlFor="newPassword">New Password</Label>
-              <Input 
-                id="newPassword" 
-                type="password" 
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setShowResetPasswordDialog(false)}>
-              Cancel
-            </Button>
-            <Button onClick={handleResetPassword} disabled={isSaving || !newPassword}>
-              {isSaving ? 'Resetting...' : 'Reset Password'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 };
 
 export default Settings;
-
