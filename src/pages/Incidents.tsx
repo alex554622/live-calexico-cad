@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -438,10 +439,9 @@ const Incidents = () => {
               />
             ) : (
               <Tabs defaultValue="details">
-                <TabsList className="grid grid-cols-3">
+                <TabsList className="grid grid-cols-2">
                   <TabsTrigger value="details">Details</TabsTrigger>
                   <TabsTrigger value="officers">Officers</TabsTrigger>
-                  <TabsTrigger value="timeline">Timeline</TabsTrigger>
                 </TabsList>
                 
                 <TabsContent value="details" className="space-y-4 py-4">
