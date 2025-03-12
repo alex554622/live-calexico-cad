@@ -1,55 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { useAuth } from '@/context/AuthContext';
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { useToast } from '@/hooks/use-toast';
-import { Shield, User as UserIcon, UserPlus, X, Save, Database, UserX, Users, Trash2 } from 'lucide-react';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { 
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from "@/components/ui/alert-dialog";
-import { Badge } from '@/components/ui/badge';
-import { updateOfficer, createOfficer, updateUser, createUser, getAllUsers, deleteUser } from '@/services/api';
-import { useData } from '@/context/DataContext';
-import type { User } from '@/types';
+import React from 'react';
+import { useAuth } from '@/context/auth';
 
 const Settings = () => {
   const { user, hasPermission, updateCurrentUser } = useAuth();
-  const { toast } = useToast();
-  const { createOfficer: createOfficerData } = useData();
   const [isSaving, setIsSaving] = useState(false);
   const [newAccounts, setNewAccounts] = useState<Array<{name: string; email: string; role: string; password: string}>>([]);
   const [dataRetention, setDataRetention] = useState("5"); // Default 5 days
