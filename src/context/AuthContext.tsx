@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '@/types';
 import { supabase } from '@/lib/supabase';
@@ -56,11 +55,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const { data: authUser } = await supabase.auth.getUser();
         if (authUser?.user) {
           // Create a basic user record
-          const newUser: Partial<User> = {
+          const newUser = {
             username: email,
             name: email.split('@')[0],
             role: 'officer', // Default role
-            password: 'placeholder', // Adding a placeholder password to satisfy the not-null constraint
           };
           
           const { data, error } = await supabase
