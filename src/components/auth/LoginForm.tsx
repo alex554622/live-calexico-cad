@@ -23,16 +23,35 @@ const LoginForm = () => {
     setLoading(true);
     
     try {
-      // Special case for administrator login
-      if (email === 'avalladolid@calexico.ca.gov' && password === '1992') {
-        await handleAdminLogin();
+      // Admin credentials check
+      if (email === 'avalladolid@calexico.ca.gov') {
+        // Check if admin profile exists
+        const { data: existingProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('username', email)
+          .single();
+
+        if (!existingProfile) {
+          // Try to create admin user if it doesn't exist
+          const { data: authData, error: signUpError } = await supabase.auth.signUp({
+            email,
+            password,
+            options: {
+              data: {
+                name: 'Administrator'
+              }
+            }
+          });
+
+          if (signUpError) {
+            console.error("Admin creation error:", signUpError);
+          }
+        }
       }
-      
-      // Check if data retention was previously enabled
-      const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
-      
-      // When logging in, pass the retention status
-      const success = await login(email, password, retentionEnabled);
+
+      // Regular login attempt
+      const success = await login(email, password, false);
       if (success) {
         toast({
           title: "Login successful",
@@ -55,32 +74,6 @@ const LoginForm = () => {
       });
     } finally {
       setLoading(false);
-    }
-  };
-
-  const handleAdminLogin = async () => {
-    // Try to create the admin user if it doesn't exist already
-    const { data: existingUser, error: checkError } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('username', email)
-      .single();
-      
-    if (checkError && !existingUser) {
-      // Attempt to sign up the admin user
-      const { data: authUser, error: signupError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            name: 'Administrator'
-          }
-        }
-      });
-      
-      if (signupError) {
-        console.error("Admin creation error:", signupError);
-      }
     }
   };
 
