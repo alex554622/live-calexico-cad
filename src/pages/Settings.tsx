@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -45,7 +44,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { updateOfficer, createOfficer, updateUser, createUser, getAllUsers, deleteUser } from '@/services/api';
 import { useData } from '@/context/DataContext';
-import { User } from '@/types';
+import type { User } from '@/types';
 
 const Settings = () => {
   const { user, hasPermission, updateCurrentUser } = useAuth();
@@ -76,7 +75,6 @@ const Settings = () => {
     }
   }, [user]);
 
-  // Fetch all users when the component mounts
   useEffect(() => {
     if (hasPermission('manageSettings')) {
       fetchUsers();
@@ -105,7 +103,6 @@ const Settings = () => {
       setIsSaving(true);
       await deleteUser(userId);
       
-      // Refresh the users list
       await fetchUsers();
       
       toast({
@@ -175,7 +172,6 @@ const Settings = () => {
         return;
       }
       
-      // For the admin hardcoded password or for other users
       const correctPassword = user.username === 'alexvalla' ? '!345660312' : (user as any).password;
       
       if (userProfile.currentPassword !== correctPassword) {
@@ -198,7 +194,6 @@ const Settings = () => {
       
       const updatedUser = await updateUser(user.id, updatedUserData);
       
-      // Update the current user in AuthContext
       if (updateCurrentUser) {
         updateCurrentUser(updatedUser);
       }
@@ -278,7 +273,6 @@ const Settings = () => {
       
       setNewAccounts([]);
       
-      // Refresh users list after creating new accounts
       fetchUsers();
     } catch (error) {
       console.error('Error creating accounts:', error);
@@ -703,7 +697,6 @@ const Settings = () => {
         )}
       </Tabs>
 
-      {/* Delete User Confirmation Dialog */}
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
           <AlertDialogHeader>
