@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -32,7 +33,9 @@ const Login = () => {
       // Check if data retention was previously enabled
       const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
       
-      // Query the users table to find the matching user
+      console.log("Attempting to log in with username:", username);
+      
+      // First, check if the user exists in the database
       const { data, error } = await supabase
         .from('users')
         .select(`
@@ -45,11 +48,22 @@ const Login = () => {
           user_permissions(permission)
         `)
         .eq('username', username)
-        .maybeSingle(); // Use maybeSingle() instead of single() to avoid errors when no data is found
+        .maybeSingle();
+      
+      console.log("Supabase response:", { data, error });
       
       // Check if user exists and password matches
-      if (error || !data || data.password !== password) {
-        throw new Error('Invalid username or password');
+      if (error) {
+        console.error('Supabase error:', error);
+        throw new Error('Database error. Please try again later.');
+      }
+      
+      if (!data) {
+        throw new Error('User not found. Please check your username.');
+      }
+      
+      if (data.password !== password) {
+        throw new Error('Incorrect password. Please try again.');
       }
       
       // Store data retention preference
