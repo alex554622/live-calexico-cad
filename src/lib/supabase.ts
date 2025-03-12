@@ -8,5 +8,15 @@ const supabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYm
 
 // Log that we're creating a Supabase client - helps with debugging
 console.log('Creating Supabase client with URL:', supabaseUrl);
+console.log('Supabase key validity check:', supabaseAnonKey ? 'Key provided' : 'No key provided');
 
-export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+  auth: {
+    autoRefreshToken: true,
+    persistSession: true,
+    detectSessionInUrl: true
+  }
+});
+
+// Check if the client is created
+console.log('Supabase client created:', supabase ? 'Success' : 'Failed');

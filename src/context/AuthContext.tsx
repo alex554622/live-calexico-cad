@@ -40,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const checkAuth = async () => {
       try {
         setLoading(true);
+        console.log("Checking authentication status...");
         
         // Get current user from Supabase
         const { data: { session }, error } = await supabase.auth.getSession();
@@ -75,6 +76,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               permissions: profile.permissions as any
             });
           }
+        } else {
+          console.log("No active session found");
         }
       } catch (error) {
         console.error('Error in checkAuth:', error);
@@ -132,7 +135,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string, retainData = false) => {
     try {
       setLoading(true);
-      console.log('Attempting login with:', email);
+      console.log('Attempting login with email:', email);
+      
+      // Clear any previous session data to avoid conflicts
+      console.log('Clearing previous session data');
       
       const { data, error } = await supabase.auth.signInWithPassword({
         email, 
@@ -154,6 +160,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Store data retention preference
         localStorage.setItem('dataRetention', retainData ? 'true' : 'false');
+        
+        // Double check that we have a user profile
+        const { data: profile, error: profileError } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', data.session.user.id)
+          .single();
+          
+        if (profileError) {
+          console.error('Error fetching user profile after login:', profileError);
+        } else if (profile) {
+          console.log('User profile loaded:', profile.name);
+        }
+        
         return true;
       }
       

@@ -34,8 +34,10 @@ const Login = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    console.log('Login form submitted');
     
     if (!email || !password) {
+      console.log('Missing email or password');
       toast({
         title: "Missing Information",
         description: "Please enter both email and password.",
@@ -50,7 +52,7 @@ const Login = () => {
       // Check if data retention was previously enabled
       const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
       
-      console.log('Attempting login with:', email);
+      console.log('Attempting login with email:', email);
       
       // When logging in, pass the retention status
       const success = await login(email, password, retentionEnabled);
@@ -121,6 +123,10 @@ const Login = () => {
                 className="w-full bg-police hover:bg-police-dark"
                 type="submit"
                 disabled={loading || isSubmitting}
+                onClick={(e) => {
+                  console.log('Login button clicked');
+                  // Do not call handleSubmit directly, let the form submit handle it
+                }}
               >
                 {loading || isSubmitting ? "Logging in..." : "Login"}
               </Button>
