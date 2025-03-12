@@ -7,6 +7,7 @@ import CreateUserForm from '@/components/settings/CreateUserForm';
 import UsersList from '@/components/settings/UsersList';
 import SystemSettings from '@/components/settings/SystemSettings';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { cn } from '@/lib/utils';
 
 const Settings = () => {
   const { hasPermission } = useAuth();
