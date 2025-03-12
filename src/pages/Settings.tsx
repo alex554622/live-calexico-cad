@@ -12,26 +12,15 @@ import {
 } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { 
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { useToast } from '@/hooks/use-toast';
-import { Bell, Shield, User, MapPin } from 'lucide-react';
+import { Shield, User } from 'lucide-react';
 
 const Settings = () => {
   const { user, hasPermission } = useAuth();
   const { toast } = useToast();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [locationTracking, setLocationTracking] = useState(true);
-  const [darkMode, setDarkMode] = useState(false);
-  const [defaultDepartment, setDefaultDepartment] = useState('Calexico PD');
   const [isSaving, setIsSaving] = useState(false);
 
   const handleSaveSettings = () => {
@@ -56,154 +45,13 @@ const Settings = () => {
         </p>
       </div>
 
-      <Tabs defaultValue="general">
-        <TabsList className="grid grid-cols-4 w-full max-w-3xl">
-          <TabsTrigger value="general">General</TabsTrigger>
-          <TabsTrigger value="notifications">Notifications</TabsTrigger>
+      <Tabs defaultValue="account">
+        <TabsList className="grid grid-cols-2 w-full max-w-3xl">
           <TabsTrigger value="account">Account</TabsTrigger>
           {hasPermission('manageSettings') && (
             <TabsTrigger value="system">System</TabsTrigger>
           )}
         </TabsList>
-        
-        <TabsContent value="general" className="max-w-3xl">
-          <Card>
-            <CardHeader>
-              <CardTitle>General Settings</CardTitle>
-              <CardDescription>
-                Manage your general application preferences
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Dark Mode</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Switch between light and dark theme
-                  </p>
-                </div>
-                <Switch
-                  checked={darkMode}
-                  onCheckedChange={setDarkMode}
-                />
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-2">
-                <Label htmlFor="defaultDepartment">Default Department</Label>
-                <Select
-                  value={defaultDepartment}
-                  onValueChange={setDefaultDepartment}
-                >
-                  <SelectTrigger id="defaultDepartment">
-                    <SelectValue placeholder="Select department" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Calexico PD">Calexico PD</SelectItem>
-                    <SelectItem value="Imperial County Sheriff">Imperial County Sheriff</SelectItem>
-                    <SelectItem value="El Centro PD">El Centro PD</SelectItem>
-                  </SelectContent>
-                </Select>
-                <p className="text-sm text-muted-foreground">
-                  This will be the default department for new officers
-                </p>
-              </div>
-              
-              <Separator />
-              
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <div className="flex items-center">
-                    <MapPin className="h-4 w-4 mr-1" />
-                    <Label>Location Tracking</Label>
-                  </div>
-                  <p className="text-sm text-muted-foreground">
-                    Track officer locations in real-time
-                  </p>
-                </div>
-                <Switch
-                  checked={locationTracking}
-                  onCheckedChange={setLocationTracking}
-                />
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveSettings} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Settings'}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
-        
-        <TabsContent value="notifications" className="max-w-3xl">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center">
-                <Bell className="h-5 w-5 mr-2" />
-                Notification Settings
-              </CardTitle>
-              <CardDescription>
-                Configure how you want to receive notifications
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="flex items-center justify-between">
-                <div className="space-y-0.5">
-                  <Label>Enable Notifications</Label>
-                  <p className="text-sm text-muted-foreground">
-                    Receive real-time notifications about incidents and officers
-                  </p>
-                </div>
-                <Switch
-                  checked={notificationsEnabled}
-                  onCheckedChange={setNotificationsEnabled}
-                />
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-4">
-                <Label>Notification Types</Label>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-medium">New Incident Alerts</p>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified when new incidents are reported
-                    </p>
-                  </div>
-                  <Switch defaultChecked={true} />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-medium">Officer Status Updates</p>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified when officers change their status
-                    </p>
-                  </div>
-                  <Switch defaultChecked={true} />
-                </div>
-                
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <p className="text-sm font-medium">Assignment Notifications</p>
-                    <p className="text-sm text-muted-foreground">
-                      Get notified when officers are assigned to incidents
-                    </p>
-                  </div>
-                  <Switch defaultChecked={true} />
-                </div>
-              </div>
-            </CardContent>
-            <CardFooter>
-              <Button onClick={handleSaveSettings} disabled={isSaving}>
-                {isSaving ? 'Saving...' : 'Save Settings'}
-              </Button>
-            </CardFooter>
-          </Card>
-        </TabsContent>
         
         <TabsContent value="account" className="max-w-3xl">
           <Card>
