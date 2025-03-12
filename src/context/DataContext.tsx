@@ -1,7 +1,7 @@
 
 import React, { createContext, useContext, useEffect } from 'react';
 import { Officer, Incident, Notification } from '../types';
-import { useAuth } from './AuthContext';
+import { useAuth } from './auth';
 import { useOfficers } from '@/hooks/use-officers';
 import { useIncidents } from '@/hooks/use-incidents';
 import { useNotifications } from '@/hooks/use-notifications';
