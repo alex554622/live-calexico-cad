@@ -1,45 +1,34 @@
-import React from 'react';
-import { Outlet } from 'react-router-dom';
-import Header from './Header';
-import { Sidebar } from './Sidebar';
-import { cn } from '@/lib/utils';
-import ThemeToggle from '@/components/common/ThemeToggle';
 
-const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  
-  const toggleSidebar = () => {
-    setSidebarCollapsed(prev => !prev);
-  };
+import React from 'react';
+import { Menu } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/context/AuthContext';
+
+interface HeaderProps {
+  toggleSidebar: () => void;
+}
+
+const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
+  const { user } = useAuth();
   
   return (
-    <div className="min-h-screen flex flex-col bg-background">
-      <Header toggleSidebar={toggleSidebar} />
+    <header className="h-14 border-b bg-background flex items-center px-4 sticky top-0 z-10">
+      <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mr-2">
+        <Menu className="h-5 w-5" />
+      </Button>
       
-      {/* Theme toggle positioned in the top-right corner */}
-      <div className="absolute top-4 right-4 z-50">
-        <ThemeToggle />
-      </div>
+      <div className="font-semibold">Calexico Police CAD</div>
       
-      <div className="flex flex-1 overflow-hidden">
-        <Sidebar 
-          collapsed={sidebarCollapsed} 
-          setCollapsed={setSidebarCollapsed} 
-        />
-        
-        <main 
-          className={cn(
-            "flex-1 transition-all duration-300 ease-in-out overflow-y-auto",
-            sidebarCollapsed ? "ml-[60px]" : "ml-[240px]"
-          )}
-        >
-          <div className="container mx-auto px-4 py-6">
-            {children}
-          </div>
-        </main>
+      <div className="ml-auto flex items-center space-x-2">
+        {user && (
+          <span className="text-sm text-muted-foreground">
+            {user.name || user.email}
+          </span>
+        )}
       </div>
-    </div>
+    </header>
   );
 };
 
-export default AppLayout;
+export default Header;
