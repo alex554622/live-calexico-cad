@@ -30,12 +30,9 @@ const Login = () => {
     setLoading(true);
     
     try {
-      // Check if data retention was previously enabled
-      const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
+      console.log("Login attempt with:", { username });
       
-      console.log("Attempting to log in with username:", username);
-      
-      // First, check if the user exists in the database
+      // Query the users table to check the credentials
       const { data, error } = await supabase
         .from('users')
         .select(`
@@ -50,26 +47,28 @@ const Login = () => {
         .eq('username', username)
         .maybeSingle();
       
-      console.log("Supabase response:", { data, error });
+      console.log("Supabase query response:", { data, error });
       
-      // Check if user exists and password matches
       if (error) {
         console.error('Supabase error:', error);
-        throw new Error('Database error. Please try again later.');
+        throw new Error(`Database error: ${error.message}`);
       }
       
       if (!data) {
+        console.error('User not found:', username);
         throw new Error('User not found. Please check your username.');
       }
       
+      // Simple password validation
       if (data.password !== password) {
+        console.error('Password mismatch for user:', username);
         throw new Error('Incorrect password. Please try again.');
       }
       
-      // Store data retention preference
-      localStorage.setItem('dataRetention', retentionEnabled ? 'true' : 'false');
+      // Data retention preference
+      const retainData = localStorage.getItem('dataRetention') === 'true';
       
-      // Transform permissions from array of objects to object with boolean values
+      // Format permissions from the join query
       const permissions: Record<string, boolean> = {};
       if (data.user_permissions) {
         data.user_permissions.forEach((p: { permission: string }) => {
@@ -77,18 +76,10 @@ const Login = () => {
         });
       }
       
-      // Create session in localStorage
-      localStorage.setItem('supabase.auth.token', JSON.stringify({
-        currentSession: {
-          user: {
-            id: data.id,
-            email: data.username
-          }
-        }
-      }));
+      console.log("User authenticated, calling login function with permissions:", permissions);
       
       // Call the login function from AuthContext
-      const success = await login(username, password, retentionEnabled);
+      const success = await login(username, password, retainData);
       
       if (success) {
         toast({
@@ -98,7 +89,7 @@ const Login = () => {
         });
         navigate('/');
       } else {
-        throw new Error('Authentication failed');
+        throw new Error('Authentication failed in context. Please try again.');
       }
     } catch (error) {
       console.error('Login error:', error);
