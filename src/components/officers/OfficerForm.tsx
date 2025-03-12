@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -96,8 +95,7 @@ const OfficerForm: React.FC<OfficerFormProps> = ({
           location: {
             lat: 0,
             lng: 0,
-          },
-          lastUpdated: new Date().toISOString(),
+          }
         });
         
         toast({
