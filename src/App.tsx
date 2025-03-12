@@ -9,6 +9,8 @@ import { DataProvider } from "./context/DataContext";
 import AppLayout from "./components/layout/AppLayout";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
+import Incidents from "./pages/Incidents";
+import Officers from "./pages/Officers";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -45,6 +47,8 @@ const App = () => (
                 </ProtectedRoute>
               }>
                 <Route index element={<Dashboard />} />
+                <Route path="incidents" element={<Incidents />} />
+                <Route path="officers" element={<Officers />} />
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
