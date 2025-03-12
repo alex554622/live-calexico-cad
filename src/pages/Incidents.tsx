@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
-import { Incident } from '@/types';
+import { Incident, Officer } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -26,16 +26,21 @@ import IncidentStatusBadge from '@/components/common/IncidentStatusBadge';
 import IncidentPriorityBadge from '@/components/common/IncidentPriorityBadge';
 import IncidentForm from '@/components/incidents/IncidentForm';
 import { format } from 'date-fns';
+import { useToast } from '@/hooks/use-toast';
 
 const Incidents = () => {
-  const { incidents, officers, loadingIncidents, loadingOfficers } = useData();
+  const { incidents, officers, loadingIncidents, loadingOfficers, assignOfficerToIncident } = useData();
   const { hasPermission } = useAuth();
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<string>('all');
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [selectedOfficerId, setSelectedOfficerId] = useState<string>('');
+  const [assigningInProgress, setAssigningInProgress] = useState(false);
 
   // Filter incidents based on search term and filters
   const filteredIncidents = incidents.filter(incident => {
@@ -65,6 +70,38 @@ const Incidents = () => {
       window.open(url, '_blank', 'noopener,noreferrer');
     }
   };
+
+  const handleAssignOfficer = async () => {
+    if (!selectedIncident || !selectedOfficerId) return;
+    
+    try {
+      setAssigningInProgress(true);
+      await assignOfficerToIncident(selectedIncident.id, selectedOfficerId);
+      
+      toast({
+        title: 'Officer Assigned',
+        description: 'Officer has been successfully assigned to the incident',
+      });
+      
+      setIsAssigning(false);
+      setSelectedOfficerId('');
+    } catch (error) {
+      console.error('Error assigning officer:', error);
+      toast({
+        title: 'Assignment Failed',
+        description: 'Failed to assign officer to the incident',
+        variant: 'destructive',
+      });
+    } finally {
+      setAssigningInProgress(false);
+    }
+  };
+
+  // Get available officers (not on another incident and not off duty)
+  const availableOfficers = officers.filter(officer => 
+    (officer.status === 'available' || !officer.currentIncidentId) && 
+    officer.status !== 'offDuty'
+  );
 
   return (
     <div className="space-y-6">
@@ -322,7 +359,11 @@ const Incidents = () => {
                       
                       {hasPermission('assignOfficer') && (
                         <div className="pt-4">
-                          <Button variant="outline" className="w-full">
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={() => setIsAssigning(true)}
+                          >
                             Assign Officers
                           </Button>
                         </div>
@@ -340,6 +381,59 @@ const Incidents = () => {
             )}
           </DialogContent>
         )}
+      </Dialog>
+
+      {/* Assign Officer Dialog */}
+      <Dialog open={isAssigning} onOpenChange={setIsAssigning}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle>Assign Officer to Incident</DialogTitle>
+            <DialogDescription>
+              Select an available officer to assign to this incident.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            {availableOfficers.length > 0 ? (
+              <div className="space-y-4">
+                <Select
+                  value={selectedOfficerId}
+                  onValueChange={setSelectedOfficerId}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select an officer" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableOfficers.map(officer => (
+                      <SelectItem key={officer.id} value={officer.id}>
+                        {officer.name} - {officer.rank}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : (
+              <div className="text-center py-4 text-muted-foreground">
+                No available officers at the moment
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsAssigning(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleAssignOfficer}
+              disabled={!selectedOfficerId || assigningInProgress}
+            >
+              {assigningInProgress ? 'Assigning...' : 'Assign'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
       </Dialog>
     </div>
   );

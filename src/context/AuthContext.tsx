@@ -1,82 +1,43 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { login as apiLogin, logout as apiLogout, getCurrentUser } from '../services/api';
 import { User } from '../types';
-import { useToast } from '@/hooks/use-toast';
+import { login as apiLogin, logout as apiLogout, getCurrentUser } from '../services/api';
+
+// Define the permission types
+export type Permission = 
+  | 'viewOfficerDetails'
+  | 'createOfficer'
+  | 'editOfficer'
+  | 'deleteOfficer'
+  | 'viewIncidentDetails'
+  | 'createIncident'
+  | 'editIncident'
+  | 'closeIncident'
+  | 'assignOfficer'
+  | 'manageSettings'
+  | 'viewReports';
 
 interface AuthContextType {
   user: User | null;
   loading: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
-  hasPermission: (permission: keyof NonNullable<User['permissions']>) => boolean;
+  hasPermission: (permission: Permission) => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const defaultPermissions = {
-  admin: {
-    createIncident: true,
-    editIncident: true,
-    assignOfficer: true,
-    createUser: true,
-    editUser: true,
-    editOfficer: true,
-    createOfficer: true,
-    viewOfficerDetails: true,
-    assignIncidentToOfficer: true,
-  },
-  supervisor: {
-    createIncident: true,
-    editIncident: true,
-    assignOfficer: true,
-    createUser: true,
-    editUser: false,
-    editOfficer: true,
-    createOfficer: true,
-    viewOfficerDetails: true,
-    assignIncidentToOfficer: true,
-  },
-  dispatcher: {
-    createIncident: true,
-    editIncident: true,
-    assignOfficer: true,
-    createUser: false,
-    editUser: false,
-    editOfficer: false,
-    createOfficer: false,
-    viewOfficerDetails: true,
-    assignIncidentToOfficer: true,
-  },
-  officer: {
-    createIncident: false,
-    editIncident: false,
-    assignOfficer: false,
-    createUser: false,
-    editUser: false,
-    editOfficer: false,
-    createOfficer: false,
-    viewOfficerDetails: false,
-    assignIncidentToOfficer: false,
-  }
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
-  const { toast } = useToast();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
         const currentUser = await getCurrentUser();
-        if (currentUser) {
-          // Attach default permissions based on role
-          currentUser.permissions = defaultPermissions[currentUser.role];
-          setUser(currentUser);
-        }
+        setUser(currentUser);
       } catch (error) {
-        console.error('Auth error:', error);
+        console.error('Error checking auth status:', error);
       } finally {
         setLoading(false);
       }
@@ -85,66 +46,59 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     checkAuth();
   }, []);
 
-  const login = async (username: string, password: string): Promise<boolean> => {
+  const login = async (username: string, password: string) => {
     try {
-      setLoading(true);
-      const loggedInUser = await apiLogin(username, password);
-      
-      if (loggedInUser) {
-        // Attach default permissions based on role
-        loggedInUser.permissions = defaultPermissions[loggedInUser.role];
-        setUser(loggedInUser);
-        
-        toast({
-          title: 'Login successful',
-          description: `Welcome back, ${loggedInUser.name}!`,
-        });
+      const user = await apiLogin(username, password);
+      if (user) {
+        setUser(user);
         return true;
-      } else {
-        toast({
-          title: 'Login failed',
-          description: 'Invalid username or password',
-          variant: 'destructive',
-        });
-        return false;
       }
+      return false;
     } catch (error) {
       console.error('Login error:', error);
-      toast({
-        title: 'Login error',
-        description: 'An unexpected error occurred',
-        variant: 'destructive',
-      });
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
-  const logout = async (): Promise<void> => {
+  const logout = async () => {
     try {
-      setLoading(true);
       await apiLogout();
       setUser(null);
-      toast({
-        title: 'Logged out',
-        description: 'You have been successfully logged out',
-      });
     } catch (error) {
       console.error('Logout error:', error);
-      toast({
-        title: 'Logout error',
-        description: 'An error occurred during logout',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
     }
   };
 
-  const hasPermission = (permission: keyof NonNullable<User['permissions']>): boolean => {
-    if (!user || !user.permissions) return false;
-    return !!user.permissions[permission];
+  const hasPermission = (permission: Permission) => {
+    if (!user) return false;
+    
+    // Admin has all permissions
+    if (user.role === 'admin') return true;
+    
+    // Dispatcher permissions
+    if (user.role === 'dispatcher') {
+      const dispatcherPermissions: Permission[] = [
+        'viewOfficerDetails',
+        'viewIncidentDetails',
+        'createIncident',
+        'editIncident',
+        'assignOfficer',
+        'viewReports'
+      ];
+      return dispatcherPermissions.includes(permission);
+    }
+    
+    // Officer permissions
+    if (user.role === 'officer') {
+      const officerPermissions: Permission[] = [
+        'viewOfficerDetails',
+        'viewIncidentDetails',
+        'createIncident'
+      ];
+      return officerPermissions.includes(permission);
+    }
+    
+    return false;
   };
 
   return (

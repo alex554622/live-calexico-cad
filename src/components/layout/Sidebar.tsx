@@ -1,133 +1,81 @@
 
-import React from 'react';
+import { Link, useLocation } from 'react-router-dom';
 import { 
   Home, 
   Users, 
+  FileText, 
   Bell, 
-  AlertTriangle, 
-  Settings, 
-  ChevronLeft, 
-  ChevronRight 
+  Settings,
+  Menu
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
-import { Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { useMobile } from '@/hooks/use-mobile';
 import { useAuth } from '@/context/AuthContext';
 
-interface SidebarProps {
-  isOpen: boolean;
-  toggle: () => void;
-}
-
-const Sidebar: React.FC<SidebarProps> = ({ isOpen, toggle }) => {
+export function Sidebar({ collapsed, setCollapsed }: { 
+  collapsed: boolean; 
+  setCollapsed: (collapsed: boolean) => void;
+}) {
   const location = useLocation();
+  const isMobile = useMobile();
   const { user } = useAuth();
   
-  const isActive = (path: string, exact = false) => {
-    if (exact) {
-      return location.pathname === path;
-    }
-    return location.pathname.startsWith(path);
+  const isActivePath = (path: string) => {
+    return location.pathname === path;
   };
   
-  const menuItems = [
-    { 
-      icon: Home, 
-      label: 'Dashboard', 
-      path: '/',
-      exact: true,
-      roles: ['admin', 'dispatcher', 'supervisor', 'officer']
-    },
-    { 
-      icon: AlertTriangle, 
-      label: 'Incidents', 
-      path: '/incidents',
-      roles: ['admin', 'dispatcher', 'supervisor', 'officer']
-    },
-    { 
-      icon: Users, 
-      label: 'Officers', 
-      path: '/officers',
-      roles: ['admin', 'dispatcher', 'supervisor', 'officer']
-    },
-    { 
-      icon: Bell, 
-      label: 'Notifications', 
-      path: '/notifications',
-      roles: ['admin', 'dispatcher', 'supervisor', 'officer']
-    },
-    { 
-      icon: Settings, 
-      label: 'Settings', 
-      path: '/settings',
-      roles: ['admin', 'supervisor']
-    }
+  const navItems = [
+    { icon: Home, label: 'Dashboard', path: '/' },
+    { icon: Users, label: 'Officers', path: '/officers' },
+    { icon: FileText, label: 'Incidents', path: '/incidents' },
+    { icon: Bell, label: 'Notifications', path: '/notifications' },
+    { icon: Settings, label: 'Settings', path: '/settings' }
   ];
-
-  const filteredMenuItems = menuItems.filter(item => 
-    user && item.roles.includes(user.role)
-  );
+  
+  if (!user) return null;
   
   return (
-    <aside 
+    <div 
       className={cn(
-        "fixed inset-y-0 left-0 z-20 flex flex-col bg-sidebar h-full transition-all duration-300 ease-in-out",
-        isOpen ? "w-64" : "w-16"
+        "group flex flex-col h-full border-r bg-background transition-all duration-300",
+        collapsed ? "w-[60px]" : "w-[240px]"
       )}
     >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border">
-        <h1 className={cn(
-          "text-sidebar-foreground font-bold transition-opacity",
-          isOpen ? "opacity-100" : "opacity-0"
-        )}>
-          Calexico Live
-        </h1>
+      <div className="flex items-center justify-between px-4 h-14">
+        {!collapsed && (
+          <div className="font-semibold text-lg">Calexico CAD</div>
+        )}
         <Button 
           variant="ghost" 
           size="icon" 
-          onClick={toggle} 
-          className="text-sidebar-foreground hover:text-white hover:bg-sidebar-accent"
+          onClick={() => setCollapsed(!collapsed)}
+          className={cn(collapsed ? "mx-auto" : "")}
         >
-          {isOpen ? <ChevronLeft size={18} /> : <ChevronRight size={18} />}
+          <Menu className="h-4 w-4" />
         </Button>
       </div>
       
-      <nav className="flex-1 overflow-y-auto py-4">
-        <ul className="space-y-1 px-2">
-          {filteredMenuItems.map((item, index) => (
-            <li key={index}>
-              <Link 
-                to={item.path}
-                className={cn(
-                  "flex items-center px-3 py-2 rounded-md transition-colors",
-                  isActive(item.path, item.exact) 
-                    ? "bg-sidebar-primary text-sidebar-primary-foreground" 
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                )}
-              >
-                <item.icon className="h-5 w-5 flex-shrink-0" />
-                <span className={cn(
-                  "ml-3 transition-opacity", 
-                  isOpen ? "opacity-100" : "opacity-0"
-                )}>
-                  {item.label}
-                </span>
-              </Link>
-            </li>
+      <div className="flex-1 overflow-y-auto py-4">
+        <nav className="flex flex-col gap-1 px-2">
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={cn(
+                "flex items-center py-2 px-3 rounded-md transition-all",
+                isActivePath(item.path) 
+                  ? "bg-primary/10 text-primary font-medium" 
+                  : "hover:bg-accent text-muted-foreground hover:text-foreground",
+                collapsed && "justify-center px-0"
+              )}
+            >
+              <item.icon className={cn("h-5 w-5", collapsed ? "mx-auto" : "mr-3")} />
+              {!collapsed && <span>{item.label}</span>}
+            </Link>
           ))}
-        </ul>
-      </nav>
-      
-      <div className="p-4 border-t border-sidebar-border text-sidebar-foreground">
-        <div className={cn(
-          "text-xs transition-opacity", 
-          isOpen ? "opacity-100" : "opacity-0"
-        )}>
-          © 2025 Calexico PD
-        </div>
+        </nav>
       </div>
-    </aside>
+    </div>
   );
-};
-
-export default Sidebar;
+}
