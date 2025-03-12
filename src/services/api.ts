@@ -1,3 +1,4 @@
+
 import { Officer, Incident, Notification, User, OfficerStatus } from '../types';
 import { mockOfficers, mockIncidents, mockNotifications, mockUsers } from './mockData';
 
@@ -408,12 +409,13 @@ export const createViewOnlyUser = (username: string, password: string, name: str
         avatar: `https://ui-avatars.com/api/?name=${name.replace(/ /g, '+')}&background=1E40AF&color=fff`,
         permissions: {
           viewOfficerDetails: true,
-          viewIncidentDetails: true,
           createIncident: false,
           editIncident: false,
           assignOfficer: false,
           createUser: false,
           editUser: false,
+          createOfficer: false,
+          editOfficer: false
         }
       };
       
