@@ -61,15 +61,24 @@ export const getCurrentUser = (): Promise<User | null> => {
 };
 
 // New function to update user information
-export const updateUser = (id: string, updates: Partial<User>): Promise<User> => {
+export const updateUser = (id: string, updates: Partial<User & { password?: string }>): Promise<User> => {
   return new Promise((resolve) => {
     setTimeout(() => {
       const userIndex = users.findIndex(u => u.id === id);
       if (userIndex !== -1) {
+        // Extract password from updates if it exists
+        const { password, ...userUpdates } = updates;
+        
+        // Update the user object
         users[userIndex] = {
           ...users[userIndex],
-          ...updates,
+          ...userUpdates,
         };
+        
+        // Store the password separately (in a real app, this would be hashed)
+        if (password) {
+          (users[userIndex] as any).password = password;
+        }
         
         // If this is the current user, update currentUser as well
         if (currentUser && currentUser.id === id) {

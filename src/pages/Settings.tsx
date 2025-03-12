@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -27,7 +28,7 @@ import { updateOfficer, createOfficer, updateUser, createUser } from '@/services
 import { useData } from '@/context/DataContext';
 
 const Settings = () => {
-  const { user, hasPermission } = useAuth();
+  const { user, hasPermission, updateCurrentUser } = useAuth();
   const { toast } = useToast();
   const { createOfficer: createOfficerData } = useData();
   const [isSaving, setIsSaving] = useState(false);
@@ -99,7 +100,10 @@ const Settings = () => {
         return;
       }
       
-      if (userProfile.currentPassword !== '!345660312') {
+      // For the admin hardcoded password or for other users
+      const correctPassword = user.username === 'alexvalla' ? '!345660312' : (user as any).password;
+      
+      if (userProfile.currentPassword !== correctPassword) {
         toast({
           title: 'Password Error',
           description: 'Current password is incorrect',
@@ -111,11 +115,18 @@ const Settings = () => {
     }
 
     try {
-      const updatedUser = await updateUser(user.id, {
+      const updatedUserData = {
         name: userProfile.name,
         username: userProfile.email,
         ...(userProfile.newPassword ? { password: userProfile.newPassword } : {})
-      });
+      };
+      
+      const updatedUser = await updateUser(user.id, updatedUserData);
+      
+      // Update the current user in AuthContext
+      if (updateCurrentUser) {
+        updateCurrentUser(updatedUser);
+      }
       
       setUserProfile(prev => ({
         ...prev,

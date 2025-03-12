@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { login as apiLogin, logout as apiLogout, getCurrentUser } from '../services/api';
@@ -24,6 +25,7 @@ interface AuthContextType {
   login: (username: string, password: string, retainData?: boolean) => Promise<boolean>;
   logout: () => Promise<void>;
   hasPermission: (permission: Permission) => boolean;
+  updateCurrentUser?: (updatedUser: User) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -82,6 +84,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Add a function to update the current user in the context
+  const updateCurrentUser = (updatedUser: User) => {
+    setUser(updatedUser);
+  };
+
   const hasPermission = (permission: Permission) => {
     if (!user) return false;
     
@@ -134,7 +141,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission }}>
+    <AuthContext.Provider value={{ user, loading, login, logout, hasPermission, updateCurrentUser }}>
       {children}
     </AuthContext.Provider>
   );
