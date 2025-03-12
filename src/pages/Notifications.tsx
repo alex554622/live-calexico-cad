@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/select';
 
 const Notifications = () => {
-  const { notifications, loadingNotifications, markNotificationAsRead } = useData();
+  const { notifications, loadingNotifications, markNotificationAsRead, deleteReadNotifications } = useData();
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState<string>('all');
   const [showUnreadOnly, setShowUnreadOnly] = useState(false);
@@ -40,32 +40,34 @@ const Notifications = () => {
     });
   };
 
-  const deleteReadNotifications = () => {
-    const readCount = notifications.filter(n => n.read).length;
-    
-    if (readCount === 0) {
+  const handleDeleteReadNotifications = async () => {
+    try {
+      const readCount = notifications.filter(n => n.read).length;
+      
+      if (readCount === 0) {
+        toast({
+          title: "No read notifications",
+          description: "There are no read notifications to delete.",
+          variant: "default",
+        });
+        return;
+      }
+      
+      const deletedCount = await deleteReadNotifications();
+      
       toast({
-        title: "No read notifications",
-        description: "There are no read notifications to delete.",
+        title: "Notifications deleted",
+        description: `${deletedCount} read notifications have been deleted.`,
         variant: "default",
       });
-      return;
+    } catch (error) {
+      console.error('Error deleting read notifications:', error);
+      toast({
+        title: "Error",
+        description: "Failed to delete read notifications.",
+        variant: "destructive",
+      });
     }
-    
-    // Mark as handled in UI first
-    toast({
-      title: "Notifications deleted",
-      description: `${readCount} read notifications have been deleted.`,
-      variant: "default",
-    });
-    
-    // In a real implementation, we would call an API to delete the read notifications
-    // For now we'll just mark them as read since our mock API doesn't support deletion
-    notifications.forEach(notification => {
-      if (!notification.read) {
-        markNotificationAsRead(notification.id);
-      }
-    });
   };
 
   return (
@@ -118,7 +120,7 @@ const Notifications = () => {
             Mark All Read
           </Button>
           
-          <Button variant="outline" onClick={deleteReadNotifications} className="gap-2">
+          <Button variant="outline" onClick={handleDeleteReadNotifications} className="gap-2">
             <Trash2 className="h-4 w-4" />
             Delete Read
           </Button>

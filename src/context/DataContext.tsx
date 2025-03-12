@@ -13,7 +13,8 @@ import {
   createOfficer as apiCreateOfficer,
   updateOfficer as apiUpdateOfficer,
   deleteOfficer as apiDeleteOfficer,
-  deleteIncident as apiDeleteIncident
+  deleteIncident as apiDeleteIncident,
+  deleteReadNotifications as apiDeleteReadNotifications
 } from '../services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthContext';
@@ -35,6 +36,7 @@ interface DataContextType {
   updateOfficer: (officerId: string, updates: Partial<Officer>) => Promise<Officer>;
   deleteOfficer: (officerId: string) => Promise<void>;
   deleteIncident: (incidentId: string) => Promise<void>;
+  deleteReadNotifications: () => Promise<number>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -320,6 +322,22 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteReadNotificationsWrapper = async () => {
+    try {
+      const deletedCount = await apiDeleteReadNotifications();
+      setNotifications(prev => prev.filter(n => !n.read));
+      return deletedCount;
+    } catch (error) {
+      console.error('Error deleting read notifications:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete read notifications',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   return (
     <DataContext.Provider value={{
       officers,
@@ -338,6 +356,7 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateOfficer: updateOfficerWrapper,
       deleteOfficer: deleteOfficerWrapper,
       deleteIncident: deleteIncidentWrapper,
+      deleteReadNotifications: deleteReadNotificationsWrapper,
     }}>
       {children}
     </DataContext.Provider>

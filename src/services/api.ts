@@ -432,6 +432,17 @@ export const markNotificationAsRead = (id: string): Promise<Notification> => {
   });
 };
 
+export const deleteReadNotifications = (): Promise<number> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const initialCount = notifications.length;
+      notifications = notifications.filter(n => !n.read);
+      const deletedCount = initialCount - notifications.length;
+      resolve(deletedCount);
+    }, 300);
+  });
+};
+
 // This is a utility function to simulate real-time updates in our demo
 export const simulateRealTimeUpdates = (
   onOfficerUpdate: (officer: Officer) => void,
