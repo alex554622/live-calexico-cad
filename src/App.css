@@ -50,4 +50,20 @@
     padding-left: 0.75rem;
     padding-right: 0.75rem;
   }
+  
+  /* Improve scrolling on mobile */
+  body, html {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+  
+  /* Make all overflow containers scrollable on mobile */
+  .overflow-auto, 
+  .overflow-y-auto,
+  form,
+  .dialog-content {
+    -webkit-overflow-scrolling: touch;
+    max-height: 100%;
+    overscroll-behavior-y: contain;
+  }
 }

@@ -23,7 +23,11 @@ const Header: React.FC<HeaderProps> = ({ toggleSidebar }) => {
   };
   
   return (
-    <header className="h-14 border-b bg-background flex items-center px-4 sticky top-0 z-10">
+    <header className={cn(
+      "h-14 border-b bg-background flex items-center px-4 sticky top-0 z-10",
+      // Ensure header doesn't jump during scroll on mobile
+      isMobile ? "will-change-transform" : ""
+    )}>
       <Button variant="ghost" size="icon" onClick={toggleSidebar} className="mr-2">
         <Menu className="h-5 w-5" />
       </Button>

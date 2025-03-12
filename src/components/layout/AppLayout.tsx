@@ -42,15 +42,20 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         
         <main 
           className={cn(
-            "flex-1 transition-all duration-300 ease-in-out overflow-y-auto",
+            "flex-1 transition-all duration-300 ease-in-out",
+            // Remove overflow-y-auto from here as it's causing issues on mobile
             isMobile ? 
               (sidebarCollapsed ? "ml-[60px]" : "ml-0") : 
-              (sidebarCollapsed ? "ml-[60px]" : "ml-[240px]")
+              (sidebarCollapsed ? "ml-[60px]" : "ml-[240px]"),
+            // Add overflow-y-auto with better mobile support
+            "overflow-y-auto"
           )}
         >
           <div className={cn(
             "mx-auto px-4 py-6",
-            isMobile ? "container-fluid" : "container"
+            isMobile ? "container-fluid" : "container",
+            // Add padding to prevent content from being hidden under fixed elements
+            isMobile ? "pb-20" : "pb-6"
           )}>
             {children}
           </div>
