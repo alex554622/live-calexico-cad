@@ -1,8 +1,7 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { supabase } from '../integrations/supabase/client';
-import { Session } from '@supabase/supabase-js';
+import { login as apiLogin, logout as apiLogout, getCurrentUser } from '../services/api';
 
 // Define the permission types
 export type Permission = 
@@ -24,7 +23,7 @@ export type Permission =
 interface AuthContextType {
   user: User | null;
   loading: boolean;
-  login: (email: string, password: string, retainData?: boolean) => Promise<boolean>;
+  login: (username: string, password: string, retainData?: boolean) => Promise<boolean>;
   logout: () => Promise<void>;
   hasPermission: (permission: Permission) => boolean;
   updateCurrentUser?: (updatedUser: User) => void;
@@ -39,12 +38,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        // Get the current session
-        const { data: { session } } = await supabase.auth.getSession();
-        
-        if (session) {
-          await fetchUserProfile(session);
-        }
+        const currentUser = await getCurrentUser();
+        setUser(currentUser);
       } catch (error) {
         console.error('Error checking auth status:', error);
       } finally {
@@ -53,66 +48,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     checkAuth();
-
-    // Set up auth state listener
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        if (event === 'SIGNED_IN' && session) {
-          await fetchUserProfile(session);
-        } else if (event === 'SIGNED_OUT') {
-          setUser(null);
-        }
-      }
-    );
-
-    return () => {
-      subscription.unsubscribe();
-    };
   }, []);
 
-  const fetchUserProfile = async (session: Session) => {
+  const login = async (username: string, password: string, retainData = false) => {
     try {
-      // Fetch the user profile from the profiles table
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('id', session.user.id)
-        .single();
-
-      if (error) {
-        throw error;
-      }
-
-      if (profile) {
-        // Transform the profile data to match our User type
-        setUser({
-          id: profile.id,
-          username: profile.username,
-          name: profile.name,
-          role: profile.role,
-          avatar: profile.avatar
-        });
-      }
-    } catch (error) {
-      console.error('Error fetching user profile:', error);
-    }
-  };
-
-  const login = async (email: string, password: string, retainData = false) => {
-    try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
-
-      if (error) {
-        console.error('Login error:', error.message);
-        return false;
-      }
-
-      if (data.user) {
+      const user = await apiLogin(username, password);
+      if (user) {
+        setUser(user);
+        
         // Store data retention preference
         localStorage.setItem('dataRetention', retainData ? 'true' : 'false');
+        
         return true;
       }
       return false;
@@ -124,9 +70,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      
+      await apiLogout();
       setUser(null);
       
       // If data retention is not enabled, clear local storage
