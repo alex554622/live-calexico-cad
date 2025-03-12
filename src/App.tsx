@@ -8,7 +8,7 @@ import { AuthProvider, useAuth } from "./context/auth";
 import { DataProvider } from "./context/DataContext";
 import AppLayout from "./components/layout/AppLayout";
 import Login from "./pages/Login";
-import Dashboard from "./pages/Dashboard";
+import Dashboard from "./pages/dashboard";
 import Incidents from "./pages/Incidents";
 import Officers from "./pages/Officers";
 import NotFound from "./pages/NotFound";
