@@ -17,7 +17,7 @@ import { Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const { login, loading } = useAuth();
   const navigate = useNavigate();
@@ -30,13 +30,13 @@ const Login = () => {
     const retentionEnabled = localStorage.getItem('dataRetention') === 'true';
     
     // When logging in, pass the retention status
-    const success = await login(username, password, retentionEnabled);
+    const success = await login(email, password, retentionEnabled);
     if (success) {
       navigate('/');
     } else {
       toast({
         title: "Login Failed",
-        description: "Invalid username or password. Please try again.",
+        description: "Invalid email or password. Please try again.",
         variant: "destructive"
       });
     }
@@ -58,13 +58,13 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
               </div>

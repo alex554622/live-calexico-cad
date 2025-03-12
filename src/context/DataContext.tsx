@@ -1,23 +1,9 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Officer, Incident, Notification } from '../types';
-import { 
-  getOfficers, 
-  getIncidents, 
-  getNotifications, 
-  updateOfficerStatus, 
-  updateIncident, 
-  createIncident, 
-  assignOfficerToIncident,
-  markNotificationAsRead,
-  simulateRealTimeUpdates,
-  createOfficer as apiCreateOfficer,
-  updateOfficer as apiUpdateOfficer,
-  deleteOfficer as apiDeleteOfficer,
-  deleteIncident as apiDeleteIncident,
-  deleteReadNotifications as apiDeleteReadNotifications
-} from '../services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthContext';
+import { supabase } from '@/lib/supabase';
 
 interface DataContextType {
   officers: Officer[];
@@ -53,11 +39,62 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const { toast } = useToast();
   const { user } = useAuth();
 
+  // Function to convert Supabase officers to our app's Officer type
+  const mapDbOfficerToAppOfficer = (dbOfficer: any): Officer => {
+    return {
+      id: dbOfficer.id,
+      name: dbOfficer.name,
+      rank: dbOfficer.rank,
+      badgeNumber: dbOfficer.badge_number,
+      status: dbOfficer.status,
+      department: dbOfficer.department,
+      shiftSchedule: dbOfficer.shift_schedule,
+      currentIncidentId: dbOfficer.current_incident_id,
+      lastUpdated: dbOfficer.last_updated,
+      contactInfo: dbOfficer.contact_info
+    };
+  };
+
+  // Function to convert Supabase incidents to our app's Incident type
+  const mapDbIncidentToAppIncident = (dbIncident: any): Incident => {
+    return {
+      id: dbIncident.id,
+      title: dbIncident.title,
+      description: dbIncident.description,
+      status: dbIncident.status,
+      priority: dbIncident.priority,
+      location: dbIncident.location,
+      reportedAt: dbIncident.reported_at,
+      updatedAt: dbIncident.updated_at,
+      assignedOfficers: dbIncident.assigned_officers,
+      type: dbIncident.type
+    };
+  };
+
+  // Function to convert Supabase notifications to our app's Notification type
+  const mapDbNotificationToAppNotification = (dbNotification: any): Notification => {
+    return {
+      id: dbNotification.id,
+      title: dbNotification.title,
+      message: dbNotification.message,
+      type: dbNotification.type,
+      timestamp: dbNotification.timestamp,
+      read: dbNotification.read,
+      relatedTo: dbNotification.related_to
+    };
+  };
+
   const fetchOfficers = useCallback(async () => {
     try {
       setLoadingOfficers(true);
-      const data = await getOfficers();
-      setOfficers(data);
+      const { data, error } = await supabase
+        .from('officers')
+        .select('*')
+        .order('last_updated', { ascending: false });
+        
+      if (error) throw error;
+      
+      setOfficers(data.map(mapDbOfficerToAppOfficer));
     } catch (error) {
       console.error('Error fetching officers:', error);
       toast({
@@ -73,8 +110,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchIncidents = useCallback(async () => {
     try {
       setLoadingIncidents(true);
-      const data = await getIncidents();
-      setIncidents(data);
+      const { data, error } = await supabase
+        .from('incidents')
+        .select('*')
+        .order('reported_at', { ascending: false });
+        
+      if (error) throw error;
+      
+      setIncidents(data.map(mapDbIncidentToAppIncident));
     } catch (error) {
       console.error('Error fetching incidents:', error);
       toast({
@@ -90,8 +133,14 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchNotifications = useCallback(async () => {
     try {
       setLoadingNotifications(true);
-      const data = await getNotifications();
-      setNotifications(data);
+      const { data, error } = await supabase
+        .from('notifications')
+        .select('*')
+        .order('timestamp', { ascending: false });
+        
+      if (error) throw error;
+      
+      setNotifications(data.map(mapDbNotificationToAppNotification));
     } catch (error) {
       console.error('Error fetching notifications:', error);
       toast({
@@ -115,58 +164,118 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     if (user) {
       refreshData();
+      
+      // Set up real-time subscriptions
+      const officersSubscription = supabase
+        .channel('public:officers')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'officers' 
+        }, payload => {
+          if (payload.eventType === 'INSERT') {
+            setOfficers(prev => [mapDbOfficerToAppOfficer(payload.new), ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setOfficers(prev => 
+              prev.map(officer => officer.id === payload.new.id ? 
+                mapDbOfficerToAppOfficer(payload.new) : officer
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setOfficers(prev => prev.filter(officer => officer.id !== payload.old.id));
+          }
+        })
+        .subscribe();
+        
+      const incidentsSubscription = supabase
+        .channel('public:incidents')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'incidents' 
+        }, payload => {
+          if (payload.eventType === 'INSERT') {
+            setIncidents(prev => [mapDbIncidentToAppIncident(payload.new), ...prev]);
+          } else if (payload.eventType === 'UPDATE') {
+            setIncidents(prev => 
+              prev.map(incident => incident.id === payload.new.id ? 
+                mapDbIncidentToAppIncident(payload.new) : incident
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setIncidents(prev => prev.filter(incident => incident.id !== payload.old.id));
+          }
+        })
+        .subscribe();
+        
+      const notificationsSubscription = supabase
+        .channel('public:notifications')
+        .on('postgres_changes', { 
+          event: '*', 
+          schema: 'public', 
+          table: 'notifications' 
+        }, payload => {
+          if (payload.eventType === 'INSERT') {
+            setNotifications(prev => [mapDbNotificationToAppNotification(payload.new), ...prev]);
+            
+            // Show toast for new notifications
+            toast({
+              title: payload.new.title,
+              description: payload.new.message,
+            });
+          } else if (payload.eventType === 'UPDATE') {
+            setNotifications(prev => 
+              prev.map(notification => notification.id === payload.new.id ? 
+                mapDbNotificationToAppNotification(payload.new) : notification
+              )
+            );
+          } else if (payload.eventType === 'DELETE') {
+            setNotifications(prev => prev.filter(notification => notification.id !== payload.old.id));
+          }
+        })
+        .subscribe();
+      
+      return () => {
+        supabase.removeChannel(officersSubscription);
+        supabase.removeChannel(incidentsSubscription);
+        supabase.removeChannel(notificationsSubscription);
+      };
     }
-  }, [user, refreshData]);
+  }, [user, refreshData, toast]);
 
-  useEffect(() => {
-    if (!user) return;
-    
-    const handleOfficerUpdate = (updatedOfficer: Officer) => {
-      setOfficers(prev => 
-        prev.map(officer => officer.id === updatedOfficer.id ? updatedOfficer : officer)
-      );
-      
-      toast({
-        title: 'Officer Status Updated',
-        description: `${updatedOfficer.name} is now ${updatedOfficer.status}`,
-      });
-    };
-    
-    const handleIncidentUpdate = (updatedIncident: Incident) => {
-      setIncidents(prev => 
-        prev.map(incident => incident.id === updatedIncident.id ? updatedIncident : incident)
-      );
-      
-      toast({
-        title: 'Incident Updated',
-        description: `${updatedIncident.title} status: ${updatedIncident.status}`,
-      });
-    };
-    
-    const handleNewNotification = (newNotification: Notification) => {
-      setNotifications(prev => [newNotification, ...prev]);
-      
-      toast({
-        title: newNotification.title,
-        description: newNotification.message,
-      });
-    };
-    
-    const cleanup = simulateRealTimeUpdates(
-      handleOfficerUpdate,
-      handleIncidentUpdate,
-      handleNewNotification
-    );
-    
-    return cleanup;
-  }, [user, toast]);
-
-  const updateOfficerStatusWrapper = async (officerId: string, status: Officer['status'], incidentId?: string) => {
+  const updateOfficerStatus = async (officerId: string, status: Officer['status'], incidentId?: string) => {
     try {
-      const updatedOfficer = await updateOfficerStatus(officerId, status, incidentId);
-      setOfficers(prev => 
-        prev.map(officer => officer.id === updatedOfficer.id ? updatedOfficer : officer)
-      );
+      const now = new Date().toISOString();
+      
+      // Update officer in Supabase
+      const { data, error } = await supabase
+        .from('officers')
+        .update({
+          status,
+          current_incident_id: incidentId,
+          last_updated: now
+        })
+        .eq('id', officerId)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      const updatedOfficer = mapDbOfficerToAppOfficer(data);
+      
+      // Create notification
+      await supabase.from('notifications').insert({
+        title: 'Officer Status Updated',
+        message: `${updatedOfficer.name} is now ${status}`,
+        type: 'info',
+        timestamp: now,
+        read: false,
+        related_to: {
+          type: 'officer',
+          id: officerId
+        }
+      });
+      
       return updatedOfficer;
     } catch (error) {
       console.error('Error updating officer status:', error);
@@ -179,12 +288,46 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateIncidentWrapper = async (incidentId: string, updates: Partial<Incident>) => {
+  const updateIncident = async (incidentId: string, updates: Partial<Incident>) => {
     try {
-      const updatedIncident = await updateIncident(incidentId, updates);
-      setIncidents(prev => 
-        prev.map(incident => incident.id === updatedIncident.id ? updatedIncident : incident)
-      );
+      const now = new Date().toISOString();
+      
+      // Transform app incident to db format
+      const dbUpdates: any = {};
+      if (updates.title) dbUpdates.title = updates.title;
+      if (updates.description) dbUpdates.description = updates.description;
+      if (updates.status) dbUpdates.status = updates.status;
+      if (updates.priority) dbUpdates.priority = updates.priority;
+      if (updates.location) dbUpdates.location = updates.location;
+      if (updates.assignedOfficers) dbUpdates.assigned_officers = updates.assignedOfficers;
+      if (updates.type) dbUpdates.type = updates.type;
+      dbUpdates.updated_at = now;
+      
+      // Update incident in Supabase
+      const { data, error } = await supabase
+        .from('incidents')
+        .update(dbUpdates)
+        .eq('id', incidentId)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      const updatedIncident = mapDbIncidentToAppIncident(data);
+      
+      // Create notification
+      await supabase.from('notifications').insert({
+        title: 'Incident Updated',
+        message: `${updatedIncident.title} has been updated`,
+        type: 'info',
+        timestamp: now,
+        read: false,
+        related_to: {
+          type: 'incident',
+          id: incidentId
+        }
+      });
+      
       return updatedIncident;
     } catch (error) {
       console.error('Error updating incident:', error);
@@ -197,10 +340,44 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const createIncidentWrapper = async (incidentData: Omit<Incident, 'id' | 'reportedAt' | 'updatedAt'>) => {
+  const createIncident = async (incident: Omit<Incident, 'id' | 'reportedAt' | 'updatedAt'>) => {
     try {
-      const newIncident = await createIncident(incidentData);
-      setIncidents(prev => [newIncident, ...prev]);
+      const now = new Date().toISOString();
+      
+      // Create incident in Supabase
+      const { data, error } = await supabase
+        .from('incidents')
+        .insert({
+          title: incident.title,
+          description: incident.description,
+          status: incident.status,
+          priority: incident.priority,
+          location: incident.location,
+          reported_at: now,
+          updated_at: now,
+          assigned_officers: incident.assignedOfficers || [],
+          type: incident.type
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      const newIncident = mapDbIncidentToAppIncident(data);
+      
+      // Create notification
+      await supabase.from('notifications').insert({
+        title: 'New Incident Reported',
+        message: `${newIncident.title} at ${newIncident.location.address}`,
+        type: 'warning',
+        timestamp: now,
+        read: false,
+        related_to: {
+          type: 'incident',
+          id: newIncident.id
+        }
+      });
+      
       return newIncident;
     } catch (error) {
       console.error('Error creating incident:', error);
@@ -213,17 +390,67 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const assignOfficerToIncidentWrapper = async (incidentId: string, officerId: string) => {
+  const assignOfficerToIncident = async (incidentId: string, officerId: string) => {
     try {
-      const { incident, officer } = await assignOfficerToIncident(incidentId, officerId);
+      const now = new Date().toISOString();
       
-      setIncidents(prev => 
-        prev.map(i => i.id === incident.id ? incident : i)
-      );
+      // Get the incident
+      const { data: incidentData, error: incidentError } = await supabase
+        .from('incidents')
+        .select()
+        .eq('id', incidentId)
+        .single();
+        
+      if (incidentError) throw incidentError;
       
-      setOfficers(prev => 
-        prev.map(o => o.id === officer.id ? officer : o)
-      );
+      // Add officer to assigned_officers if not already there
+      const assignedOfficers = [...(incidentData.assigned_officers || [])];
+      if (!assignedOfficers.includes(officerId)) {
+        assignedOfficers.push(officerId);
+      }
+      
+      // Update the incident
+      const { data: updatedIncidentData, error: updateIncidentError } = await supabase
+        .from('incidents')
+        .update({
+          assigned_officers: assignedOfficers,
+          updated_at: now
+        })
+        .eq('id', incidentId)
+        .select()
+        .single();
+        
+      if (updateIncidentError) throw updateIncidentError;
+      
+      // Update the officer
+      const { data: updatedOfficerData, error: updateOfficerError } = await supabase
+        .from('officers')
+        .update({
+          status: 'responding',
+          current_incident_id: incidentId,
+          last_updated: now
+        })
+        .eq('id', officerId)
+        .select()
+        .single();
+        
+      if (updateOfficerError) throw updateOfficerError;
+      
+      const incident = mapDbIncidentToAppIncident(updatedIncidentData);
+      const officer = mapDbOfficerToAppOfficer(updatedOfficerData);
+      
+      // Create notification
+      await supabase.from('notifications').insert({
+        title: 'Officer Assigned',
+        message: `${officer.name} assigned to ${incident.title}`,
+        type: 'success',
+        timestamp: now,
+        read: false,
+        related_to: {
+          type: 'incident',
+          id: incidentId
+        }
+      });
       
       return { incident, officer };
     } catch (error) {
@@ -237,23 +464,63 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const markNotificationAsReadWrapper = async (notificationId: string) => {
+  const markNotificationAsRead = async (notificationId: string) => {
     try {
-      const updatedNotification = await markNotificationAsRead(notificationId);
-      setNotifications(prev => 
-        prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
-      );
-      return updatedNotification;
+      // Update notification in Supabase
+      const { data, error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      return mapDbNotificationToAppNotification(data);
     } catch (error) {
       console.error('Error marking notification as read:', error);
       throw error;
     }
   };
 
-  const createOfficerWrapper = async (officerData: Omit<Officer, 'id' | 'lastUpdated'>) => {
+  const createOfficer = async (officer: Omit<Officer, 'id' | 'lastUpdated'>) => {
     try {
-      const newOfficer = await apiCreateOfficer(officerData);
-      setOfficers(prev => [newOfficer, ...prev]);
+      const now = new Date().toISOString();
+      
+      // Create officer in Supabase
+      const { data, error } = await supabase
+        .from('officers')
+        .insert({
+          name: officer.name,
+          rank: officer.rank,
+          badge_number: officer.badgeNumber,
+          status: officer.status || 'available',
+          department: officer.department,
+          shift_schedule: officer.shiftSchedule,
+          current_incident_id: officer.currentIncidentId,
+          last_updated: now,
+          contact_info: officer.contactInfo
+        })
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      const newOfficer = mapDbOfficerToAppOfficer(data);
+      
+      // Create notification
+      await supabase.from('notifications').insert({
+        title: 'New Officer Added',
+        message: `${newOfficer.name} has been added to the system`,
+        type: 'info',
+        timestamp: now,
+        read: false,
+        related_to: {
+          type: 'officer',
+          id: newOfficer.id
+        }
+      });
+      
       return newOfficer;
     } catch (error) {
       console.error('Error creating officer:', error);
@@ -266,12 +533,47 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const updateOfficerWrapper = async (officerId: string, updates: Partial<Officer>) => {
+  const updateOfficer = async (officerId: string, updates: Partial<Officer>) => {
     try {
-      const updatedOfficer = await apiUpdateOfficer(officerId, updates);
-      setOfficers(prev => 
-        prev.map(officer => officer.id === updatedOfficer.id ? updatedOfficer : officer)
-      );
+      const now = new Date().toISOString();
+      
+      // Transform app officer to db format
+      const dbUpdates: any = {};
+      if (updates.name) dbUpdates.name = updates.name;
+      if (updates.rank) dbUpdates.rank = updates.rank;
+      if (updates.badgeNumber) dbUpdates.badge_number = updates.badgeNumber;
+      if (updates.status) dbUpdates.status = updates.status;
+      if (updates.department) dbUpdates.department = updates.department;
+      if (updates.shiftSchedule !== undefined) dbUpdates.shift_schedule = updates.shiftSchedule;
+      if (updates.currentIncidentId !== undefined) dbUpdates.current_incident_id = updates.currentIncidentId;
+      if (updates.contactInfo) dbUpdates.contact_info = updates.contactInfo;
+      dbUpdates.last_updated = now;
+      
+      // Update officer in Supabase
+      const { data, error } = await supabase
+        .from('officers')
+        .update(dbUpdates)
+        .eq('id', officerId)
+        .select()
+        .single();
+        
+      if (error) throw error;
+      
+      const updatedOfficer = mapDbOfficerToAppOfficer(data);
+      
+      // Create notification
+      await supabase.from('notifications').insert({
+        title: 'Officer Updated',
+        message: `${updatedOfficer.name}'s information has been updated`,
+        type: 'info',
+        timestamp: now,
+        read: false,
+        related_to: {
+          type: 'officer',
+          id: officerId
+        }
+      });
+      
       return updatedOfficer;
     } catch (error) {
       console.error('Error updating officer:', error);
@@ -284,11 +586,55 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteOfficerWrapper = async (officerId: string) => {
+  const deleteOfficer = async (officerId: string) => {
     try {
-      await apiDeleteOfficer(officerId);
-      setOfficers(prev => prev.filter(officer => officer.id !== officerId));
-      return;
+      // First, get the officer to be deleted for notification
+      const { data: officerData, error: getError } = await supabase
+        .from('officers')
+        .select()
+        .eq('id', officerId)
+        .single();
+        
+      if (getError) throw getError;
+      
+      // Delete the officer
+      const { error: deleteError } = await supabase
+        .from('officers')
+        .delete()
+        .eq('id', officerId);
+        
+      if (deleteError) throw deleteError;
+      
+      // Create notification
+      await supabase.from('notifications').insert({
+        title: 'Officer Removed',
+        message: `${officerData.name} has been removed from the system`,
+        type: 'warning',
+        timestamp: new Date().toISOString(),
+        read: false,
+        related_to: {
+          type: 'officer',
+          id: officerId
+        }
+      });
+      
+      // Update any incidents that had this officer assigned
+      const { data: incidentsWithOfficer } = await supabase
+        .from('incidents')
+        .select()
+        .contains('assigned_officers', [officerId]);
+        
+      if (incidentsWithOfficer && incidentsWithOfficer.length > 0) {
+        for (const incident of incidentsWithOfficer) {
+          await supabase
+            .from('incidents')
+            .update({
+              assigned_officers: incident.assigned_officers.filter((id: string) => id !== officerId),
+              updated_at: new Date().toISOString()
+            })
+            .eq('id', incident.id);
+        }
+      }
     } catch (error) {
       console.error('Error deleting officer:', error);
       toast({
@@ -300,17 +646,56 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteIncidentWrapper = async (incidentId: string) => {
+  const deleteIncident = async (incidentId: string) => {
     try {
-      await apiDeleteIncident(incidentId);
-      setIncidents(prev => prev.filter(incident => incident.id !== incidentId));
+      // First, get the incident to be deleted for notification
+      const { data: incidentData, error: getError } = await supabase
+        .from('incidents')
+        .select()
+        .eq('id', incidentId)
+        .single();
+        
+      if (getError) throw getError;
       
-      const assignedOfficers = officers.filter(officer => officer.currentIncidentId === incidentId);
-      for (const officer of assignedOfficers) {
-        await updateOfficerStatus(officer.id, 'available');
+      // Delete the incident
+      const { error: deleteError } = await supabase
+        .from('incidents')
+        .delete()
+        .eq('id', incidentId);
+        
+      if (deleteError) throw deleteError;
+      
+      // Create notification
+      await supabase.from('notifications').insert({
+        title: 'Incident Removed',
+        message: `${incidentData.title} has been removed from the system`,
+        type: 'warning',
+        timestamp: new Date().toISOString(),
+        read: false,
+        related_to: {
+          type: 'incident',
+          id: incidentId
+        }
+      });
+      
+      // Update any officers assigned to this incident
+      const { data: officersWithIncident } = await supabase
+        .from('officers')
+        .select()
+        .eq('current_incident_id', incidentId);
+        
+      if (officersWithIncident && officersWithIncident.length > 0) {
+        for (const officer of officersWithIncident) {
+          await supabase
+            .from('officers')
+            .update({
+              status: 'available',
+              current_incident_id: null,
+              last_updated: new Date().toISOString()
+            })
+            .eq('id', officer.id);
+        }
       }
-      
-      return;
     } catch (error) {
       console.error('Error deleting incident:', error);
       toast({
@@ -322,11 +707,27 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const deleteReadNotificationsWrapper = async () => {
+  const deleteReadNotifications = async () => {
     try {
-      const deletedCount = await apiDeleteReadNotifications();
-      setNotifications(prev => prev.filter(n => !n.read));
-      return deletedCount;
+      // First, count the read notifications
+      const { count, error: countError } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('read', true);
+        
+      if (countError) throw countError;
+      
+      if (count === 0) return 0;
+      
+      // Delete the read notifications
+      const { error: deleteError } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('read', true);
+        
+      if (deleteError) throw deleteError;
+      
+      return count || 0;
     } catch (error) {
       console.error('Error deleting read notifications:', error);
       toast({
@@ -347,16 +748,16 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       loadingIncidents,
       loadingNotifications,
       refreshData,
-      updateOfficerStatus: updateOfficerStatusWrapper,
-      updateIncident: updateIncidentWrapper,
-      createIncident: createIncidentWrapper,
-      assignOfficerToIncident: assignOfficerToIncidentWrapper,
-      markNotificationAsRead: markNotificationAsReadWrapper,
-      createOfficer: createOfficerWrapper,
-      updateOfficer: updateOfficerWrapper,
-      deleteOfficer: deleteOfficerWrapper,
-      deleteIncident: deleteIncidentWrapper,
-      deleteReadNotifications: deleteReadNotificationsWrapper,
+      updateOfficerStatus,
+      updateIncident,
+      createIncident,
+      assignOfficerToIncident,
+      markNotificationAsRead,
+      createOfficer,
+      updateOfficer,
+      deleteOfficer,
+      deleteIncident,
+      deleteReadNotifications,
     }}>
       {children}
     </DataContext.Provider>
