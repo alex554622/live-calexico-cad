@@ -23,7 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { updateOfficer, createOfficer, updateUser } from '@/services/api';
+import { updateOfficer, createOfficer, updateUser, createUser } from '@/services/api';
 import { useData } from '@/context/DataContext';
 
 const Settings = () => {
@@ -41,7 +41,6 @@ const Settings = () => {
     confirmPassword: '',
   });
 
-  // Set initial user data when user changes
   useEffect(() => {
     if (user) {
       setUserProfile(prev => ({
@@ -63,7 +62,6 @@ const Settings = () => {
   const handleSaveSettings = () => {
     setIsSaving(true);
     
-    // Simulate saving settings
     setTimeout(() => {
       setIsSaving(false);
       toast({
@@ -71,7 +69,6 @@ const Settings = () => {
         description: 'Your settings have been saved successfully',
       });
       
-      // Store data retention setting in localStorage
       localStorage.setItem('dataRetention', dataRetention);
     }, 1000);
   };
@@ -81,7 +78,6 @@ const Settings = () => {
     
     setIsSaving(true);
     
-    // Password validation if attempting to change password
     if (userProfile.newPassword) {
       if (userProfile.newPassword !== userProfile.confirmPassword) {
         toast({
@@ -103,8 +99,6 @@ const Settings = () => {
         return;
       }
       
-      // Here we would normally verify the current password against the API
-      // For this demo we'll just simulate it
       if (userProfile.currentPassword !== '!345660312') {
         toast({
           title: 'Password Error',
@@ -117,20 +111,17 @@ const Settings = () => {
     }
 
     try {
-      // Call the API to update user profile
       const updatedUser = await updateUser(user.id, {
         name: userProfile.name,
         username: userProfile.email,
         ...(userProfile.newPassword ? { password: userProfile.newPassword } : {})
       });
       
-      // Reset password fields
       setUserProfile(prev => ({
         ...prev,
         currentPassword: '',
         newPassword: '',
         confirmPassword: '',
-        // Update with the values from the response
         name: updatedUser.name,
         email: updatedUser.username
       }));
@@ -157,7 +148,6 @@ const Settings = () => {
     setIsSaving(true);
 
     try {
-      // Process each account creation sequentially
       for (const account of newAccounts) {
         if (!account.name || !account.email || !account.password || !account.role) {
           toast({
@@ -168,23 +158,31 @@ const Settings = () => {
           continue;
         }
 
-        // Create a new officer based on the account information
-        await createOfficerData({
-          badgeNumber: `CPD-${Math.floor(1000 + Math.random() * 9000)}`,
+        await createUser({
+          username: account.email,
           name: account.name,
-          rank: 'Patrol Officer',
-          department: 'Central',
-          status: 'available',
-          contactInfo: {
-            phone: '',
-            email: account.email,
-          },
-          shiftSchedule: 'Mon-Fri 8am-4pm',
-          location: {
-            lat: 32.6789,
-            lng: -115.4989,
-          }
+          role: account.role as 'admin' | 'dispatcher' | 'supervisor' | 'officer',
+          password: account.password
         });
+
+        if (account.role === 'officer') {
+          await createOfficerData({
+            badgeNumber: `CPD-${Math.floor(1000 + Math.random() * 9000)}`,
+            name: account.name,
+            rank: 'Patrol Officer',
+            department: 'Central',
+            status: 'available',
+            contactInfo: {
+              phone: '',
+              email: account.email,
+            },
+            shiftSchedule: 'Mon-Fri 8am-4pm',
+            location: {
+              lat: 32.6789,
+              lng: -115.4989,
+            }
+          });
+        }
       }
 
       toast({
@@ -192,7 +190,6 @@ const Settings = () => {
         description: `Successfully created ${newAccounts.length} new account(s)`,
       });
       
-      // Clear the form after successful creation
       setNewAccounts([]);
     } catch (error) {
       console.error('Error creating accounts:', error);
@@ -222,7 +219,6 @@ const Settings = () => {
     setNewAccounts(updatedAccounts);
   };
 
-  // Check if current user is alexvalla
   const isAlexValla = user?.username === 'alexvalla';
 
   return (
@@ -312,7 +308,6 @@ const Settings = () => {
                 <Button 
                   variant="outline" 
                   onClick={() => {
-                    // Reset form to original values
                     setUserProfile({
                       name: user?.name || '',
                       email: user?.username || '',

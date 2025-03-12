@@ -26,7 +26,18 @@ export const login = (username: string, password: string): Promise<User | null> 
         currentUser = user;
         resolve(user);
       } else {
-        resolve(null);
+        // Check for other users created through the settings page
+        const user = users.find(u => 
+          u.username === username && 
+          (u as any).password === password
+        );
+        
+        if (user) {
+          currentUser = user;
+          resolve(user);
+        } else {
+          resolve(null);
+        }
       }
     }, 800); // Simulate network delay
   });
@@ -87,6 +98,94 @@ export const updateUser = (id: string, updates: Partial<User>): Promise<User> =>
       }
     }, 500);
   });
+};
+
+// New function to create a user account
+export const createUser = (userData: { 
+  username: string; 
+  name: string; 
+  role: 'admin' | 'dispatcher' | 'supervisor' | 'officer';
+  password: string;
+}): Promise<User> => {
+  return new Promise((resolve) => {
+    setTimeout(() => {
+      const newUser: User = {
+        id: String(users.length + 1),
+        username: userData.username,
+        name: userData.name,
+        role: userData.role,
+        avatar: `https://ui-avatars.com/api/?name=${encodeURIComponent(userData.name)}&background=1E40AF&color=fff`,
+        permissions: getDefaultPermissionsForRole(userData.role)
+      };
+      
+      // Store password - in a real app, this would be hashed
+      // For the demo, we're storing it in memory with the user object
+      (newUser as any).password = userData.password;
+      
+      users = [...users, newUser];
+      
+      // Create a notification for the new user
+      const newNotification: Notification = {
+        id: String(notifications.length + 1),
+        title: 'New User Created',
+        message: `${newUser.name} has been added as ${newUser.role}`,
+        type: 'info',
+        timestamp: new Date().toISOString(),
+        read: false,
+        relatedTo: {
+          type: 'user',
+          id: newUser.id
+        }
+      };
+      
+      notifications = [newNotification, ...notifications];
+      
+      resolve(newUser);
+    }, 500);
+  });
+};
+
+// Helper function to set default permissions based on role
+const getDefaultPermissionsForRole = (role: 'admin' | 'dispatcher' | 'supervisor' | 'officer') => {
+  switch (role) {
+    case 'admin':
+      return {
+        createIncident: true,
+        editIncident: true,
+        assignOfficer: true,
+        createUser: true,
+        editUser: true,
+        editOfficer: true,
+        createOfficer: true,
+        viewOfficerDetails: true,
+        assignIncidentToOfficer: true
+      };
+    case 'supervisor':
+      return {
+        createIncident: true,
+        editIncident: true,
+        assignOfficer: true,
+        editOfficer: true,
+        createOfficer: true,
+        viewOfficerDetails: true,
+        assignIncidentToOfficer: true
+      };
+    case 'dispatcher':
+      return {
+        createIncident: true,
+        editIncident: true,
+        assignOfficer: true,
+        viewOfficerDetails: true,
+        assignIncidentToOfficer: true
+      };
+    case 'officer':
+      return {
+        createIncident: true,
+        viewOfficerDetails: true
+      };
+    default:
+      return {};
+  }
 };
 
 // Officer related API
