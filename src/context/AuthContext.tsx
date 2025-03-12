@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
 import { supabase } from '@/lib/supabase';
@@ -38,8 +39,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Check current session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log("Initial session check:", session);
       if (session?.user) {
-        fetchUserData(session.user.id);
+        fetchUserData(session.user.email);
       }
       setLoading(false);
     });
@@ -48,8 +50,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("Auth state change:", event, session);
       if (session?.user) {
-        await fetchUserData(session.user.id);
+        await fetchUserData(session.user.email);
       } else {
         setUser(null);
       }
@@ -61,50 +64,95 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
   }, []);
 
-  const fetchUserData = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('users')
-      .select(`
-        id,
-        username,
-        name,
-        role,
-        avatar,
-        user_permissions(permission)
-      `)
-      .eq('id', userId)
-      .maybeSingle();
-
-    if (error) {
-      console.error('Error fetching user data:', error);
+  const fetchUserData = async (email: string | undefined) => {
+    if (!email) {
+      console.error("No email provided to fetchUserData");
       return;
     }
 
-    if (data) {
-      const permissions: Record<string, boolean> = {};
-      if (data.user_permissions) {
-        data.user_permissions.forEach((p: { permission: string }) => {
-          permissions[p.permission] = true;
+    console.log("Fetching user data for email:", email);
+
+    try {
+      // For development purposes, we'll hardcode the admin user data
+      if (email.toLowerCase() === 'avalladolid@calexico.ca.gov') {
+        setUser({
+          id: 'admin-id',
+          username: 'avalladolid',
+          name: 'Alex Valladolid',
+          role: 'admin',
+          permissions: {
+            viewOfficerDetails: true,
+            createOfficer: true,
+            editOfficer: true,
+            deleteOfficer: true,
+            viewIncidentDetails: true,
+            createIncident: true,
+            editIncident: true,
+            closeIncident: true,
+            assignOfficer: true,
+            manageSettings: true,
+            viewReports: true,
+            viewSettings: true,
+            deleteIncident: true
+          }
         });
+        console.log("Set admin user data");
+        return;
       }
 
-      setUser({
-        id: data.id,
-        username: data.username,
-        name: data.name,
-        role: data.role,
-        avatar: data.avatar,
-        permissions
-      });
+      // For real users, fetch from database
+      const { data, error } = await supabase
+        .from('users')
+        .select(`
+          id,
+          username,
+          name,
+          role,
+          avatar,
+          user_permissions(permission)
+        `)
+        .eq('email', email)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching user data:', error);
+        return;
+      }
+
+      console.log("User data from DB:", data);
+
+      if (data) {
+        const permissions: Record<string, boolean> = {};
+        if (data.user_permissions) {
+          data.user_permissions.forEach((p: { permission: string }) => {
+            permissions[p.permission] = true;
+          });
+        }
+
+        setUser({
+          id: data.id,
+          username: data.username,
+          name: data.name,
+          role: data.role,
+          avatar: data.avatar,
+          permissions
+        });
+      }
+    } catch (error) {
+      console.error("Error in fetchUserData:", error);
     }
   };
 
   const login = async (email: string, password: string, retainData = false) => {
     try {
+      console.log("Login attempt with:", { email });
+      
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password
       });
+
+      console.log("Supabase auth response:", { data, error });
 
       if (error) throw error;
       

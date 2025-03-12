@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -17,9 +18,10 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/lib/supabase';
 
 const Login = () => {
-  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const { login } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
 
@@ -28,38 +30,26 @@ const Login = () => {
     setLoading(true);
     
     try {
-      console.log("Attempting Supabase auth login with:", { email: username });
+      console.log("Attempting login with:", { email });
       
-      // Use Supabase Auth for login
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: username,
-        password: password,
-      });
+      const success = await login(email, password);
       
-      console.log("Auth response:", { authData, authError });
-      
-      if (authError) {
-        throw new Error(authError.message);
+      if (success) {
+        toast({
+          title: "Login Successful",
+          description: "Welcome back!",
+          variant: "default"
+        });
+        
+        navigate('/');
+      } else {
+        throw new Error('Invalid email or password');
       }
-      
-      if (!authData.user) {
-        throw new Error('Login failed. Please check your credentials.');
-      }
-
-      // Successful login
-      toast({
-        title: "Login Successful",
-        description: "Welcome back!",
-        variant: "default"
-      });
-      
-      navigate('/');
-      
     } catch (error) {
       console.error('Login error:', error);
       toast({
         title: "Login Failed",
-        description: error instanceof Error ? error.message : "Invalid username or password",
+        description: error instanceof Error ? error.message : "Invalid email or password",
         variant: "destructive"
       });
     } finally {
@@ -83,16 +73,16 @@ const Login = () => {
           <form onSubmit={handleSubmit}>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="username">Username</Label>
+                <Label htmlFor="email">Email</Label>
                 <Input
-                  id="username"
-                  type="text"
-                  placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  id="email"
+                  type="email"
+                  placeholder="Enter your email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">Default admin: alexvalla</p>
+                <p className="text-xs text-muted-foreground">Admin: avalladolid@calexico.ca.gov</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -104,7 +94,7 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
-                <p className="text-xs text-muted-foreground">Default password: !345660312</p>
+                <p className="text-xs text-muted-foreground">Default password: 1992</p>
               </div>
             </CardContent>
             <CardFooter>
