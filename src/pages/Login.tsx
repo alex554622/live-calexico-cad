@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -19,9 +19,16 @@ import { useToast } from '@/hooks/use-toast';
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, loading } = useAuth();
+  const { login, loading, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  useEffect(() => {
+    // Redirect if already logged in
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -34,8 +41,10 @@ const Login = () => {
       const success = await login(email, password, retentionEnabled);
       
       if (success) {
+        console.log('Login successful, redirecting to dashboard');
         navigate('/');
       } else {
+        console.error('Login failed');
         toast({
           title: "Login Failed",
           description: "Invalid email or password. Please try again.",
