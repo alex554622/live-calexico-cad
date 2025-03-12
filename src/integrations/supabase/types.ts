@@ -9,7 +9,224 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      incident_officers: {
+        Row: {
+          assigned_at: string
+          id: string
+          incident_id: string
+          officer_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          id?: string
+          incident_id: string
+          officer_id: string
+        }
+        Update: {
+          assigned_at?: string
+          id?: string
+          incident_id?: string
+          officer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incident_officers_incident_id_fkey"
+            columns: ["incident_id"]
+            isOneToOne: false
+            referencedRelation: "incidents"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "incident_officers_officer_id_fkey"
+            columns: ["officer_id"]
+            isOneToOne: false
+            referencedRelation: "officers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incidents: {
+        Row: {
+          description: string
+          document_link: string | null
+          id: string
+          location_address: string
+          location_lat: number
+          location_lng: number
+          priority: string
+          reported_at: string
+          reported_by: string
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          description: string
+          document_link?: string | null
+          id?: string
+          location_address: string
+          location_lat: number
+          location_lng: number
+          priority: string
+          reported_at?: string
+          reported_by: string
+          status: string
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          description?: string
+          document_link?: string | null
+          id?: string
+          location_address?: string
+          location_lat?: number
+          location_lng?: number
+          priority?: string
+          reported_at?: string
+          reported_by?: string
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      notifications: {
+        Row: {
+          id: string
+          message: string
+          read: boolean
+          related_to_id: string | null
+          related_to_type: string | null
+          timestamp: string
+          title: string
+          type: string
+        }
+        Insert: {
+          id?: string
+          message: string
+          read?: boolean
+          related_to_id?: string | null
+          related_to_type?: string | null
+          timestamp?: string
+          title: string
+          type: string
+        }
+        Update: {
+          id?: string
+          message?: string
+          read?: boolean
+          related_to_id?: string | null
+          related_to_type?: string | null
+          timestamp?: string
+          title?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      officers: {
+        Row: {
+          badge_number: string
+          contact_email: string | null
+          contact_phone: string | null
+          current_incident_id: string | null
+          department: string
+          id: string
+          last_updated: string
+          location_lat: number | null
+          location_lng: number | null
+          name: string
+          rank: string
+          shift_schedule: string | null
+          status: string
+        }
+        Insert: {
+          badge_number: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          current_incident_id?: string | null
+          department: string
+          id?: string
+          last_updated?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          name: string
+          rank: string
+          shift_schedule?: string | null
+          status: string
+        }
+        Update: {
+          badge_number?: string
+          contact_email?: string | null
+          contact_phone?: string | null
+          current_incident_id?: string | null
+          department?: string
+          id?: string
+          last_updated?: string
+          location_lat?: number | null
+          location_lng?: number | null
+          name?: string
+          rank?: string
+          shift_schedule?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
+      user_permissions: {
+        Row: {
+          id: string
+          permission: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          permission: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          permission?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_permissions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      users: {
+        Row: {
+          avatar: string | null
+          created_at: string
+          id: string
+          name: string
+          password: string
+          role: string
+          username: string
+        }
+        Insert: {
+          avatar?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          password: string
+          role: string
+          username: string
+        }
+        Update: {
+          avatar?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          password?: string
+          role?: string
+          username?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

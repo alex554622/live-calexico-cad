@@ -1,7 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { login as apiLogin, logout as apiLogout, getCurrentUser } from '../services/api';
+import { supabase } from '@/lib/supabase';
+import { Session } from '@supabase/supabase-js';
+import { useToast } from '@/hooks/use-toast';
 
 // Define the permission types
 export type Permission = 
@@ -17,7 +19,7 @@ export type Permission =
   | 'manageSettings'
   | 'viewReports'
   | 'viewSettings'
-  | 'deleteIncident';  // Added deleteIncident permission
+  | 'deleteIncident';
 
 interface AuthContextType {
   user: User | null;
@@ -33,12 +35,55 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const currentUser = await getCurrentUser();
-        setUser(currentUser);
+        setLoading(true);
+        
+        // Check if there's an active session
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (session) {
+          // Fetch user data from the users table
+          const { data: userData, error } = await supabase
+            .from('users')
+            .select(`
+              id, 
+              username, 
+              name, 
+              role, 
+              avatar, 
+              user_permissions(permission)
+            `)
+            .eq('username', session.user.email)
+            .single();
+          
+          if (error) {
+            console.error('Error fetching user data:', error);
+            return;
+          }
+          
+          if (userData) {
+            // Transform permissions from array of objects to object with boolean values
+            const permissions: Record<string, boolean> = {};
+            if (userData.user_permissions) {
+              userData.user_permissions.forEach((p: { permission: string }) => {
+                permissions[p.permission] = true;
+              });
+            }
+            
+            setUser({
+              id: userData.id,
+              username: userData.username,
+              name: userData.name,
+              role: userData.role,
+              avatar: userData.avatar,
+              permissions
+            });
+          }
+        }
       } catch (error) {
         console.error('Error checking auth status:', error);
       } finally {
@@ -46,21 +91,85 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
     };
 
+    // Initial check
     checkAuth();
+    
+    // Subscribe to auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        if (event === 'SIGNED_IN') {
+          checkAuth();
+        } else if (event === 'SIGNED_OUT') {
+          setUser(null);
+        }
+      }
+    );
+
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
   const login = async (username: string, password: string, retainData = false) => {
     try {
-      const user = await apiLogin(username, password);
-      if (user) {
-        setUser(user);
-        
-        // Store data retention preference
-        localStorage.setItem('dataRetention', retainData ? 'true' : 'false');
-        
-        return true;
+      // For now, we're using a custom login that matches our existing users table
+      // In a real implementation, you'd want to use Supabase Auth properly
+      const { data, error } = await supabase
+        .from('users')
+        .select(`
+          id, 
+          username, 
+          name, 
+          role, 
+          avatar, 
+          password,
+          user_permissions(permission)
+        `)
+        .eq('username', username)
+        .single();
+      
+      if (error || !data) {
+        console.error('Login error:', error);
+        return false;
       }
-      return false;
+      
+      // Check password (this is a simple check, in a real app you'd use proper hashing)
+      if (data.password !== password) {
+        return false;
+      }
+      
+      // Transform permissions from array of objects to object with boolean values
+      const permissions: Record<string, boolean> = {};
+      if (data.user_permissions) {
+        data.user_permissions.forEach((p: { permission: string }) => {
+          permissions[p.permission] = true;
+        });
+      }
+      
+      // Set user in state
+      setUser({
+        id: data.id,
+        username: data.username,
+        name: data.name,
+        role: data.role,
+        avatar: data.avatar,
+        permissions
+      });
+      
+      // Store data retention preference
+      localStorage.setItem('dataRetention', retainData ? 'true' : 'false');
+      
+      // Create a session for the user (in a real app, this would be handled by Supabase Auth)
+      localStorage.setItem('supabase.auth.token', JSON.stringify({
+        currentSession: {
+          user: {
+            id: data.id,
+            email: data.username
+          }
+        }
+      }));
+      
+      return true;
     } catch (error) {
       console.error('Login error:', error);
       return false;
@@ -69,16 +178,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = async () => {
     try {
-      await apiLogout();
-      setUser(null);
-      
-      // If data retention is not enabled, clear local storage
+      // Clear local storage and state
       const retainData = localStorage.getItem('dataRetention') === 'true';
       if (!retainData) {
-        // Clear only authentication data, not all settings
-        localStorage.removeItem('authToken');
-        // Keep retentionSettings, dataRetention, etc.
+        localStorage.removeItem('supabase.auth.token');
       }
+      
+      setUser(null);
     } catch (error) {
       console.error('Logout error:', error);
     }
@@ -95,6 +201,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Admin has all permissions
     if (user.role === 'admin') return true;
     
+    // Check user permissions
+    if (user.permissions && user.permissions[permission as string]) {
+      return true;
+    }
+    
     // Dispatcher permissions
     if (user.role === 'dispatcher') {
       const dispatcherPermissions: Permission[] = [
@@ -105,7 +216,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'assignOfficer',
         'viewReports',
         'deleteIncident',
-        'viewSettings'  // Dispatchers can view settings
+        'viewSettings'
       ];
       return dispatcherPermissions.includes(permission);
     }
@@ -121,7 +232,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'viewReports',
         'deleteIncident',
         'viewSettings',
-        'manageSettings'  // Supervisors can manage settings
+        'manageSettings'
       ];
       return supervisorPermissions.includes(permission);
     }
@@ -132,7 +243,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         'viewOfficerDetails',
         'viewIncidentDetails',
         'createIncident'
-        // Note: 'viewSettings' is not included for officers
       ];
       return officerPermissions.includes(permission);
     }

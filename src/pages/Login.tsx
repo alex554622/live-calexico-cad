@@ -67,6 +67,7 @@ const Login = () => {
                   onChange={(e) => setUsername(e.target.value)}
                   required
                 />
+                <p className="text-xs text-muted-foreground">Default admin: alexvalla</p>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="password">Password</Label>
@@ -78,6 +79,7 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                 />
+                <p className="text-xs text-muted-foreground">Default password: !345660312</p>
               </div>
             </CardContent>
             <CardFooter>
