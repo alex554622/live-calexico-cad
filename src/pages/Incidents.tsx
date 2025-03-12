@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -29,7 +30,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const Incidents = () => {
-  const { incidents, officers, loadingIncidents, loadingOfficers, assignOfficerToIncident, updateIncident } = useData();
+  const { incidents, officers, loadingIncidents, loadingOfficers, assignOfficerToIncident, updateIncident, deleteIncident } = useData();
   const { hasPermission } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -124,22 +125,42 @@ const Incidents = () => {
   const handleDeleteSelected = async () => {
     try {
       for (const id of selectedIncidents) {
-        await updateIncident(id, { status: 'archived' });
+        await deleteIncident(id);
       }
       
       toast({
-        title: 'Incidents Archived',
-        description: `${selectedIncidents.length} incident(s) have been archived`,
+        title: 'Incidents Deleted',
+        description: `${selectedIncidents.length} incident(s) have been deleted`,
       });
       
       setSelectedIncidents([]);
       setIsSelectionMode(false);
       setIsConfirmingDelete(false);
     } catch (error) {
-      console.error('Error archiving incidents:', error);
+      console.error('Error deleting incidents:', error);
       toast({
         title: 'Error',
-        description: 'Failed to archive selected incidents',
+        description: 'Failed to delete selected incidents',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteIncident = async (incidentId: string) => {
+    try {
+      await deleteIncident(incidentId);
+      
+      toast({
+        title: 'Incident Deleted',
+        description: `Incident has been deleted successfully`,
+      });
+      
+      setSelectedIncident(null);
+    } catch (error) {
+      console.error('Error deleting incident:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete incident',
         variant: 'destructive',
       });
     }
@@ -318,18 +339,32 @@ const Incidents = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
                 <span>{selectedIncident.title}</span>
-                {hasPermission('editIncident') && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsEditing(true);
-                    }}
-                  >
-                    Edit
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {hasPermission('editIncident') && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditing(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  )}
+                  {hasPermission('deleteIncident') && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteIncident(selectedIncident.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    </Button>
+                  )}
+                </div>
               </DialogTitle>
               <div className="flex space-x-2 mt-2">
                 <IncidentPriorityBadge priority={selectedIncident.priority} />
@@ -516,7 +551,7 @@ const Incidents = () => {
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
               Are you sure you want to delete {selectedIncidents.length} selected incident(s)? 
-              This action will archive the incidents and cannot be undone.
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

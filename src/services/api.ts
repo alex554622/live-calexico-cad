@@ -1,4 +1,3 @@
-
 import { Officer, Incident, Notification, User, OfficerStatus } from '../types';
 import { mockOfficers, mockIncidents, mockNotifications, mockUsers } from './mockData';
 
@@ -174,6 +173,53 @@ export const updateOfficer = (id: string, updates: Partial<Officer>): Promise<Of
   });
 };
 
+export const deleteOfficer = (id: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const officerIndex = officers.findIndex(o => o.id === id);
+      if (officerIndex !== -1) {
+        // Get the officer to be deleted
+        const officerToDelete = officers[officerIndex];
+        
+        // Remove the officer from the data store
+        officers = officers.filter(o => o.id !== id);
+        
+        // Create a notification
+        const newNotification: Notification = {
+          id: String(notifications.length + 1),
+          title: 'Officer Removed',
+          message: `${officerToDelete.name} has been removed from the system`,
+          type: 'warning',
+          timestamp: new Date().toISOString(),
+          read: false,
+          relatedTo: {
+            type: 'officer',
+            id
+          }
+        };
+        
+        notifications = [newNotification, ...notifications];
+        
+        // Update any incidents that had this officer assigned
+        incidents = incidents.map(incident => {
+          if (incident.assignedOfficers.includes(id)) {
+            return {
+              ...incident,
+              assignedOfficers: incident.assignedOfficers.filter(officerId => officerId !== id),
+              updatedAt: new Date().toISOString()
+            };
+          }
+          return incident;
+        });
+        
+        resolve();
+      } else {
+        reject(new Error('Officer not found'));
+      }
+    }, 300);
+  });
+};
+
 // Incident related API
 export const getIncidents = (): Promise<Incident[]> => {
   return new Promise((resolve) => {
@@ -308,6 +354,55 @@ export const assignOfficerToIncident = (
         throw new Error('Incident or Officer not found');
       }
     }, 500);
+  });
+};
+
+// Incident related API
+export const deleteIncident = (id: string): Promise<void> => {
+  return new Promise((resolve, reject) => {
+    setTimeout(() => {
+      const incidentIndex = incidents.findIndex(i => i.id === id);
+      if (incidentIndex !== -1) {
+        // Get the incident to be deleted
+        const incidentToDelete = incidents[incidentIndex];
+        
+        // Remove the incident from the data store
+        incidents = incidents.filter(i => i.id !== id);
+        
+        // Create a notification
+        const newNotification: Notification = {
+          id: String(notifications.length + 1),
+          title: 'Incident Removed',
+          message: `${incidentToDelete.title} has been removed from the system`,
+          type: 'warning',
+          timestamp: new Date().toISOString(),
+          read: false,
+          relatedTo: {
+            type: 'incident',
+            id
+          }
+        };
+        
+        notifications = [newNotification, ...notifications];
+        
+        // Update any officers assigned to this incident
+        officers = officers.map(officer => {
+          if (officer.currentIncidentId === id) {
+            return {
+              ...officer,
+              status: 'available' as OfficerStatus,
+              currentIncidentId: undefined,
+              lastUpdated: new Date().toISOString()
+            };
+          }
+          return officer;
+        });
+        
+        resolve();
+      } else {
+        reject(new Error('Incident not found'));
+      }
+    }, 300);
   });
 };
 

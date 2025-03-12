@@ -11,7 +11,9 @@ import {
   markNotificationAsRead,
   simulateRealTimeUpdates,
   createOfficer as apiCreateOfficer,
-  updateOfficer as apiUpdateOfficer
+  updateOfficer as apiUpdateOfficer,
+  deleteOfficer as apiDeleteOfficer,
+  deleteIncident as apiDeleteIncident
 } from '../services/api';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthContext';
@@ -31,6 +33,8 @@ interface DataContextType {
   markNotificationAsRead: (notificationId: string) => Promise<Notification>;
   createOfficer: (officer: Omit<Officer, 'id' | 'lastUpdated'>) => Promise<Officer>;
   updateOfficer: (officerId: string, updates: Partial<Officer>) => Promise<Officer>;
+  deleteOfficer: (officerId: string) => Promise<void>;
+  deleteIncident: (incidentId: string) => Promise<void>;
 }
 
 const DataContext = createContext<DataContextType | undefined>(undefined);
@@ -278,6 +282,44 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const deleteOfficerWrapper = async (officerId: string) => {
+    try {
+      await apiDeleteOfficer(officerId);
+      setOfficers(prev => prev.filter(officer => officer.id !== officerId));
+      return;
+    } catch (error) {
+      console.error('Error deleting officer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete officer',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
+  const deleteIncidentWrapper = async (incidentId: string) => {
+    try {
+      await apiDeleteIncident(incidentId);
+      setIncidents(prev => prev.filter(incident => incident.id !== incidentId));
+      
+      const assignedOfficers = officers.filter(officer => officer.currentIncidentId === incidentId);
+      for (const officer of assignedOfficers) {
+        await updateOfficerStatus(officer.id, 'available');
+      }
+      
+      return;
+    } catch (error) {
+      console.error('Error deleting incident:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete incident',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   return (
     <DataContext.Provider value={{
       officers,
@@ -294,6 +336,8 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
       markNotificationAsRead: markNotificationAsReadWrapper,
       createOfficer: createOfficerWrapper,
       updateOfficer: updateOfficerWrapper,
+      deleteOfficer: deleteOfficerWrapper,
+      deleteIncident: deleteIncidentWrapper,
     }}>
       {children}
     </DataContext.Provider>

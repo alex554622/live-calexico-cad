@@ -28,7 +28,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Checkbox } from '@/components/ui/checkbox';
 
 const Officers = () => {
-  const { officers, incidents, loadingOfficers, updateOfficer } = useData();
+  const { officers, incidents, loadingOfficers, updateOfficer, deleteOfficer } = useData();
   const { hasPermission } = useAuth();
   const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,7 +42,6 @@ const Officers = () => {
   const [isSelectionMode, setIsSelectionMode] = useState(false);
   const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
 
-  // Create a list of unique ranks for the rank filter
   const uniqueRanks = useMemo(() => {
     const ranks = officers.map(officer => officer.rank);
     return [...new Set(ranks)];
@@ -98,22 +97,42 @@ const Officers = () => {
   const handleDeleteSelected = async () => {
     try {
       for (const id of selectedOfficers) {
-        await updateOfficer(id, { status: 'offDuty' });
+        await deleteOfficer(id);
       }
       
       toast({
-        title: 'Officers Set to Off Duty',
-        description: `${selectedOfficers.length} officer(s) have been set to off duty`,
+        title: 'Officers Deleted',
+        description: `${selectedOfficers.length} officer(s) have been deleted`,
       });
       
       setSelectedOfficers([]);
       setIsSelectionMode(false);
       setIsConfirmingDelete(false);
     } catch (error) {
-      console.error('Error updating officers:', error);
+      console.error('Error deleting officers:', error);
       toast({
         title: 'Error',
-        description: 'Failed to update selected officers',
+        description: 'Failed to delete selected officers',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  const handleDeleteOfficer = async (officerId: string) => {
+    try {
+      await deleteOfficer(officerId);
+      
+      toast({
+        title: 'Officer Deleted',
+        description: `Officer has been deleted successfully`,
+      });
+      
+      setSelectedOfficer(null);
+    } catch (error) {
+      console.error('Error deleting officer:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to delete officer',
         variant: 'destructive',
       });
     }
@@ -148,7 +167,7 @@ const Officers = () => {
               variant="destructive" 
               onClick={() => setIsConfirmingDelete(true)}
             >
-              <Trash2 className="h-4 w-4 mr-1" /> Set Off Duty
+              <Trash2 className="h-4 w-4 mr-1" /> Delete Selected
             </Button>
           )}
         </div>
@@ -282,18 +301,32 @@ const Officers = () => {
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
                 <span>{selectedOfficer.name}</span>
-                {hasPermission('editOfficer') && (
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsEditing(true);
-                    }}
-                  >
-                    Edit
-                  </Button>
-                )}
+                <div className="flex gap-2">
+                  {hasPermission('editOfficer') && (
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsEditing(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  )}
+                  {hasPermission('deleteOfficer') && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteOfficer(selectedOfficer.id);
+                      }}
+                    >
+                      <Trash2 className="h-4 w-4 mr-1" /> Delete
+                    </Button>
+                  )}
+                </div>
               </DialogTitle>
               <div className="flex items-center gap-2 mt-1">
                 <span className="text-muted-foreground">{selectedOfficer.rank} • Badge #{selectedOfficer.badgeNumber}</span>
@@ -394,9 +427,10 @@ const Officers = () => {
       <Dialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
-            <DialogTitle>Confirm Action</DialogTitle>
+            <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
-              Are you sure you want to set {selectedOfficers.length} selected officer(s) to off duty status?
+              Are you sure you want to delete {selectedOfficers.length} selected officer(s)? 
+              This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -404,7 +438,7 @@ const Officers = () => {
               Cancel
             </Button>
             <Button variant="destructive" onClick={handleDeleteSelected}>
-              Confirm
+              Delete
             </Button>
           </DialogFooter>
         </DialogContent>
