@@ -20,7 +20,8 @@ export function useIsMobile() {
     // Ensure body has proper scroll settings on mobile
     if (window.innerWidth < MOBILE_BREAKPOINT) {
       document.body.style.overflowY = "auto";
-      document.body.style.WebkitOverflowScrolling = "touch";
+      // Use proper TypeScript compatible way to set webkit property
+      (document.body.style as any)["-webkit-overflow-scrolling"] = "touch";
       document.documentElement.style.overscrollBehavior = "contain";
     }
     
