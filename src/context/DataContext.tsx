@@ -2,20 +2,24 @@ import React, { createContext, useContext, useState, useEffect, useCallback } fr
 import { Officer, Incident, Notification } from '../types';
 import { 
   getOfficers, 
-  getIncidents, 
-  getNotifications, 
   updateOfficerStatus, 
+  createOfficer as apiCreateOfficer,
+  updateOfficer as apiUpdateOfficer,
+  deleteOfficer as apiDeleteOfficer
+} from '../services/officers';
+import { 
+  getIncidents, 
   updateIncident, 
   createIncident, 
   assignOfficerToIncident,
+  deleteIncident as apiDeleteIncident
+} from '../services/incidents';
+import {
+  getNotifications,
   markNotificationAsRead,
-  simulateRealTimeUpdates,
-  createOfficer as apiCreateOfficer,
-  updateOfficer as apiUpdateOfficer,
-  deleteOfficer as apiDeleteOfficer,
-  deleteIncident as apiDeleteIncident,
   deleteReadNotifications as apiDeleteReadNotifications
-} from '../services/api';
+} from '../services/notifications';
+import { simulateRealTimeUpdates } from '../services/realtime';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from './AuthContext';
 
