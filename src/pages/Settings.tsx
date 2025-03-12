@@ -344,7 +344,7 @@ const Settings = () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center">
-                  <User className="h-5 w-5 mr-2" />
+                  <UserIcon className="h-5 w-5 mr-2" />
                   Account Settings
                 </CardTitle>
                 <CardDescription>
