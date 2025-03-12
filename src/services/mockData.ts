@@ -1,3 +1,4 @@
+
 import { Officer, Incident, Notification, User } from '../types';
 
 export const mockUsers: User[] = [
@@ -135,6 +136,7 @@ export const mockIncidents: Incident[] = [
     reportedAt: new Date(Date.now() - 1000 * 60 * 30).toISOString(), // 30 mins ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(), // 10 mins ago
     reportedBy: '2', // Sarah Smith
+    type: 'traffic'
   },
   {
     id: '2',
@@ -151,6 +153,7 @@ export const mockIncidents: Incident[] = [
     reportedAt: new Date(Date.now() - 1000 * 60 * 45).toISOString(), // 45 mins ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 15).toISOString(), // 15 mins ago
     reportedBy: '2', // Sarah Smith
+    type: 'assistance'
   },
   {
     id: '3',
@@ -167,6 +170,7 @@ export const mockIncidents: Incident[] = [
     reportedAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(), // 10 mins ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 10).toISOString(), // 10 mins ago
     reportedBy: '2', // Sarah Smith
+    type: 'criminal'
   },
   {
     id: '4',
@@ -183,6 +187,7 @@ export const mockIncidents: Incident[] = [
     reportedAt: new Date(Date.now() - 1000 * 60 * 120).toISOString(), // 2 hours ago
     updatedAt: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
     reportedBy: '2', // Sarah Smith
+    type: 'other'
   },
 ];
 

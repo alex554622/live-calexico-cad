@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
-import { Incident, IncidentPriority, IncidentStatus } from '@/types';
+import { Incident, IncidentPriority, IncidentStatus, IncidentType } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -39,6 +39,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
     status: IncidentStatus;
     address: string;
     documentLink?: string;
+    type: IncidentType;
   }>({
     title: initialData?.title || '',
     description: initialData?.description || '',
@@ -46,6 +47,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
     status: initialData?.status || 'active',
     address: initialData?.location.address || '',
     documentLink: initialData?.documentLink || '',
+    type: initialData?.type || 'other',
   });
   
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -101,6 +103,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
             address: formData.address,
           },
           documentLink: formData.documentLink,
+          type: formData.type,
         });
         
         toast({
@@ -124,6 +127,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
           assignedOfficers: [],
           reportedBy: user?.name || 'Unknown',
           documentLink: formData.documentLink,
+          type: formData.type,
         });
         
         toast({
@@ -164,11 +168,11 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
         <Textarea
           id="description"
           name="description"
-          value={formData.description}
           onChange={handleChange}
           placeholder="Enter incident description"
           rows={4}
           required
+          value={formData.description}
         />
       </div>
       
@@ -207,6 +211,25 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
             </SelectContent>
           </Select>
         </div>
+      </div>
+      
+      <div className="space-y-2">
+        <Label htmlFor="type">Incident Type</Label>
+        <Select
+          value={formData.type}
+          onValueChange={(value) => handleSelectChange('type', value)}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select incident type" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="traffic">Traffic</SelectItem>
+            <SelectItem value="emergency">Emergency</SelectItem>
+            <SelectItem value="assistance">Assistance</SelectItem>
+            <SelectItem value="criminal">Criminal</SelectItem>
+            <SelectItem value="other">Other</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
       
       <div className="space-y-2">
