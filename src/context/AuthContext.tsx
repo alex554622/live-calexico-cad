@@ -84,18 +84,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
 
       if (profile) {
-        // Validate that the role is one of the accepted values
-        const validRoles: User['role'][] = ['admin', 'dispatcher', 'supervisor', 'officer'];
-        const role = validRoles.includes(profile.role as User['role']) 
-          ? (profile.role as User['role']) 
-          : 'officer'; // Default to officer if role is invalid
-        
         // Transform the profile data to match our User type
         setUser({
           id: profile.id,
           username: profile.username,
           name: profile.name,
-          role: role,
+          role: profile.role,
           avatar: profile.avatar
         });
       }
