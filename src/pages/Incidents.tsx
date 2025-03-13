@@ -41,6 +41,7 @@ const Incidents = () => {
     selectedIncidents,
     setSelectedIncidents,
     isSelectionMode,
+    setIsSelectionMode,
     toggleSelectionMode,
     toggleIncidentSelection
   } = useIncidentSelection();
