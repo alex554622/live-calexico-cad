@@ -5,16 +5,13 @@ import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
 import { Officer } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import OfficerForm from '@/components/officers/OfficerForm';
 import OfficerFilters from '@/components/officers/OfficerFilters';
-import OfficerCard from '@/components/officers/OfficerCard';
-import OfficerDetailDialog from '@/components/officers/OfficerDetailDialog';
-import StatusUpdateDialog from '@/components/officers/StatusUpdateDialog';
-import DeleteOfficersDialog from '@/components/officers/DeleteOfficersDialog';
+import OfficerCardGrid from '@/components/officers/OfficerCardGrid';
+import OfficerDialogs from '@/components/officers/OfficerDialogs';
 import { useOfficerSelection } from '@/hooks/use-officer-selection';
 import { useOfficerStatusUpdate } from '@/hooks/use-officer-status-update';
 import { useOfficerOperations } from '@/hooks/use-officer-operations';
+import { useOfficerPage } from '@/hooks/use-officer-page';
 
 const Officers = () => {
   const { officers, incidents, loadingOfficers } = useData();
@@ -60,34 +57,22 @@ const Officers = () => {
     handleDeleteOfficer
   } = useOfficerOperations();
 
-  // Helper functions
-  const getOfficerIncident = (officer: Officer) => {
-    if (!officer.currentIncidentId) return null;
-    return incidents.find(incident => incident.id === officer.currentIncidentId);
-  };
-
-  const handleUpdateStatus = async () => {
-    const updatedOfficer = await handleUpdateOfficerStatus();
-    
-    if (updatedOfficer && selectedOfficer && selectedOfficer.id === updatedOfficer.id) {
-      setSelectedOfficer(updatedOfficer);
-    }
-  };
-
-  const handleDeleteSelectedConfirm = async () => {
-    const success = await handleDeleteSelected(selectedOfficers);
-    if (success) {
-      setSelectedOfficers([]);
-      setIsSelectionMode(false);
-    }
-  };
-
-  const handleSingleOfficerDelete = async (officerId: string) => {
-    const success = await handleDeleteOfficer(officerId);
-    if (success) {
-      setSelectedOfficer(null);
-    }
-  };
+  const {
+    getOfficerIncident,
+    handleUpdateStatus,
+    handleDeleteSelectedConfirm,
+    handleSingleOfficerDelete
+  } = useOfficerPage({
+    incidents,
+    selectedOfficer,
+    setSelectedOfficer,
+    handleUpdateOfficerStatus,
+    handleDeleteSelected,
+    handleDeleteOfficer,
+    selectedOfficers,
+    setSelectedOfficers,
+    setIsSelectionMode
+  });
 
   return (
     <div className="space-y-6">
@@ -134,72 +119,38 @@ const Officers = () => {
         uniqueRanks={uniqueRanks}
       />
 
-      {loadingOfficers ? (
-        <div className="min-h-[400px] flex items-center justify-center">
-          <p>Loading officers...</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredOfficers.map(officer => (
-            <OfficerCard
-              key={officer.id}
-              officer={officer}
-              isSelectionMode={isSelectionMode}
-              isSelected={selectedOfficers.includes(officer.id)}
-              onSelect={toggleOfficerSelection}
-              onClick={() => setSelectedOfficer(officer)}
-              onStatusUpdate={openStatusUpdateDialog}
-              currentIncident={getOfficerIncident(officer)}
-              hasEditPermission={hasPermission('editOfficer')}
-            />
-          ))}
-        </div>
-      )}
+      <OfficerCardGrid
+        loadingOfficers={loadingOfficers}
+        filteredOfficers={filteredOfficers}
+        isSelectionMode={isSelectionMode}
+        selectedOfficers={selectedOfficers}
+        toggleOfficerSelection={toggleOfficerSelection}
+        setSelectedOfficer={setSelectedOfficer}
+        openStatusUpdateDialog={openStatusUpdateDialog}
+        getOfficerIncident={getOfficerIncident}
+        hasEditPermission={hasPermission('editOfficer')}
+      />
 
-      {/* Create Officer Dialog */}
-      <Dialog open={isCreating} onOpenChange={setIsCreating}>
-        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Add New Officer</DialogTitle>
-            <DialogDescription>
-              Fill in the details to add a new officer to the system.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <OfficerForm 
-            onSuccess={handleCreateSuccess}
-            onCancel={() => setIsCreating(false)}
-          />
-        </DialogContent>
-      </Dialog>
-
-      {/* Officer Detail Dialog */}
-      <OfficerDetailDialog
-        officer={selectedOfficer}
+      <OfficerDialogs
+        isCreating={isCreating}
+        setIsCreating={setIsCreating}
+        selectedOfficer={selectedOfficer}
+        setSelectedOfficer={setSelectedOfficer}
         incidents={incidents}
-        isOpen={!!selectedOfficer}
-        onOpenChange={(open) => !open && setSelectedOfficer(null)}
-        onDelete={handleSingleOfficerDelete}
+        isUpdatingStatus={isUpdatingStatus}
+        setIsUpdatingStatus={setIsUpdatingStatus}
+        statusUpdateOfficer={statusUpdateOfficer}
+        newStatus={newStatus}
+        setNewStatus={setNewStatus}
+        isConfirmingDelete={isConfirmingDelete}
+        setIsConfirmingDelete={setIsConfirmingDelete}
+        selectedOfficersCount={selectedOfficers.length}
+        handleCreateSuccess={handleCreateSuccess}
+        handleUpdateStatus={handleUpdateStatus}
+        handleDeleteSelectedConfirm={handleDeleteSelectedConfirm}
+        handleSingleOfficerDelete={handleSingleOfficerDelete}
         hasEditPermission={hasPermission('editOfficer')}
         hasDeletePermission={hasPermission('deleteOfficer')}
-      />
-
-      {/* Status Update Dialog */}
-      <StatusUpdateDialog
-        isOpen={isUpdatingStatus}
-        onOpenChange={setIsUpdatingStatus}
-        officer={statusUpdateOfficer}
-        status={newStatus}
-        onStatusChange={setNewStatus}
-        onSubmit={handleUpdateStatus}
-      />
-
-      {/* Delete Confirmation Dialog */}
-      <DeleteOfficersDialog
-        isOpen={isConfirmingDelete}
-        onOpenChange={setIsConfirmingDelete}
-        selectedCount={selectedOfficers.length}
-        onDelete={handleDeleteSelectedConfirm}
       />
     </div>
   );
