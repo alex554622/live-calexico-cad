@@ -115,4 +115,26 @@
   [role="tablist"]::-webkit-scrollbar {
     display: none;
   }
+  
+  /* Make dialogs more mobile-friendly */
+  .dialog-content, [role="dialog"] {
+    @apply p-4 max-h-[calc(100vh-20px)] overflow-y-auto;
+    margin: 10px;
+    width: calc(100% - 20px) !important;
+  }
+  
+  /* Reduce spacing in incident forms */
+  .incident-form .space-y-4 {
+    @apply space-y-2;
+  }
+  
+  .incident-form label {
+    @apply text-sm;
+  }
+  
+  .incident-form input, 
+  .incident-form select, 
+  .incident-form textarea {
+    @apply h-9 text-sm;
+  }
 }

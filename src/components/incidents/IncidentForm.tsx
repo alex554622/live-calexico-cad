@@ -16,6 +16,7 @@ import {
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { FileText } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface IncidentFormProps {
   initialData?: Incident;
@@ -31,6 +32,7 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
   const { createIncident, updateIncident } = useData();
   const { user, hasPermission } = useAuth();
   const { toast } = useToast();
+  const isMobile = useIsMobile();
   
   const [formData, setFormData] = useState<{
     title: string;
@@ -146,9 +148,9 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
   };
   
   return (
-    <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="space-y-2">
-        <Label htmlFor="title">Title</Label>
+    <form onSubmit={handleSubmit} className="space-y-3">
+      <div className="space-y-1">
+        <Label htmlFor="title" className="text-sm">Title</Label>
         <Input
           id="title"
           name="title"
@@ -156,30 +158,32 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
           onChange={handleChange}
           placeholder="Enter incident title"
           required
+          className={isMobile ? "h-9 text-sm" : ""}
         />
       </div>
       
-      <div className="space-y-2">
-        <Label htmlFor="description">Description</Label>
+      <div className="space-y-1">
+        <Label htmlFor="description" className="text-sm">Description</Label>
         <Textarea
           id="description"
           name="description"
           value={formData.description}
           onChange={handleChange}
           placeholder="Enter incident description"
-          rows={4}
+          rows={isMobile ? 3 : 4}
           required
+          className={isMobile ? "text-sm" : ""}
         />
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="priority">Priority</Label>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="space-y-1">
+          <Label htmlFor="priority" className="text-sm">Priority</Label>
           <Select
             value={formData.priority}
             onValueChange={(value) => handleSelectChange('priority', value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className={isMobile ? "h-9 text-sm" : ""}>
               <SelectValue placeholder="Select priority" />
             </SelectTrigger>
             <SelectContent>
@@ -190,13 +194,13 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
           </Select>
         </div>
         
-        <div className="space-y-2">
-          <Label htmlFor="status">Status</Label>
+        <div className="space-y-1">
+          <Label htmlFor="status" className="text-sm">Status</Label>
           <Select
             value={formData.status}
             onValueChange={(value) => handleSelectChange('status', value)}
           >
-            <SelectTrigger>
+            <SelectTrigger className={isMobile ? "h-9 text-sm" : ""}>
               <SelectValue placeholder="Select status" />
             </SelectTrigger>
             <SelectContent>
@@ -209,8 +213,8 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
         </div>
       </div>
       
-      <div className="space-y-2">
-        <Label htmlFor="address">Location</Label>
+      <div className="space-y-1">
+        <Label htmlFor="address" className="text-sm">Location</Label>
         <Input
           id="address"
           name="address"
@@ -218,13 +222,14 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
           onChange={handleChange}
           placeholder="Enter incident address"
           required
+          className={isMobile ? "h-9 text-sm" : ""}
         />
       </div>
       
-      <div className="space-y-2">
-        <Label htmlFor="documentLink">
+      <div className="space-y-1">
+        <Label htmlFor="documentLink" className="text-sm">
           <div className="flex items-center">
-            <FileText className="h-4 w-4 mr-2" />
+            <FileText className="h-3 w-3 mr-1" />
             Google Docs Link
           </div>
         </Label>
@@ -234,19 +239,31 @@ const IncidentForm: React.FC<IncidentFormProps> = ({
           value={formData.documentLink || ''}
           onChange={handleChange}
           placeholder="https://docs.google.com/document/d/..."
+          className={isMobile ? "h-9 text-sm" : ""}
         />
         <p className="text-xs text-muted-foreground">
           Link to a Google Doc for detailed incident documentation
         </p>
       </div>
       
-      <div className="flex justify-end space-x-2 pt-4">
+      <div className="flex justify-end space-x-2 pt-3">
         {onCancel && (
-          <Button type="button" variant="outline" onClick={onCancel}>
+          <Button 
+            type="button" 
+            variant="outline" 
+            onClick={onCancel}
+            size={isMobile ? "sm" : "default"}
+            className={isMobile ? "text-xs h-8" : ""}
+          >
             Cancel
           </Button>
         )}
-        <Button type="submit" disabled={isSubmitting}>
+        <Button 
+          type="submit" 
+          disabled={isSubmitting}
+          size={isMobile ? "sm" : "default"}
+          className={isMobile ? "text-xs h-8" : ""}
+        >
           {isSubmitting ? 'Saving...' : initialData ? 'Update Incident' : 'Create Incident'}
         </Button>
       </div>
