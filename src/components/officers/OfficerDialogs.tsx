@@ -1,7 +1,5 @@
-
 import React from 'react';
-import { Officer, Incident } from '@/types';
-import { OfficerStatus } from '@/types';
+import { Officer, Incident, OfficerStatus } from '@/types';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import OfficerForm from './OfficerForm';
 import OfficerDetailDialog from './OfficerDetailDialog';
