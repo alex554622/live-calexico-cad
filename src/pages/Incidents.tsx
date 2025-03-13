@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -187,7 +186,7 @@ const Incidents = () => {
       )}
 
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <div>
             <h2 className="text-lg font-semibold mb-2">Create New Incident</h2>
             <p className="text-sm text-muted-foreground mb-4">
@@ -204,7 +203,7 @@ const Incidents = () => {
 
       <Dialog open={!!selectedIncident} onOpenChange={(open) => !open && setSelectedIncident(null)}>
         {selectedIncident && (
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <IncidentDetailView 
               incident={selectedIncident}
               officers={officers}
