@@ -60,21 +60,21 @@ const Login = () => {
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 bg-gray-100">
-      <div className={`w-full ${isMobile ? 'max-w-sm' : 'max-w-md'} p-2`}>
-        <Card className="border-2 border-police">
-          <CardHeader className="space-y-1 flex flex-col items-center">
-            <div className="w-12 h-12 bg-police rounded-full flex items-center justify-center mb-2">
-              <Shield className="h-6 w-6 text-white" />
+      <div className={`w-full ${isMobile ? 'max-w-xs' : 'max-w-sm'} p-2`}>
+        <Card className="border-2 border-police shadow-md">
+          <CardHeader className="space-y-1 flex flex-col items-center pb-4">
+            <div className="w-10 h-10 bg-police rounded-full flex items-center justify-center mb-2">
+              <Shield className="h-5 w-5 text-white" />
             </div>
-            <CardTitle className="text-2xl font-bold text-center">Calexico Live</CardTitle>
-            <CardDescription className="text-center">
+            <CardTitle className="text-xl font-bold text-center">Calexico Live</CardTitle>
+            <CardDescription className="text-center text-sm">
               Real-Time Officer Activity Display
             </CardDescription>
           </CardHeader>
           <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+            <CardContent className="space-y-3 pt-0">
+              <div className="space-y-1">
+                <Label htmlFor="email" className="text-sm">Email</Label>
                 <Input
                   id="email"
                   type="email"
@@ -82,10 +82,11 @@ const Login = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
+                  className="h-9"
                 />
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+              <div className="space-y-1">
+                <Label htmlFor="password" className="text-sm">Password</Label>
                 <Input
                   id="password"
                   type="password"
@@ -93,12 +94,13 @@ const Login = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   required
+                  className="h-9"
                 />
               </div>
             </CardContent>
-            <CardFooter>
+            <CardFooter className="pt-0">
               <Button
-                className="w-full bg-police hover:bg-police-dark"
+                className="w-full bg-police hover:bg-police-dark h-9 text-sm"
                 type="submit"
                 disabled={loading}
               >
@@ -110,11 +112,11 @@ const Login = () => {
       </div>
       
       {/* Valladolid Software Engineering Logo */}
-      <div className="mt-6 text-center">
+      <div className="mt-4 text-center">
         <div className="flex items-center justify-center">
           <div className="bg-white p-2 rounded-md shadow-sm">
-            <p className="text-sm text-gray-500">by</p>
-            <p className="text-lg font-semibold text-police">Valladolid Software Engineering</p>
+            <p className="text-xs text-gray-500">by</p>
+            <p className="text-sm font-semibold text-police">Valladolid Software Engineering</p>
           </div>
         </div>
       </div>
