@@ -1,183 +1,91 @@
-import React, { useState, useMemo } from 'react';
+
+import React from 'react';
+import { Plus, CheckSquare, Trash2 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
-import { Officer, OfficerStatus } from '@/types';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Search, Filter, Plus, Phone, Mail, CheckSquare, Trash2, AlertCircle } from 'lucide-react';
-import OfficerStatusBadge from '@/components/common/OfficerStatusBadge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import OfficerForm from '@/components/officers/OfficerForm';
-import { format } from 'date-fns';
-import { useToast } from '@/hooks/use-toast';
-import { Checkbox } from '@/components/ui/checkbox';
+import OfficerFilters from '@/components/officers/OfficerFilters';
+import OfficerCard from '@/components/officers/OfficerCard';
+import OfficerDetailDialog from '@/components/officers/OfficerDetailDialog';
+import StatusUpdateDialog from '@/components/officers/StatusUpdateDialog';
+import DeleteOfficersDialog from '@/components/officers/DeleteOfficersDialog';
+import { useOfficerSelection } from '@/hooks/use-officer-selection';
+import { useOfficerStatusUpdate } from '@/hooks/use-officer-status-update';
+import { useOfficerOperations } from '@/hooks/use-officer-operations';
 
 const Officers = () => {
-  const { officers, incidents, loadingOfficers, updateOfficer, deleteOfficer, updateOfficerStatus } = useData();
+  const { officers, incidents, loadingOfficers } = useData();
   const { hasPermission } = useAuth();
-  const { toast } = useToast();
-  const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string>('all');
-  const [rankFilter, setRankFilter] = useState<string>('all');
-  const [selectedOfficer, setSelectedOfficer] = useState<Officer | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  
-  const [selectedOfficers, setSelectedOfficers] = useState<string[]>([]);
-  const [isSelectionMode, setIsSelectionMode] = useState(false);
-  const [isConfirmingDelete, setIsConfirmingDelete] = useState(false);
-  
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
-  const [statusUpdateOfficer, setStatusUpdateOfficer] = useState<Officer | null>(null);
-  const [newStatus, setNewStatus] = useState<OfficerStatus>('available');
 
-  const uniqueRanks = useMemo(() => {
-    const ranks = officers.map(officer => officer.rank);
-    return [...new Set(ranks)];
-  }, [officers]);
+  // Hooks for officer management
+  const {
+    searchTerm,
+    setSearchTerm,
+    statusFilter,
+    setStatusFilter,
+    rankFilter,
+    setRankFilter,
+    selectedOfficers,
+    setSelectedOfficers,
+    isSelectionMode,
+    setIsSelectionMode,
+    selectedOfficer,
+    setSelectedOfficer,
+    uniqueRanks,
+    filteredOfficers,
+    toggleSelectionMode,
+    toggleOfficerSelection
+  } = useOfficerSelection(officers);
 
-  const filteredOfficers = officers.filter(officer => {
-    const matchesSearch = 
-      officer.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      officer.badgeNumber.toString().includes(searchTerm) ||
-      officer.rank.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesStatus = statusFilter === 'all' || officer.status === statusFilter;
-    const matchesRank = rankFilter === 'all' || officer.rank === rankFilter;
-    
-    return matchesSearch && matchesStatus && matchesRank;
-  });
+  const {
+    isUpdatingStatus,
+    setIsUpdatingStatus,
+    statusUpdateOfficer,
+    newStatus,
+    setNewStatus,
+    openStatusUpdateDialog,
+    handleUpdateOfficerStatus
+  } = useOfficerStatusUpdate();
 
+  const {
+    isCreating,
+    setIsCreating,
+    isConfirmingDelete,
+    setIsConfirmingDelete,
+    handleCreateSuccess,
+    handleDeleteSelected,
+    handleDeleteOfficer
+  } = useOfficerOperations();
+
+  // Helper functions
   const getOfficerIncident = (officer: Officer) => {
     if (!officer.currentIncidentId) return null;
     return incidents.find(incident => incident.id === officer.currentIncidentId);
   };
 
-  const handleCreateSuccess = (newOfficer: Officer) => {
-    setIsCreating(false);
-    setSelectedOfficer(newOfficer);
-  };
-
-  const handleEditSuccess = (updatedOfficer: Officer) => {
-    setIsEditing(false);
-    setSelectedOfficer(updatedOfficer);
-  };
-
-  const toggleSelectionMode = () => {
-    setIsSelectionMode(!isSelectionMode);
-    if (isSelectionMode) {
-      setSelectedOfficers([]);
+  const handleUpdateStatus = async () => {
+    const updatedOfficer = await handleUpdateOfficerStatus();
+    
+    if (updatedOfficer && selectedOfficer && selectedOfficer.id === updatedOfficer.id) {
+      setSelectedOfficer(updatedOfficer);
     }
   };
 
-  const toggleOfficerSelection = (id: string, e: React.MouseEvent) => {
-    if (!isSelectionMode) return;
-    
-    e.stopPropagation();
-    setSelectedOfficers(prev => {
-      if (prev.includes(id)) {
-        return prev.filter(officerId => officerId !== id);
-      } else {
-        return [...prev, id];
-      }
-    });
-  };
-
-  const handleDeleteSelected = async () => {
-    try {
-      for (const id of selectedOfficers) {
-        await deleteOfficer(id);
-      }
-      
-      toast({
-        title: 'Officers Deleted',
-        description: `${selectedOfficers.length} officer(s) have been deleted`,
-      });
-      
+  const handleDeleteSelectedConfirm = async () => {
+    const success = await handleDeleteSelected(selectedOfficers);
+    if (success) {
       setSelectedOfficers([]);
       setIsSelectionMode(false);
-      setIsConfirmingDelete(false);
-    } catch (error) {
-      console.error('Error deleting officers:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete selected officers',
-        variant: 'destructive',
-      });
     }
   };
 
-  const handleDeleteOfficer = async (officerId: string) => {
-    try {
-      await deleteOfficer(officerId);
-      
-      toast({
-        title: 'Officer Deleted',
-        description: `Officer has been deleted successfully`,
-      });
-      
+  const handleSingleOfficerDelete = async (officerId: string) => {
+    const success = await handleDeleteOfficer(officerId);
+    if (success) {
       setSelectedOfficer(null);
-    } catch (error) {
-      console.error('Error deleting officer:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to delete officer',
-        variant: 'destructive',
-      });
     }
-  };
-
-  const handleUpdateOfficerStatus = async () => {
-    if (!statusUpdateOfficer) return;
-    
-    try {
-      const updatedOfficer = await updateOfficerStatus(
-        statusUpdateOfficer.id, 
-        newStatus, 
-        newStatus === 'responding' ? statusUpdateOfficer.currentIncidentId : undefined
-      );
-      
-      toast({
-        title: 'Status Updated',
-        description: `${updatedOfficer.name}'s status updated to ${newStatus}`,
-      });
-      
-      setIsUpdatingStatus(false);
-      setStatusUpdateOfficer(null);
-      
-      if (selectedOfficer && selectedOfficer.id === updatedOfficer.id) {
-        setSelectedOfficer(updatedOfficer);
-      }
-    } catch (error) {
-      console.error('Error updating officer status:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to update officer status',
-        variant: 'destructive',
-      });
-    }
-  };
-
-  const openStatusUpdateDialog = (officer: Officer, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    setStatusUpdateOfficer(officer);
-    setNewStatus(officer.status);
-    setIsUpdatingStatus(true);
   };
 
   return (
@@ -215,51 +123,15 @@ const Officers = () => {
         </div>
       </div>
 
-      <div className="flex flex-col sm:flex-row gap-4">
-        <div className="relative flex-1">
-          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search officers..."
-            className="pl-8"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-        <div className="flex gap-2">
-          <Select
-            value={statusFilter}
-            onValueChange={setStatusFilter}
-          >
-            <SelectTrigger className="w-[130px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Status" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="available">Available</SelectItem>
-              <SelectItem value="responding">Responding</SelectItem>
-              <SelectItem value="busy">Busy</SelectItem>
-              <SelectItem value="offDuty">Off Duty</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={rankFilter}
-            onValueChange={setRankFilter}
-          >
-            <SelectTrigger className="w-[130px]">
-              <Filter className="h-4 w-4 mr-2" />
-              <SelectValue placeholder="Rank" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Ranks</SelectItem>
-              {uniqueRanks.map(rank => (
-                <SelectItem key={rank} value={rank}>{rank}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
+      <OfficerFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        rankFilter={rankFilter}
+        onRankFilterChange={setRankFilter}
+        uniqueRanks={uniqueRanks}
+      />
 
       {loadingOfficers ? (
         <div className="min-h-[400px] flex items-center justify-center">
@@ -267,72 +139,23 @@ const Officers = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredOfficers.map(officer => {
-            const currentIncident = getOfficerIncident(officer);
-            return (
-              <div
-                key={officer.id}
-                className={`border rounded-lg overflow-hidden hover:border-primary transition-colors ${
-                  isSelectionMode ? 'cursor-default' : 'cursor-pointer'
-                } ${selectedOfficers.includes(officer.id) ? 'border-primary bg-primary/5' : ''}`}
-                onClick={() => !isSelectionMode && setSelectedOfficer(officer)}
-              >
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center">
-                      {isSelectionMode && (
-                        <Checkbox 
-                          checked={selectedOfficers.includes(officer.id)} 
-                          onCheckedChange={() => toggleOfficerSelection(officer.id, { stopPropagation: () => {} } as React.MouseEvent)}
-                          onClick={(e) => e.stopPropagation()}
-                          className="mr-2"
-                        />
-                      )}
-                      <div>
-                        <h3 className="font-medium">{officer.name}</h3>
-                        <p className="text-sm text-muted-foreground">{officer.rank} • Badge #{officer.badgeNumber}</p>
-                      </div>
-                    </div>
-                    <div className="flex flex-col items-end gap-2">
-                      <OfficerStatusBadge status={officer.status} />
-                      {hasPermission('editOfficer') && (
-                        <Button 
-                          variant="outline" 
-                          size="sm" 
-                          className="text-xs h-7"
-                          onClick={(e) => openStatusUpdateDialog(officer, e)}
-                        >
-                          Update Status
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                  
-                  <div className="mt-4 space-y-2">
-                    <div className="flex items-center text-sm">
-                      <Phone className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span>{officer.contactInfo?.phone || 'No phone available'}</span>
-                    </div>
-                    <div className="flex items-center text-sm">
-                      <Mail className="h-4 w-4 mr-2 text-muted-foreground" />
-                      <span>{officer.contactInfo?.email || 'No email available'}</span>
-                    </div>
-                  </div>
-                  
-                  {currentIncident && (
-                    <div className="mt-4 pt-4 border-t">
-                      <p className="text-sm font-medium">Current Incident:</p>
-                      <p className="text-sm truncate">{currentIncident.title}</p>
-                      <p className="text-xs text-muted-foreground">{currentIncident.location.address}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+          {filteredOfficers.map(officer => (
+            <OfficerCard
+              key={officer.id}
+              officer={officer}
+              isSelectionMode={isSelectionMode}
+              isSelected={selectedOfficers.includes(officer.id)}
+              onSelect={toggleOfficerSelection}
+              onClick={() => setSelectedOfficer(officer)}
+              onStatusUpdate={openStatusUpdateDialog}
+              currentIncident={getOfficerIncident(officer)}
+              hasEditPermission={hasPermission('editOfficer')}
+            />
+          ))}
         </div>
       )}
 
+      {/* Create Officer Dialog */}
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
         <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -349,206 +172,34 @@ const Officers = () => {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={!!selectedOfficer} onOpenChange={(open) => !open && setSelectedOfficer(null)}>
-        {selectedOfficer && (
-          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle className="flex items-center justify-between">
-                <span>{selectedOfficer.name}</span>
-                <div className="flex gap-2">
-                  {hasPermission('editOfficer') && (
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setIsEditing(true);
-                      }}
-                    >
-                      Edit
-                    </Button>
-                  )}
-                  {hasPermission('deleteOfficer') && (
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleDeleteOfficer(selectedOfficer.id);
-                      }}
-                    >
-                      <Trash2 className="h-4 w-4 mr-1" /> Delete
-                    </Button>
-                  )}
-                </div>
-              </DialogTitle>
-              <div className="flex items-center gap-2 mt-1">
-                <span className="text-muted-foreground">{selectedOfficer.rank} • Badge #{selectedOfficer.badgeNumber}</span>
-                <OfficerStatusBadge status={selectedOfficer.status} />
-              </div>
-            </DialogHeader>
-            
-            {isEditing ? (
-              <OfficerForm 
-                initialData={selectedOfficer}
-                onSuccess={handleEditSuccess}
-                onCancel={() => setIsEditing(false)}
-              />
-            ) : (
-              <Tabs defaultValue="details">
-                <TabsList className="grid grid-cols-2">
-                  <TabsTrigger value="details">Details</TabsTrigger>
-                  <TabsTrigger value="incidents">Incidents</TabsTrigger>
-                </TabsList>
-                
-                <TabsContent value="details" className="space-y-4 py-4">
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">Contact Information</h3>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-xs text-muted-foreground">Phone</p>
-                        <p className="text-sm">{selectedOfficer.contactInfo?.phone || 'Not available'}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-muted-foreground">Email</p>
-                        <p className="text-sm">{selectedOfficer.contactInfo?.email || 'Not available'}</p>
-                      </div>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">Department</h3>
-                    <p className="text-sm">{selectedOfficer.department}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">Shift Schedule</h3>
-                    <p className="text-sm">{selectedOfficer.shiftSchedule || "No shift scheduled"}</p>
-                  </div>
-                  
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">Last Updated</h3>
-                    <p className="text-sm">{format(new Date(selectedOfficer.lastUpdated), 'MMM d, h:mm a')}</p>
-                  </div>
-                  
-                  {selectedOfficer.currentIncidentId && (
-                    <div>
-                      <h3 className="text-sm font-medium mb-1">Current Incident</h3>
-                      <div className="text-sm p-3 bg-muted rounded-md">
-                        {incidents.find(i => i.id === selectedOfficer.currentIncidentId)?.title || 'Loading...'}
-                      </div>
-                    </div>
-                  )}
-                </TabsContent>
-                
-                <TabsContent value="incidents">
-                  <div className="py-4">
-                    <h3 className="text-sm font-medium mb-3">Incident History</h3>
-                    
-                    {incidents.filter(incident => 
-                      incident.assignedOfficers.includes(selectedOfficer.id)
-                    ).length > 0 ? (
-                      <div className="space-y-3">
-                        {incidents
-                          .filter(incident => incident.assignedOfficers.includes(selectedOfficer.id))
-                          .map(incident => (
-                            <div key={incident.id} className="border rounded-md p-3">
-                              <div className="flex justify-between items-start">
-                                <div>
-                                  <h4 className="font-medium">{incident.title}</h4>
-                                  <p className="text-xs text-muted-foreground">{incident.location.address}</p>
-                                </div>
-                                <div className="flex items-center gap-2">
-                                  <span className="text-xs">{format(new Date(incident.reportedAt), 'MMM d')}</span>
-                                </div>
-                              </div>
-                            </div>
-                          ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-6 text-muted-foreground">
-                        No incident history found for this officer
-                      </div>
-                    )}
-                  </div>
-                </TabsContent>
-              </Tabs>
-            )}
-          </DialogContent>
-        )}
-      </Dialog>
+      {/* Officer Detail Dialog */}
+      <OfficerDetailDialog
+        officer={selectedOfficer}
+        incidents={incidents}
+        isOpen={!!selectedOfficer}
+        onOpenChange={(open) => !open && setSelectedOfficer(null)}
+        onDelete={handleSingleOfficerDelete}
+        hasEditPermission={hasPermission('editOfficer')}
+        hasDeletePermission={hasPermission('deleteOfficer')}
+      />
 
-      <Dialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
-        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Confirm Deletion</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete {selectedOfficers.length} selected officer(s)? 
-              This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsConfirmingDelete(false)}>
-              Cancel
-            </Button>
-            <Button variant="destructive" onClick={handleDeleteSelected}>
-              Delete
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Status Update Dialog */}
+      <StatusUpdateDialog
+        isOpen={isUpdatingStatus}
+        onOpenChange={setIsUpdatingStatus}
+        officer={statusUpdateOfficer}
+        status={newStatus}
+        onStatusChange={setNewStatus}
+        onSubmit={handleUpdateStatus}
+      />
 
-      <Dialog open={isUpdatingStatus} onOpenChange={setIsUpdatingStatus}>
-        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle>Update Officer Status</DialogTitle>
-            <DialogDescription>
-              Change the status of {statusUpdateOfficer?.name}
-            </DialogDescription>
-          </DialogHeader>
-          
-          <div className="py-4">
-            <Select
-              value={newStatus}
-              onValueChange={(value) => setNewStatus(value as OfficerStatus)}
-            >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Select status" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="available">Available</SelectItem>
-                <SelectItem value="responding">Responding</SelectItem>
-                <SelectItem value="busy">Busy</SelectItem>
-                <SelectItem value="offDuty">Off Duty</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {newStatus === 'responding' && !statusUpdateOfficer?.currentIncidentId && (
-              <div className="mt-4 p-3 border rounded-md bg-amber-50 flex items-start gap-2">
-                <AlertCircle className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
-                <p className="text-sm text-amber-700">
-                  This officer is not assigned to any incident. They will be marked as responding, 
-                  but without an incident assignment.
-                </p>
-              </div>
-            )}
-          </div>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsUpdatingStatus(false)}>
-              Cancel
-            </Button>
-            <Button 
-              onClick={handleUpdateOfficerStatus}
-              variant={newStatus === 'available' ? 'success' : 
-                      newStatus === 'responding' ? 'info' : 
-                      newStatus === 'busy' ? 'warning' : 'secondary'}
-            >
-              Update Status
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Delete Confirmation Dialog */}
+      <DeleteOfficersDialog
+        isOpen={isConfirmingDelete}
+        onOpenChange={setIsConfirmingDelete}
+        selectedCount={selectedOfficers.length}
+        onDelete={handleDeleteSelectedConfirm}
+      />
     </div>
   );
 };
