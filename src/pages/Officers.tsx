@@ -334,7 +334,7 @@ const Officers = () => {
       )}
 
       <Dialog open={isCreating} onOpenChange={setIsCreating}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Add New Officer</DialogTitle>
             <DialogDescription>
@@ -351,7 +351,7 @@ const Officers = () => {
 
       <Dialog open={!!selectedOfficer} onOpenChange={(open) => !open && setSelectedOfficer(null)}>
         {selectedOfficer && (
-          <DialogContent className="sm:max-w-[600px]">
+          <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle className="flex items-center justify-between">
                 <span>{selectedOfficer.name}</span>
@@ -479,7 +479,7 @@ const Officers = () => {
       </Dialog>
 
       <Dialog open={isConfirmingDelete} onOpenChange={setIsConfirmingDelete}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Confirm Deletion</DialogTitle>
             <DialogDescription>
@@ -499,7 +499,7 @@ const Officers = () => {
       </Dialog>
 
       <Dialog open={isUpdatingStatus} onOpenChange={setIsUpdatingStatus}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Update Officer Status</DialogTitle>
             <DialogDescription>
