@@ -3,6 +3,7 @@ import React from 'react';
 import { Plus, CheckSquare, Trash2 } from 'lucide-react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
+import { Officer } from '@/types';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import OfficerForm from '@/components/officers/OfficerForm';
