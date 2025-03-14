@@ -31,7 +31,7 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
       <h2 className="text-xl font-semibold mb-4">Assignments</h2>
       {isTouchDevice && (
         <div className="mb-3 text-sm text-muted-foreground">
-          <p>Double-tap an officer to enter drag mode, then drag to an assignment.</p>
+          <p>Drag officers to assign them to different locations.</p>
         </div>
       )}
       <div className={`grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3 ${

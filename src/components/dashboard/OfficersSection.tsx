@@ -127,8 +127,7 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
         className={`border-2 border-dashed rounded-lg p-2 transition-colors duration-200
           ${(isDragOver || isTouchOver) 
             ? 'border-primary bg-primary/10' 
-            : 'border-transparent hover:border-primary'}
-          ${isTouchDevice ? 'touch-action-pan-y' : ''}`}
+            : 'border-transparent hover:border-primary'}`}
         data-drop-target="officers-list"
       >
         {availableOfficers.length === 0 ? (
@@ -136,8 +135,7 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
             All officers are currently assigned to assignments
           </div>
         ) : (
-          <div className={`grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto
-            ${isTouchDevice ? '-webkit-overflow-scrolling-touch' : ''}`}>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
             {availableOfficers.map((officer) => (
               <DraggableOfficerCard 
                 key={officer.id} 
