@@ -99,7 +99,7 @@ const Dashboard = () => {
     const officer = officers.find(o => o.id === officerId);
     if (officer) {
       try {
-        await updateOfficer({
+        await updateOfficer(officer.id, {
           ...officer,
           status: 'responding'
         });
