@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { format } from 'date-fns';
 import { Notification } from '@/types';
@@ -8,7 +7,7 @@ import {
   CheckCircle, 
   Info,
 } from 'lucide-react';
-import { useData } from '@/context/DataContext';
+import { useData } from '@/context/data';
 
 interface NotificationItemProps {
   notification: Notification;

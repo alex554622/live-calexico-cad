@@ -1,7 +1,7 @@
 
 import React from 'react';
 import { Plus, CheckSquare, Trash2 } from 'lucide-react';
-import { useData } from '@/context/DataContext';
+import { useData } from '@/context/data';
 import { useAuth } from '@/context/AuthContext';
 import { Officer } from '@/types';
 import { Button } from '@/components/ui/button';

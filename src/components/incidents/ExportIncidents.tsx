@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { useData } from '@/context/DataContext';
+import { useData } from '@/context/data';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import * as XLSX from 'xlsx';

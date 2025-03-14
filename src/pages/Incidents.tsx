@@ -1,5 +1,6 @@
+
 import React, { useState, useEffect } from 'react';
-import { useData } from '@/context/DataContext';
+import { useData } from '@/context/data';
 import { useAuth } from '@/context/AuthContext';
 import { Incident } from '@/types';
 import { 

@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { useData } from '@/context/DataContext';
+import { useData } from '@/context/data';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Bell, Search, Trash2 } from 'lucide-react';

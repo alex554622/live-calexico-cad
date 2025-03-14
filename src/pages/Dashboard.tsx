@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { useData } from '@/context/DataContext';
+import { useData } from '@/context/data';
 import { useAuth } from '@/context/AuthContext';
 import { Officer, Incident } from '@/types';
 import { toast } from '@/components/ui/use-toast';

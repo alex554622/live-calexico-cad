@@ -2,7 +2,7 @@
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { signUp, createUserRecord } from '@/lib/supabase';
-import { useData } from '@/context/DataContext';
+import { useData } from '@/context/data';
 import { NewAccountFormData } from '@/types/user';
 
 export const useCreateUser = () => {
