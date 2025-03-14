@@ -3,7 +3,6 @@ import React from 'react';
 import { Officer } from '@/types';
 import AssignmentBlock from './AssignmentBlock';
 import { useTouchDevice } from '@/hooks/use-touch-device';
-import { toast } from 'sonner';
 
 interface AssignmentGridProps {
   assignments: string[];
@@ -31,9 +30,8 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
     <div>
       <h2 className="text-xl font-semibold mb-4">Assignments</h2>
       {isTouchDevice && (
-        <div className="mb-3 text-sm text-muted-foreground bg-muted p-2 rounded-md">
-          <p><strong>Touch and hold</strong> officers to drag and assign them to different locations.</p>
-          <p className="mt-1">Drag assigned officers back to the Officers list to unassign them.</p>
+        <div className="mb-3 text-sm text-muted-foreground">
+          <p>Tap and hold officers to assign them to different locations.</p>
         </div>
       )}
       <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3">

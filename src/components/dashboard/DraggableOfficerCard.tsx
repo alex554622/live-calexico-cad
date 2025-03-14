@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Officer } from '@/types';
 import OfficerStatusBadge from '@/components/common/OfficerStatusBadge';
 import { useTouchDevice } from '@/hooks/use-touch-device';
@@ -15,19 +15,6 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
 }) => {
   const isTouchDevice = useTouchDevice();
   const [isDragging, setIsDragging] = useState(false);
-  const [touchStartTime, setTouchStartTime] = useState<number | null>(null);
-  const [touchMoved, setTouchMoved] = useState(false);
-  
-  // Clean up any lingering ghost elements when component unmounts
-  useEffect(() => {
-    return () => {
-      const ghost = document.getElementById('touch-drag-ghost');
-      if (ghost && ghost.parentNode) {
-        document.body.removeChild(ghost);
-      }
-      delete (window as any).touchDragOfficerId;
-    };
-  }, []);
   
   // Handle mouse drag start
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
@@ -65,64 +52,52 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
   
   // Touch handlers for touch devices
   const handleTouchStart = (e: React.TouchEvent) => {
-    if (!isTouchDevice) return;
-    
-    // Record touch start time to differentiate between tap and drag
-    setTouchStartTime(Date.now());
-    setTouchMoved(false);
-    
-    // Don't prevent default here to allow scrolling
-  };
-  
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!isTouchDevice) return;
-    
-    // If this is the first move event, check if it's been long enough to start a drag
-    const touchDuration = touchStartTime ? Date.now() - touchStartTime : 0;
-    
-    // Only start drag if touch has been held for at least 200ms
-    if (touchDuration < 200) {
-      return;
-    }
-    
-    setTouchMoved(true);
-    
-    // Now we're definitely dragging, so prevent scrolling
-    e.preventDefault();
     e.stopPropagation();
     
     const touch = e.touches[0];
     const officerId = officer.id;
     const name = officer.name;
     
-    // Create ghost element for touch dragging if it doesn't exist yet
-    let ghost = document.getElementById('touch-drag-ghost');
-    if (!ghost) {
-      ghost = document.createElement('div');
-      ghost.className = 'fixed z-50 bg-primary text-primary-foreground px-3 py-2 rounded-md shadow opacity-80';
-      ghost.innerHTML = name;
-      ghost.id = 'touch-drag-ghost';
-      ghost.style.position = 'fixed';
-      ghost.style.pointerEvents = 'none';
-      document.body.appendChild(ghost);
-      
-      // Store data for the drag operation
-      (window as any).touchDragOfficerId = officerId;
-      
-      // Dispatch custom event to indicate drag start
-      window.dispatchEvent(new CustomEvent('touchdragstart', { 
-        detail: { 
-          officerId: officerId,
-          name: name,
-          x: touch.clientX,
-          y: touch.clientY
-        }
-      }));
-    }
-    
-    // Update ghost element position
+    // Create ghost element for touch dragging
+    const ghost = document.createElement('div');
+    ghost.className = 'fixed z-50 bg-primary text-primary-foreground px-3 py-2 rounded-md shadow opacity-80';
+    ghost.innerHTML = name;
+    ghost.id = 'touch-drag-ghost';
+    ghost.style.position = 'fixed';
     ghost.style.left = `${touch.clientX - 30}px`;
     ghost.style.top = `${touch.clientY - 30}px`;
+    ghost.style.pointerEvents = 'none';
+    document.body.appendChild(ghost);
+    
+    // Store data for the drag operation
+    (window as any).touchDragOfficerId = officerId;
+    
+    // Dispatch custom event to indicate drag start
+    window.dispatchEvent(new CustomEvent('touchdragstart', { 
+      detail: { 
+        officerId: officerId,
+        name: name,
+        x: touch.clientX,
+        y: touch.clientY
+      }
+    }));
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!(window as any).touchDragOfficerId) return;
+    
+    // Prevent scrolling during drag
+    e.preventDefault();
+    e.stopPropagation();
+    
+    const touch = e.touches[0];
+    
+    // Update ghost element position
+    const ghost = document.getElementById('touch-drag-ghost');
+    if (ghost) {
+      ghost.style.left = `${touch.clientX - 30}px`;
+      ghost.style.top = `${touch.clientY - 30}px`;
+    }
     
     // Dispatch custom event for drag move
     window.dispatchEvent(new CustomEvent('touchdragmove', { 
@@ -135,33 +110,18 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
   };
   
   const handleTouchEnd = (e: React.TouchEvent) => {
-    if (!isTouchDevice) return;
-    
-    // If we didn't actually move, treat as a click
-    if (!touchMoved && touchStartTime && Date.now() - touchStartTime < 500) {
-      onClick();
-      return;
-    }
-    
-    // If we haven't created a drag operation, don't proceed
-    if (!(window as any).touchDragOfficerId) return;
-    
-    e.preventDefault();
     e.stopPropagation();
+    
+    if (!(window as any).touchDragOfficerId) return;
     
     const touch = e.changedTouches[0];
     const dropElement = document.elementFromPoint(touch.clientX, touch.clientY);
     const assignmentBlock = dropElement?.closest('[data-assignment-id]');
     
-    console.log('Touch end - drop element:', dropElement);
-    console.log('Assignment block found:', assignmentBlock);
-    
     // Handle dropping on an assignment
     if (assignmentBlock) {
       const assignmentId = assignmentBlock.getAttribute('data-assignment-id');
       if (assignmentId) {
-        console.log('Touch drop on assignment:', assignmentId);
-        
         window.dispatchEvent(new CustomEvent('touchdrop', { 
           detail: { 
             officerId: (window as any).touchDragOfficerId,
@@ -175,8 +135,6 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
       // Check if dropped back to officers list
       const officersList = dropElement?.closest('[data-drop-target="officers-list"]');
       if (officersList) {
-        console.log('Touch drop back to officers list');
-        
         window.dispatchEvent(new CustomEvent('touchdroptolist', { 
           detail: { 
             officerId: (window as any).touchDragOfficerId
@@ -193,10 +151,6 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
     delete (window as any).touchDragOfficerId;
     
     window.dispatchEvent(new CustomEvent('touchdragend'));
-    
-    // Reset touch tracking state
-    setTouchStartTime(null);
-    setTouchMoved(false);
   };
 
   return (
@@ -205,10 +159,10 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
         ${isDragging ? 'opacity-50' : ''}
         ${officer.currentIncidentId ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40' : ''}
         ${isTouchDevice ? 'active:bg-primary/10' : 'cursor-move'}`}
-      onClick={isTouchDevice ? undefined : onClick}
-      draggable={!isTouchDevice}
-      onDragStart={!isTouchDevice ? handleDragStart : undefined}
-      onDragEnd={!isTouchDevice ? handleDragEnd : undefined}
+      onClick={isTouchDevice ? onClick : undefined}
+      draggable={true}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onTouchStart={isTouchDevice ? handleTouchStart : undefined}
       onTouchMove={isTouchDevice ? handleTouchMove : undefined}
       onTouchEnd={isTouchDevice ? handleTouchEnd : undefined}

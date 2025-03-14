@@ -60,10 +60,6 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
         y <= rect.bottom;
       
       setIsTouchOver(isOver);
-      
-      if (isOver) {
-        console.log(`Touch over assignment: ${title}`);
-      }
     };
     
     const handleTouchDragEnd = () => {
@@ -74,14 +70,12 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
       const { assignmentId, officerId } = e.detail;
       
       if (assignmentId === title) {
-        console.log(`Touch drop on assignment ${title} - Officer ${officerId}`);
-        
         // Create a synthetic event for the drop handler
         const syntheticEvent = {
           preventDefault: () => {},
           stopPropagation: () => {},
           dataTransfer: {
-            getData: (key: string) => key === 'officerId' ? officerId : null
+            getData: () => officerId
           }
         } as unknown as React.DragEvent<HTMLDivElement>;
         
@@ -108,9 +102,9 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
       className={`border rounded-lg p-2 h-32 overflow-y-auto transition-colors duration-200
         ${isDragOver || isTouchOver ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''}
         ${officers.length > 0 ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}
-      onDragOver={!isTouchDevice ? handleDragOver : undefined}
-      onDragLeave={!isTouchDevice ? handleDragLeave : undefined}
-      onDrop={!isTouchDevice ? handleDrop : undefined}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       <h3 className="font-medium text-xs mb-1 text-foreground dark:text-gray-100">{title}</h3>
       <div className="space-y-1">
@@ -118,51 +112,8 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
           <div 
             key={officer.id} 
             className="flex items-center justify-between bg-white dark:bg-gray-700 p-1 rounded shadow-sm cursor-move"
-            draggable={!isTouchDevice}
-            onDragStart={!isTouchDevice && onDragStart ? (e) => onDragStart(e, officer) : undefined}
-            onTouchStart={(e) => {
-              if (isTouchDevice && onDragStart) {
-                // Trigger a long press touch on assignment officers
-                const touchTimer = setTimeout(() => {
-                  const touch = e.touches[0];
-                  
-                  // Create ghost element for touch dragging
-                  const ghost = document.createElement('div');
-                  ghost.className = 'fixed z-50 bg-primary text-primary-foreground px-3 py-2 rounded-md shadow opacity-80';
-                  ghost.innerHTML = officer.name;
-                  ghost.id = 'touch-drag-ghost';
-                  ghost.style.position = 'fixed';
-                  ghost.style.left = `${touch.clientX - 30}px`;
-                  ghost.style.top = `${touch.clientY - 30}px`;
-                  ghost.style.pointerEvents = 'none';
-                  document.body.appendChild(ghost);
-                  
-                  // Store data for the drag operation
-                  (window as any).touchDragOfficerId = officer.id;
-                  
-                  // Dispatch custom event to indicate drag start from assignment
-                  window.dispatchEvent(new CustomEvent('touchdragstartfromassignment', { 
-                    detail: { 
-                      officerId: officer.id,
-                      name: officer.name,
-                      assignmentId: title,
-                      x: touch.clientX,
-                      y: touch.clientY
-                    }
-                  }));
-                }, 300);
-                
-                // Clear the timer on touch end
-                e.currentTarget.addEventListener('touchend', () => {
-                  clearTimeout(touchTimer);
-                }, { once: true });
-                
-                // Clear the timer on touch move
-                e.currentTarget.addEventListener('touchmove', () => {
-                  clearTimeout(touchTimer);
-                }, { once: true });
-              }
-            }}
+            draggable={true}
+            onDragStart={onDragStart ? (e) => onDragStart(e, officer) : undefined}
           >
             <div className="text-xs truncate max-w-[100px] dark:text-white">{officer.name}</div>
             <OfficerStatusBadge status={officer.status} />
