@@ -1,16 +1,10 @@
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
-import StatCard from '@/components/dashboard/StatCard';
-import OfficerCard from '@/components/dashboard/OfficerCard';
+import AssignmentBlock from '@/components/dashboard/AssignmentBlock';
+import DraggableOfficerCard from '@/components/dashboard/DraggableOfficerCard';
 import IncidentCard from '@/components/dashboard/IncidentCard';
-import { 
-  AlertTriangle, 
-  Users, 
-  Clock, 
-  Shield
-} from 'lucide-react';
 import { 
   Dialog,
   DialogContent,
@@ -24,27 +18,118 @@ import OfficerStatusBadge from '@/components/common/OfficerStatusBadge';
 import IncidentPriorityBadge from '@/components/common/IncidentPriorityBadge';
 import IncidentStatusBadge from '@/components/common/IncidentStatusBadge';
 import { format } from 'date-fns';
-import { Button } from '@/components/ui/button';
+import { toast } from '@/components/ui/use-toast';
+
+const ASSIGNMENTS = [
+  "2nd St & Chavez",
+  "Imperial & 5th St",
+  "Imperial & 7th St",
+  "Imperial & Grant St",
+  "Imperial & 98",
+  "Chavez & Grant",
+  "UP/DOWN",
+  "ENF 2 HRS",
+  "ENF METERS",
+  "Beats Patrol"
+];
 
 const Dashboard = () => {
-  const { officers, incidents, loadingOfficers, loadingIncidents } = useData();
+  const { officers, incidents, loadingOfficers, loadingIncidents, updateOfficer } = useData();
   const { user } = useAuth();
   
-  const [selectedOfficer, setSelectedOfficer] = React.useState<Officer | null>(null);
-  const [selectedIncident, setSelectedIncident] = React.useState<Incident | null>(null);
+  const [selectedOfficer, setSelectedOfficer] = useState<Officer | null>(null);
+  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
+  const [officerAssignments, setOfficerAssignments] = useState<Record<string, string[]>>({});
   
-  // Filter active incidents
-  const activeIncidents = incidents.filter(
-    (incident) => incident.status === 'active' || incident.status === 'pending'
-  );
+  // Initialize assignments
+  useEffect(() => {
+    const initialAssignments: Record<string, string[]> = {};
+    ASSIGNMENTS.forEach(assignment => {
+      initialAssignments[assignment] = [];
+    });
+    
+    // Group officers by current assignment if they have one
+    officers.forEach(officer => {
+      if (officer.currentIncidentId) {
+        const incident = incidents.find(inc => inc.id === officer.currentIncidentId);
+        if (incident) {
+          // Try to match the location to an assignment
+          const matchedAssignment = ASSIGNMENTS.find(
+            assignment => incident.location.address.includes(assignment)
+          );
+          
+          if (matchedAssignment) {
+            initialAssignments[matchedAssignment] = [
+              ...initialAssignments[matchedAssignment],
+              officer.id
+            ];
+          }
+        }
+      }
+    });
+    
+    setOfficerAssignments(initialAssignments);
+  }, [officers, incidents]);
   
-  const availableOfficers = officers.filter(
-    (officer) => officer.status === 'available'
-  );
+  // Filter to get most recent incidents
+  const recentIncidents = [...incidents]
+    .sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime())
+    .slice(0, 4);
   
-  const respondingOfficers = officers.filter(
-    (officer) => officer.status === 'responding'
-  );
+  // Get officers for a specific assignment
+  const getAssignmentOfficers = (assignment: string) => {
+    const officerIds = officerAssignments[assignment] || [];
+    return officers.filter(officer => officerIds.includes(officer.id));
+  };
+  
+  // Handle dropping an officer onto an assignment
+  const handleOfficerDrop = async (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => {
+    e.preventDefault();
+    const officerId = e.dataTransfer.getData("officerId");
+    if (!officerId) return;
+    
+    // Remove officer from any previous assignment
+    const updatedAssignments = { ...officerAssignments };
+    
+    Object.keys(updatedAssignments).forEach(assignment => {
+      updatedAssignments[assignment] = updatedAssignments[assignment].filter(
+        id => id !== officerId
+      );
+    });
+    
+    // Add officer to the new assignment
+    updatedAssignments[assignmentId] = [
+      ...updatedAssignments[assignmentId],
+      officerId
+    ];
+    
+    setOfficerAssignments(updatedAssignments);
+    
+    // Update officer status to 'responding'
+    const officer = officers.find(o => o.id === officerId);
+    if (officer) {
+      try {
+        // In a real application, you would update the officer's status and location
+        // based on the assignment. For now, we're just updating the status.
+        await updateOfficer({
+          ...officer,
+          status: 'responding'
+        });
+        
+        toast({
+          title: "Officer assigned",
+          description: `${officer.name} has been assigned to ${assignmentId}`,
+        });
+      } catch (error) {
+        console.error("Failed to update officer status", error);
+        toast({
+          title: "Assignment failed",
+          description: "Failed to update officer status",
+          variant: "destructive"
+        });
+      }
+    }
+  };
   
   return (
     <div className="space-y-6">
@@ -61,32 +146,19 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          {/* Stats Row */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard
-              title="Active Incidents"
-              value={activeIncidents.length}
-              icon={AlertTriangle}
-              iconClassName="text-status-responding"
-            />
-            <StatCard
-              title="Available Officers"
-              value={availableOfficers.length}
-              icon={Users}
-              iconClassName="text-status-available"
-            />
-            <StatCard
-              title="Responding Officers"
-              value={respondingOfficers.length}
-              icon={Clock}
-              iconClassName="text-status-busy"
-            />
-            <StatCard
-              title="Total Officers"
-              value={officers.length}
-              icon={Shield}
-              iconClassName="text-police"
-            />
+          {/* Assignment Blocks */}
+          <div>
+            <h2 className="text-xl font-semibold mb-4">Assignments</h2>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {ASSIGNMENTS.map((assignment) => (
+                <AssignmentBlock
+                  key={assignment}
+                  title={assignment}
+                  officers={getAssignmentOfficers(assignment)}
+                  onDrop={handleOfficerDrop}
+                />
+              ))}
+            </div>
           </div>
           
           {/* Main Content */}
@@ -98,7 +170,7 @@ const Dashboard = () => {
               </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {officers.slice(0, 6).map((officer) => (
-                  <OfficerCard 
+                  <DraggableOfficerCard 
                     key={officer.id} 
                     officer={officer} 
                     onClick={() => setSelectedOfficer(officer)}
@@ -113,7 +185,7 @@ const Dashboard = () => {
                 <h2 className="text-xl font-semibold">Recent Incidents</h2>
               </div>
               <div className="space-y-4">
-                {incidents.slice(0, 4).map((incident) => (
+                {recentIncidents.map((incident) => (
                   <IncidentCard 
                     key={incident.id} 
                     incident={incident} 
