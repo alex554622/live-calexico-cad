@@ -29,6 +29,11 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Assignments</h2>
+      {isTouchDevice && (
+        <div className="mb-3 text-sm text-muted-foreground">
+          <p>Double-tap an officer to enter drag mode, then drag to an assignment.</p>
+        </div>
+      )}
       <div className={`grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3 ${
         isTouchDevice ? 'touch-action-pan-x overflow-x-auto -webkit-overflow-scrolling-touch' : ''
       }`}>

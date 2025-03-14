@@ -1,5 +1,5 @@
 
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Officer } from '@/types';
 import OfficerStatusBadge from '@/components/common/OfficerStatusBadge';
 import { useTouchDevice } from '@/hooks/use-touch-device';
@@ -21,6 +21,8 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
   const touchMovePosition = useRef({ x: 0, y: 0 });
   const cardRef = useRef<HTMLDivElement>(null);
   const ghostRef = useRef<HTMLDivElement | null>(null);
+  const lastTapTime = useRef<number>(0);
+  const isDraggable = useRef<boolean>(false);
 
   // Handle mouse drag events
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
@@ -66,10 +68,60 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
     document.addEventListener('dragend', cleanup, { once: true });
   };
 
+  // Check for double tap
+  const checkDoubleTap = (): boolean => {
+    const now = Date.now();
+    const timeSince = now - lastTapTime.current;
+    
+    if (timeSince < 300) {
+      // Double tap detected
+      return true;
+    }
+    
+    // Update last tap time
+    lastTapTime.current = now;
+    return false;
+  };
+
   // Touch event handlers for mobile devices
   const handleTouchStart = (e: React.TouchEvent) => {
     const touch = e.touches[0];
     initialTouchPosition.current = { x: touch.clientX, y: touch.clientY };
+    
+    // Check for double tap to activate dragging mode
+    const isDoubleTap = checkDoubleTap();
+    
+    if (isDoubleTap) {
+      isDraggable.current = true;
+      
+      // Visual indication that dragging is enabled
+      if (cardRef.current) {
+        cardRef.current.classList.add('border-primary');
+        cardRef.current.classList.add('bg-primary/10');
+      }
+      
+      // Show toast or visual feedback that dragging is enabled
+      const dragIndicator = document.createElement('div');
+      dragIndicator.className = 'fixed z-50 top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-black text-white text-sm px-4 py-2 rounded-full opacity-80 pointer-events-none';
+      dragIndicator.innerHTML = 'Drag mode activated';
+      dragIndicator.id = 'drag-indicator';
+      document.body.appendChild(dragIndicator);
+      
+      // Remove the indicator after 1.5 seconds
+      setTimeout(() => {
+        if (document.getElementById('drag-indicator')) {
+          document.body.removeChild(document.getElementById('drag-indicator')!);
+        }
+      }, 1500);
+      
+      return;
+    }
+    
+    // Only start dragging if we've double-tapped
+    if (!isDraggable.current) {
+      // If not in drag mode, the touchend will trigger onClick
+      return;
+    }
     
     // Use a timer to distinguish between tap and drag
     touchTimer.current = window.setTimeout(() => {
@@ -103,10 +155,13 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
       window.dispatchEvent(new CustomEvent('touchdragstart', { 
         detail: { officerId: officer.id }
       }));
-    }, 300); // 300ms is a good threshold for distinguishing tap vs drag
+    }, 100); // Reduced from 300ms to 100ms for more responsive drag start
   };
   
   const handleTouchMove = (e: React.TouchEvent) => {
+    // If we're not in draggable mode or not currently dragging, exit
+    if (!isDraggable.current) return;
+    
     const touch = e.touches[0];
     touchMovePosition.current = { x: touch.clientX, y: touch.clientY };
     
@@ -175,11 +230,41 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
       
       // Notify app that touch drag has ended
       window.dispatchEvent(new CustomEvent('touchdragend'));
-    } else {
-      // If not dragging, it was a tap, so trigger onClick
+      
+      // Reset draggable mode after a drop
+      isDraggable.current = false;
+      if (cardRef.current) {
+        cardRef.current.classList.remove('border-primary');
+        cardRef.current.classList.remove('bg-primary/10');
+      }
+    } else if (!isDraggable.current) {
+      // If not dragging and not in draggable mode, it was a normal tap
       onClick();
     }
   };
+
+  // Reset draggable state when component unmounts or when clicking outside
+  useEffect(() => {
+    const handleDocumentClick = (e: MouseEvent) => {
+      // Only run this for touch devices
+      if (!isTouchDevice) return;
+      
+      // If we clicked outside the card and dragging is enabled, disable it
+      if (cardRef.current && !cardRef.current.contains(e.target as Node) && isDraggable.current) {
+        isDraggable.current = false;
+        if (cardRef.current) {
+          cardRef.current.classList.remove('border-primary');
+          cardRef.current.classList.remove('bg-primary/10');
+        }
+      }
+    };
+    
+    document.addEventListener('click', handleDocumentClick);
+    
+    return () => {
+      document.removeEventListener('click', handleDocumentClick);
+    };
+  }, [isTouchDevice]);
 
   return (
     <div 
