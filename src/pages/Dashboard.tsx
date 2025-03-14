@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -41,19 +40,16 @@ const Dashboard = () => {
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [officerAssignments, setOfficerAssignments] = useState<Record<string, string[]>>({});
   
-  // Initialize assignments
   useEffect(() => {
     const initialAssignments: Record<string, string[]> = {};
     ASSIGNMENTS.forEach(assignment => {
       initialAssignments[assignment] = [];
     });
     
-    // Group officers by current assignment if they have one
     officers.forEach(officer => {
       if (officer.currentIncidentId) {
         const incident = incidents.find(inc => inc.id === officer.currentIncidentId);
         if (incident) {
-          // Try to match the location to an assignment
           const matchedAssignment = ASSIGNMENTS.find(
             assignment => incident.location.address.includes(assignment)
           );
@@ -71,24 +67,20 @@ const Dashboard = () => {
     setOfficerAssignments(initialAssignments);
   }, [officers, incidents]);
   
-  // Filter to get most recent incidents
   const recentIncidents = [...incidents]
     .sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime())
     .slice(0, 4);
   
-  // Get officers for a specific assignment
   const getAssignmentOfficers = (assignment: string) => {
     const officerIds = officerAssignments[assignment] || [];
     return officers.filter(officer => officerIds.includes(officer.id));
   };
   
-  // Handle dropping an officer onto an assignment
   const handleOfficerDrop = async (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => {
     e.preventDefault();
     const officerId = e.dataTransfer.getData("officerId");
     if (!officerId) return;
     
-    // Remove officer from any previous assignment
     const updatedAssignments = { ...officerAssignments };
     
     Object.keys(updatedAssignments).forEach(assignment => {
@@ -97,7 +89,6 @@ const Dashboard = () => {
       );
     });
     
-    // Add officer to the new assignment
     updatedAssignments[assignmentId] = [
       ...updatedAssignments[assignmentId],
       officerId
@@ -105,12 +96,9 @@ const Dashboard = () => {
     
     setOfficerAssignments(updatedAssignments);
     
-    // Update officer status to 'responding'
     const officer = officers.find(o => o.id === officerId);
     if (officer) {
       try {
-        // In a real application, you would update the officer's status and location
-        // based on the assignment. For now, we're just updating the status.
         await updateOfficer({
           ...officer,
           status: 'responding'
@@ -146,7 +134,6 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          {/* Assignment Blocks */}
           <div>
             <h2 className="text-xl font-semibold mb-4">Assignments</h2>
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
@@ -161,9 +148,7 @@ const Dashboard = () => {
             </div>
           </div>
           
-          {/* Main Content */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            {/* Officers Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Officers</h2>
@@ -179,7 +164,6 @@ const Dashboard = () => {
               </div>
             </div>
             
-            {/* Incidents Section */}
             <div>
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Recent Incidents</h2>
@@ -198,8 +182,12 @@ const Dashboard = () => {
         </>
       )}
       
-      {/* Officer Details Dialog */}
-      <Dialog open={!!selectedOfficer} onOpenChange={(open) => !open && setSelectedOfficer(null)}>
+      <Dialog 
+        open={!!selectedOfficer} 
+        onOpenChange={(open: boolean) => {
+          if (!open) setSelectedOfficer(null);
+        }}
+      >
         {selectedOfficer && (
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -252,8 +240,12 @@ const Dashboard = () => {
         )}
       </Dialog>
       
-      {/* Incident Details Dialog */}
-      <Dialog open={!!selectedIncident} onOpenChange={(open) => !open && setSelectedIncident(null)}>
+      <Dialog 
+        open={!!selectedIncident} 
+        onOpenChange={(open: boolean) => {
+          if (!open) setSelectedIncident(null);
+        }}
+      >
         {selectedIncident && (
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
