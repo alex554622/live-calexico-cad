@@ -18,6 +18,7 @@ interface IncidentDetailsDialogProps {
   officers: Officer[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  onOfficerDropOnIncident?: (e: React.DragEvent<HTMLDivElement>, incident: Incident) => void;
 }
 
 const IncidentDetailsDialog: React.FC<IncidentDetailsDialogProps> = ({
@@ -25,12 +26,33 @@ const IncidentDetailsDialog: React.FC<IncidentDetailsDialogProps> = ({
   officers,
   open,
   onOpenChange,
+  onOfficerDropOnIncident
 }) => {
   if (!incident) return null;
 
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (onOfficerDropOnIncident) {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = "move";
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (onOfficerDropOnIncident && incident) {
+      e.preventDefault();
+      e.stopPropagation();
+      onOfficerDropOnIncident(e, incident);
+    }
+  };
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent 
+        className="sm:max-w-[500px]"
+        onDragOver={handleDragOver}
+        onDrop={handleDrop}
+      >
         <DialogHeader>
           <DialogTitle>{incident.title}</DialogTitle>
           <div className="flex space-x-2 mt-2">

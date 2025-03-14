@@ -41,12 +41,14 @@ const Dashboard = () => {
       const { officerId, assignmentId } = e.detail;
       
       if (officerId && assignmentId) {
+        console.log(`Touch drop - Officer ${officerId} to assignment ${assignmentId}`);
+        
         // Create a synthetic drop event
         const dropEvent = {
           preventDefault: () => {},
           stopPropagation: () => {},
           dataTransfer: {
-            getData: () => officerId
+            getData: (key: string) => key === 'officerId' ? officerId : null
           }
         } as unknown as React.DragEvent<HTMLDivElement>;
         
@@ -59,12 +61,14 @@ const Dashboard = () => {
       const { officerId } = e.detail;
       
       if (officerId && handleOfficerDropToList) {
+        console.log(`Touch drop to list - Officer ${officerId}`);
+        
         // Create a synthetic drop event
         const dropEvent = {
           preventDefault: () => {},
           stopPropagation: () => {},
           dataTransfer: {
-            getData: () => officerId
+            getData: (key: string) => key === 'officerId' ? officerId : null
           }
         } as unknown as React.DragEvent<HTMLDivElement>;
         

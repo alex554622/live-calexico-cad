@@ -66,7 +66,10 @@ export function useOfficerAssignmentOperations(
   // Handle dragging officer to an assignment
   const handleOfficerDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => {
     e.preventDefault();
+    e.stopPropagation();
     const officerId = e.dataTransfer.getData("officerId");
+    console.log(`Dropping officer ${officerId} to assignment ${assignmentId}`);
+    
     if (!officerId) return;
     
     const officer = officers.find(o => o.id === officerId);
@@ -102,6 +105,7 @@ export function useOfficerAssignmentOperations(
   }, [refreshData, updateOfficer, officers, updateAssignmentOptimistically]);
   
   const handleOfficerDragStartFromAssignment = useCallback((e: React.DragEvent<HTMLDivElement>, officer: Officer) => {
+    console.log(`Dragging officer ${officer.id} from assignment`);
     e.dataTransfer.setData("officerId", officer.id);
     e.dataTransfer.effectAllowed = "move";
   }, []);
@@ -109,7 +113,10 @@ export function useOfficerAssignmentOperations(
   // Handle dragging officer back to officer list
   const handleOfficerDropToList = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     const officerId = e.dataTransfer.getData("officerId");
+    console.log(`Dropping officer ${officerId} back to list`);
+    
     if (!officerId) return;
     
     const officer = officers.find(o => o.id === officerId);
@@ -147,7 +154,10 @@ export function useOfficerAssignmentOperations(
   
   const handleOfficerDropOnIncident = useCallback(async (e: React.DragEvent<HTMLDivElement>, incident: Incident) => {
     e.preventDefault();
+    e.stopPropagation();
     const officerId = e.dataTransfer.getData("officerId");
+    console.log(`Dropping officer ${officerId} on incident ${incident.id}`);
+    
     if (!officerId) return;
     
     const officer = officers.find(o => o.id === officerId);
