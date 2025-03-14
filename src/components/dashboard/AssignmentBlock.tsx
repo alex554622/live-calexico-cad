@@ -20,15 +20,15 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
 
   return (
     <div 
-      className={`border rounded-lg p-4 h-40 overflow-y-auto ${officers.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50'}`}
+      className={`border rounded-lg p-2 h-32 overflow-y-auto ${officers.length > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50'}`}
       onDragOver={handleDragOver}
       onDrop={(e) => onDrop(e, title)}
     >
-      <h3 className="font-medium text-sm mb-2">{title}</h3>
-      <div className="space-y-2">
+      <h3 className="font-medium text-xs mb-1">{title}</h3>
+      <div className="space-y-1">
         {officers.map((officer) => (
-          <div key={officer.id} className="flex items-center justify-between bg-white p-2 rounded shadow-sm">
-            <div className="text-xs truncate">{officer.name}</div>
+          <div key={officer.id} className="flex items-center justify-between bg-white p-1 rounded shadow-sm">
+            <div className="text-xs truncate max-w-[100px]">{officer.name}</div>
             <OfficerStatusBadge status={officer.status} />
           </div>
         ))}

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -119,6 +120,35 @@ const Dashboard = () => {
     }
   };
   
+  const handleOfficerDropOnIncident = async (e: React.DragEvent<HTMLDivElement>, incident: Incident) => {
+    e.preventDefault();
+    const officerId = e.dataTransfer.getData("officerId");
+    if (!officerId) return;
+    
+    const officer = officers.find(o => o.id === officerId);
+    if (officer) {
+      try {
+        await updateOfficer(officer.id, {
+          ...officer,
+          status: 'responding',
+          currentIncidentId: incident.id
+        });
+        
+        toast({
+          title: "Officer assigned to incident",
+          description: `${officer.name} has been assigned to "${incident.title}"`,
+        });
+      } catch (error) {
+        console.error("Failed to assign officer to incident", error);
+        toast({
+          title: "Assignment failed",
+          description: "Failed to assign officer to incident",
+          variant: "destructive"
+        });
+      }
+    }
+  };
+  
   return (
     <div className="space-y-6">
       <div>
@@ -136,7 +166,7 @@ const Dashboard = () => {
         <>
           <div>
             <h2 className="text-xl font-semibold mb-4">Assignments</h2>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3">
               {ASSIGNMENTS.map((assignment) => (
                 <AssignmentBlock
                   key={assignment}
@@ -153,8 +183,8 @@ const Dashboard = () => {
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold">Officers</h2>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {officers.slice(0, 6).map((officer) => (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
+                {officers.map((officer) => (
                   <DraggableOfficerCard 
                     key={officer.id} 
                     officer={officer} 
@@ -170,11 +200,17 @@ const Dashboard = () => {
               </div>
               <div className="space-y-4">
                 {recentIncidents.map((incident) => (
-                  <IncidentCard 
-                    key={incident.id} 
-                    incident={incident} 
-                    onClick={() => setSelectedIncident(incident)}
-                  />
+                  <div 
+                    key={incident.id}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={(e) => handleOfficerDropOnIncident(e, incident)}
+                    className="border-2 border-dashed border-gray-300 rounded-lg p-1 hover:border-primary transition-colors"
+                  >
+                    <IncidentCard 
+                      incident={incident} 
+                      onClick={() => setSelectedIncident(incident)}
+                    />
+                  </div>
                 ))}
               </div>
             </div>
@@ -184,7 +220,7 @@ const Dashboard = () => {
       
       <Dialog 
         open={!!selectedOfficer} 
-        onOpenChange={(open: boolean) => {
+        onOpenChange={(open) => {
           if (!open) setSelectedOfficer(null);
         }}
       >
@@ -242,7 +278,7 @@ const Dashboard = () => {
       
       <Dialog 
         open={!!selectedIncident} 
-        onOpenChange={(open: boolean) => {
+        onOpenChange={(open) => {
           if (!open) setSelectedIncident(null);
         }}
       >
