@@ -8,6 +8,7 @@ interface AssignmentGridProps {
   officers: Officer[];
   officerAssignments: Record<string, string[]>;
   onDrop: (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => void;
+  onOfficerDragStart: (e: React.DragEvent<HTMLDivElement>, officer: Officer) => void;
 }
 
 const AssignmentGrid: React.FC<AssignmentGridProps> = ({
@@ -15,6 +16,7 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
   officers,
   officerAssignments,
   onDrop,
+  onOfficerDragStart,
 }) => {
   const getAssignmentOfficers = (assignment: string) => {
     const officerIds = officerAssignments[assignment] || [];
@@ -31,6 +33,7 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
             title={assignment}
             officers={getAssignmentOfficers(assignment)}
             onDrop={onDrop}
+            onDragStart={onOfficerDragStart}
           />
         ))}
       </div>

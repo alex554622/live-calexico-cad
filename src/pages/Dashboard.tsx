@@ -33,6 +33,9 @@ const Dashboard = () => {
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [officerAssignments, setOfficerAssignments] = useState<Record<string, string[]>>({});
   
+  // Get all assigned officer IDs across all assignments
+  const allAssignedOfficerIds = Object.values(officerAssignments).flat();
+  
   useEffect(() => {
     const initialAssignments: Record<string, string[]> = {};
     ASSIGNMENTS.forEach(assignment => {
@@ -107,6 +110,11 @@ const Dashboard = () => {
     }
   };
   
+  const handleOfficerDragStartFromAssignment = (e: React.DragEvent<HTMLDivElement>, officer: Officer) => {
+    e.dataTransfer.setData("officerId", officer.id);
+    e.dataTransfer.effectAllowed = "move";
+  };
+  
   const handleOfficerDropOnIncident = async (e: React.DragEvent<HTMLDivElement>, incident: Incident) => {
     e.preventDefault();
     const officerId = e.dataTransfer.getData("officerId");
@@ -177,11 +185,13 @@ const Dashboard = () => {
             officers={officers}
             officerAssignments={officerAssignments}
             onDrop={handleOfficerDrop}
+            onOfficerDragStart={handleOfficerDragStartFromAssignment}
           />
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <OfficersSection 
               officers={officers}
+              assignedOfficerIds={allAssignedOfficerIds}
               onOfficerClick={setSelectedOfficer}
             />
             
