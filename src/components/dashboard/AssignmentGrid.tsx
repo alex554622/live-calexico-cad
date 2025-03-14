@@ -34,7 +34,7 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
           <p>Tap and hold officers to assign them to different locations.</p>
         </div>
       )}
-      <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3" id="assignment-grid">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3" id="assignment-grid">
         {assignments.map((assignment) => (
           <AssignmentBlock
             key={assignment}

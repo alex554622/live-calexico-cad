@@ -125,8 +125,8 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
           <div 
             key={officer.id} 
             className="flex items-center justify-between bg-white dark:bg-gray-700 p-1 rounded shadow-sm cursor-move"
-            draggable={true}
-            onDragStart={onDragStart ? (e) => onDragStart(e, officer) : undefined}
+            draggable={!isTouchDevice}
+            onDragStart={onDragStart && !isTouchDevice ? (e) => onDragStart(e, officer) : undefined}
             data-officer-id={officer.id}
             data-officer-name={officer.name}
           >
