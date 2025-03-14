@@ -2,6 +2,7 @@
 import React from 'react';
 import { Officer } from '@/types';
 import AssignmentBlock from './AssignmentBlock';
+import { useTouchDevice } from '@/hooks/use-touch-device';
 
 interface AssignmentGridProps {
   assignments: string[];
@@ -18,6 +19,8 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
   onDrop,
   onOfficerDragStart,
 }) => {
+  const isTouchDevice = useTouchDevice();
+  
   const getAssignmentOfficers = (assignment: string) => {
     const officerIds = officerAssignments[assignment] || [];
     return officers.filter(officer => officerIds.includes(officer.id));
@@ -26,7 +29,9 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Assignments</h2>
-      <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3">
+      <div className={`grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3 ${
+        isTouchDevice ? 'touch-action-pan-x overflow-x-auto -webkit-overflow-scrolling-touch' : ''
+      }`}>
         {assignments.map((assignment) => (
           <AssignmentBlock
             key={assignment}
