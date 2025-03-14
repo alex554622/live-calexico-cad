@@ -11,6 +11,7 @@ const Dashboard = () => {
     setSelectedIncident,
     officerAssignments,
     allAssignedOfficerIds,
+    loading,
     handleOfficerDrop,
     handleOfficerDragStartFromAssignment,
     handleOfficerDropOnIncident
@@ -25,6 +26,7 @@ const Dashboard = () => {
       officerAssignments={officerAssignments}
       assignments={ASSIGNMENTS}
       allAssignedOfficerIds={allAssignedOfficerIds}
+      loading={loading}
       handleOfficerDrop={handleOfficerDrop}
       handleOfficerDragStartFromAssignment={handleOfficerDragStartFromAssignment}
       handleOfficerDropOnIncident={handleOfficerDropOnIncident}

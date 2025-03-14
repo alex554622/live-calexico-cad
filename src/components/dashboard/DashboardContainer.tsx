@@ -17,6 +17,7 @@ const DashboardContainer: React.FC<{
   officerAssignments: Record<string, string[]>;
   assignments: string[];
   allAssignedOfficerIds: string[];
+  loading?: boolean;
   handleOfficerDrop: (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => void;
   handleOfficerDragStartFromAssignment: (e: React.DragEvent<HTMLDivElement>, officer: Officer) => void;
   handleOfficerDropOnIncident: (e: React.DragEvent<HTMLDivElement>, incident: Incident) => void;
@@ -28,6 +29,7 @@ const DashboardContainer: React.FC<{
   officerAssignments,
   assignments,
   allAssignedOfficerIds,
+  loading = false,
   handleOfficerDrop,
   handleOfficerDragStartFromAssignment,
   handleOfficerDropOnIncident,
@@ -40,7 +42,7 @@ const DashboardContainer: React.FC<{
     .sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime())
     .slice(0, 4);
   
-  if (loadingOfficers || loadingIncidents) {
+  if (loadingOfficers || loadingIncidents || loading) {
     return (
       <div className="min-h-[400px] flex items-center justify-center">
         <p>Loading dashboard data...</p>

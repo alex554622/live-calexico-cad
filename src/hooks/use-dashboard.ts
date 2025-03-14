@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react';
 import { useData } from '@/context/data';
 import { Officer, Incident } from '@/types';
 import { toast } from '@/components/ui/use-toast';
+import { supabase } from '@/integrations/supabase/client';
 
 export const ASSIGNMENTS = [
   "2nd St & Chavez",
@@ -23,37 +24,109 @@ export function useDashboard() {
   const [selectedOfficer, setSelectedOfficer] = useState<Officer | null>(null);
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [officerAssignments, setOfficerAssignments] = useState<Record<string, string[]>>({});
+  const [loading, setLoading] = useState(true);
   
   // Get all assigned officer IDs across all assignments
   const allAssignedOfficerIds = Object.values(officerAssignments).flat();
   
-  useEffect(() => {
-    const initialAssignments: Record<string, string[]> = {};
-    ASSIGNMENTS.forEach(assignment => {
-      initialAssignments[assignment] = [];
-    });
-    
-    officers.forEach(officer => {
-      if (officer.currentIncidentId) {
-        const incident = incidents.find(inc => inc.id === officer.currentIncidentId);
-        if (incident) {
-          const matchedAssignment = ASSIGNMENTS.find(
-            assignment => incident.location.address.includes(assignment)
-          );
-          
-          if (matchedAssignment) {
-            initialAssignments[matchedAssignment] = [
-              ...initialAssignments[matchedAssignment],
-              officer.id
-            ];
+  // Fetch officer assignments from Supabase
+  const fetchOfficerAssignments = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('officer_assignments')
+        .select('*');
+      
+      if (error) throw error;
+      
+      // Transform the data into our assignment structure
+      const assignments: Record<string, string[]> = {};
+      
+      // Initialize all assignments with empty arrays
+      ASSIGNMENTS.forEach(assignment => {
+        assignments[assignment] = [];
+      });
+      
+      // Populate assignments from the database
+      if (data) {
+        data.forEach(item => {
+          if (ASSIGNMENTS.includes(item.assignment_name)) {
+            assignments[item.assignment_name].push(item.officer_id);
           }
-        }
+        });
       }
-    });
-    
-    setOfficerAssignments(initialAssignments);
-  }, [officers, incidents]);
+      
+      setOfficerAssignments(assignments);
+    } catch (error) {
+      console.error('Error fetching officer assignments:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load officer assignments',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
   
+  // Initial fetch of assignments and setup for real-time updates
+  useEffect(() => {
+    fetchOfficerAssignments();
+    
+    // Subscribe to real-time changes
+    const assignmentsChannel = supabase
+      .channel('officer_assignments_changes')
+      .on('postgres_changes', 
+        { event: '*', schema: 'public', table: 'officer_assignments' }, 
+        () => {
+          fetchOfficerAssignments();
+        }
+      )
+      .subscribe();
+    
+    // Cleanup subscription on unmount
+    return () => {
+      supabase.removeChannel(assignmentsChannel);
+    };
+  }, []);
+  
+  // Helper method to update an officer's assignment in Supabase
+  const updateOfficerAssignment = async (officerId: string, assignmentName: string) => {
+    try {
+      // First check if the officer already has an assignment
+      const { data, error } = await supabase
+        .from('officer_assignments')
+        .select('*')
+        .eq('officer_id', officerId);
+        
+      if (error) throw error;
+      
+      if (data && data.length > 0) {
+        // Update existing assignment
+        const { error: updateError } = await supabase
+          .from('officer_assignments')
+          .update({ assignment_name: assignmentName, assigned_at: new Date().toISOString() })
+          .eq('officer_id', officerId);
+          
+        if (updateError) throw updateError;
+      } else {
+        // Create new assignment
+        const { error: insertError } = await supabase
+          .from('officer_assignments')
+          .insert({
+            officer_id: officerId,
+            assignment_name: assignmentName
+          });
+          
+        if (insertError) throw insertError;
+      }
+    } catch (error) {
+      console.error('Error updating officer assignment:', error);
+      throw error;
+    }
+  };
+  
+  // Handle dragging officer to an assignment
   const handleOfficerDrop = async (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => {
     e.preventDefault();
     const officerId = e.dataTransfer.getData("officerId");
@@ -62,36 +135,25 @@ export function useDashboard() {
     const officer = officers.find(o => o.id === officerId);
     if (!officer) return;
     
-    const updatedAssignments = { ...officerAssignments };
-    
-    Object.keys(updatedAssignments).forEach(assignment => {
-      updatedAssignments[assignment] = updatedAssignments[assignment].filter(
-        id => id !== officerId
-      );
-    });
-    
-    updatedAssignments[assignmentId] = [
-      ...updatedAssignments[assignmentId],
-      officerId
-    ];
-    
-    setOfficerAssignments(updatedAssignments);
-    
     try {
+      // Update the officer status in the officers table
       await updateOfficer(officer.id, {
         ...officer,
         status: 'responding'
       });
+      
+      // Update the assignment in the officer_assignments table
+      await updateOfficerAssignment(officerId, assignmentId);
       
       toast({
         title: "Officer assigned",
         description: `${officer.name} has been assigned to ${assignmentId}`,
       });
     } catch (error) {
-      console.error("Failed to update officer status", error);
+      console.error("Failed to update officer assignment", error);
       toast({
         title: "Assignment failed",
-        description: "Failed to update officer status",
+        description: "Failed to update officer assignment",
         variant: "destructive"
       });
     }
@@ -110,31 +172,21 @@ export function useDashboard() {
     const officer = officers.find(o => o.id === officerId);
     if (officer) {
       try {
+        // Update officer in the officers table
         await updateOfficer(officer.id, {
           ...officer,
           status: 'responding',
           currentIncidentId: incident.id
         });
         
+        // Check if there's a matching assignment for this incident
         const matchedAssignment = ASSIGNMENTS.find(
           assignment => incident.location.address.includes(assignment)
         );
         
         if (matchedAssignment) {
-          const updatedAssignments = { ...officerAssignments };
-          
-          Object.keys(updatedAssignments).forEach(assignment => {
-            updatedAssignments[assignment] = updatedAssignments[assignment].filter(
-              id => id !== officerId
-            );
-          });
-          
-          updatedAssignments[matchedAssignment] = [
-            ...updatedAssignments[matchedAssignment],
-            officerId
-          ];
-          
-          setOfficerAssignments(updatedAssignments);
+          // Update officer assignment in the officer_assignments table
+          await updateOfficerAssignment(officerId, matchedAssignment);
         }
         
         toast({
@@ -158,8 +210,8 @@ export function useDashboard() {
     selectedIncident,
     setSelectedIncident,
     officerAssignments,
-    setOfficerAssignments,
     allAssignedOfficerIds,
+    loading,
     handleOfficerDrop,
     handleOfficerDragStartFromAssignment,
     handleOfficerDropOnIncident

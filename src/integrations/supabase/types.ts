@@ -123,6 +123,35 @@ export type Database = {
         }
         Relationships: []
       }
+      officer_assignments: {
+        Row: {
+          assigned_at: string
+          assignment_name: string
+          id: string
+          officer_id: string
+        }
+        Insert: {
+          assigned_at?: string
+          assignment_name: string
+          id?: string
+          officer_id: string
+        }
+        Update: {
+          assigned_at?: string
+          assignment_name?: string
+          id?: string
+          officer_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "officer_assignments_officer_id_fkey"
+            columns: ["officer_id"]
+            isOneToOne: true
+            referencedRelation: "officers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       officers: {
         Row: {
           badge_number: string
