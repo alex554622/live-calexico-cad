@@ -11,7 +11,8 @@ import { ASSIGNMENTS } from './constants';
 export function useOfficerAssignmentOperations(
   refreshData: () => void,
   updateOfficer: (officerId: string, updates: Partial<Officer>) => Promise<Officer>,
-  officers: Officer[] = []
+  officers: Officer[] = [],
+  updateAssignmentOptimistically?: (officerId: string, assignmentId: string | null) => void
 ) {
   // Helper method to update an officer's assignment in Supabase
   const updateOfficerAssignment = async (officerId: string, assignmentName: string | null) => {
@@ -72,6 +73,11 @@ export function useOfficerAssignmentOperations(
     if (!officer) return;
     
     try {
+      // Update the UI immediately with optimistic updates
+      if (updateAssignmentOptimistically) {
+        updateAssignmentOptimistically(officerId, assignmentId);
+      }
+      
       // Update the officer status in the officers table
       await updateOfficer(officer.id, {
         ...officer,
@@ -93,7 +99,7 @@ export function useOfficerAssignmentOperations(
         variant: "destructive"
       });
     }
-  }, [refreshData, updateOfficer, officers]);
+  }, [refreshData, updateOfficer, officers, updateAssignmentOptimistically]);
   
   const handleOfficerDragStartFromAssignment = useCallback((e: React.DragEvent<HTMLDivElement>, officer: Officer) => {
     e.dataTransfer.setData("officerId", officer.id);
@@ -110,6 +116,11 @@ export function useOfficerAssignmentOperations(
     if (!officer) return;
     
     try {
+      // Update the UI immediately with optimistic updates
+      if (updateAssignmentOptimistically) {
+        updateAssignmentOptimistically(officerId, null);
+      }
+      
       // Update the officer status to available
       await updateOfficer(officer.id, {
         ...officer,
@@ -132,7 +143,7 @@ export function useOfficerAssignmentOperations(
         variant: "destructive"
       });
     }
-  }, [refreshData, updateOfficer, officers]);
+  }, [refreshData, updateOfficer, officers, updateAssignmentOptimistically]);
   
   const handleOfficerDropOnIncident = useCallback(async (e: React.DragEvent<HTMLDivElement>, incident: Incident) => {
     e.preventDefault();
@@ -142,17 +153,22 @@ export function useOfficerAssignmentOperations(
     const officer = officers.find(o => o.id === officerId);
     if (officer) {
       try {
+        // Check if there's a matching assignment for this incident
+        const matchedAssignment = ASSIGNMENTS.find(
+          assignment => incident.location.address.includes(assignment)
+        );
+        
+        // Update the UI immediately with optimistic updates
+        if (updateAssignmentOptimistically && matchedAssignment) {
+          updateAssignmentOptimistically(officerId, matchedAssignment);
+        }
+        
         // Update officer in the officers table
         await updateOfficer(officer.id, {
           ...officer,
           status: 'responding',
           currentIncidentId: incident.id
         });
-        
-        // Check if there's a matching assignment for this incident
-        const matchedAssignment = ASSIGNMENTS.find(
-          assignment => incident.location.address.includes(assignment)
-        );
         
         if (matchedAssignment) {
           // Update officer assignment in the officer_assignments table
@@ -172,7 +188,7 @@ export function useOfficerAssignmentOperations(
         });
       }
     }
-  }, [refreshData, updateOfficer, officers]);
+  }, [refreshData, updateOfficer, officers, updateAssignmentOptimistically]);
 
   return {
     handleOfficerDrop,

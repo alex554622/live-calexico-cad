@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Officer } from '@/types';
 import DraggableOfficerCard from './DraggableOfficerCard';
 
@@ -16,6 +16,8 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
   onOfficerClick,
   onOfficerDrop,
 }) => {
+  const [isDragOver, setIsDragOver] = useState(false);
+  
   // Filter out officers that are already assigned to an assignment
   const availableOfficers = officers.filter(
     officer => !assignedOfficerIds.includes(officer.id)
@@ -23,6 +25,18 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    setIsDragOver(true);
+  };
+  
+  const handleDragLeave = () => {
+    setIsDragOver(false);
+  };
+  
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    setIsDragOver(false);
+    if (onOfficerDrop) {
+      onOfficerDrop(e);
+    }
   };
 
   return (
@@ -32,8 +46,12 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
       </div>
       <div 
         onDragOver={handleDragOver}
-        onDrop={onOfficerDrop}
-        className="border-2 border-dashed border-transparent hover:border-primary transition-colors rounded-lg p-2"
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`border-2 border-dashed rounded-lg p-2 transition-colors duration-200
+          ${isDragOver 
+            ? 'border-primary bg-primary/10' 
+            : 'border-transparent hover:border-primary'}`}
       >
         {availableOfficers.length === 0 ? (
           <div className="p-4 text-center text-muted-foreground border rounded-lg">
