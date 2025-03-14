@@ -1,12 +1,11 @@
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useCallback } from 'react';
 import { useDashboard, ASSIGNMENTS } from '@/hooks/dashboard';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import { useTouchDevice } from '@/hooks/use-touch-device';
 import { toast } from 'sonner';
 
 const Dashboard = () => {
-  const isTouchDevice = useTouchDevice();
   const {
     selectedOfficer,
     setSelectedOfficer,
@@ -23,6 +22,8 @@ const Dashboard = () => {
     handleOfficerDropToList
   } = useDashboard();
   
+  const isTouchDevice = useTouchDevice();
+  
   // Add effect to periodically refresh the data
   useEffect(() => {
     const intervalId = setInterval(() => {
@@ -37,7 +38,7 @@ const Dashboard = () => {
     if (!isTouchDevice) return;
     
     // Handle touch drop on assignment
-    const handleTouchDrop = (e: CustomEvent) => {
+    const handleTouchDrop = useCallback((e: CustomEvent) => {
       const { officerId, assignmentId } = e.detail;
       
       if (officerId && assignmentId) {
@@ -68,10 +69,10 @@ const Dashboard = () => {
           });
         }
       }
-    };
+    }, [handleOfficerDrop]);
     
     // Handle drop back to officers list
-    const handleTouchDropToList = (e: CustomEvent) => {
+    const handleTouchDropToList = useCallback((e: CustomEvent) => {
       const { officerId } = e.detail;
       
       if (officerId && handleOfficerDropToList) {
@@ -102,10 +103,10 @@ const Dashboard = () => {
           });
         }
       }
-    };
+    }, [handleOfficerDropToList]);
     
     // Handle drag start from assignment
-    const handleTouchDragStartFromAssignment = (e: CustomEvent) => {
+    const handleTouchDragStartFromAssignment = useCallback((e: CustomEvent) => {
       const { officerId, assignmentId } = e.detail;
       
       if (officerId && assignmentId && handleOfficerDragStartFromAssignment) {
@@ -124,7 +125,7 @@ const Dashboard = () => {
           console.error('Error starting drag from assignment:', error);
         }
       }
-    };
+    }, [handleOfficerDragStartFromAssignment]);
     
     // Clean up any lingering ghost elements on page navigation
     const cleanupGhostElements = () => {
