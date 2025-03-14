@@ -22,11 +22,9 @@ export function useDashboard() {
   // Get assignment operations with needed dependencies
   const operations = useOfficerAssignmentOperations(
     assignments.refreshData,
-    updateOfficer
+    updateOfficer,
+    officers
   );
-  
-  // Provide officers to the assignment operations scope
-  Object.defineProperty(operations, 'officers', { value: officers });
   
   // Combine all the pieces into a unified dashboard API
   return {

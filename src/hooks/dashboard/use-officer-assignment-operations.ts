@@ -10,7 +10,8 @@ import { ASSIGNMENTS } from './constants';
  */
 export function useOfficerAssignmentOperations(
   refreshData: () => void,
-  updateOfficer: (officerId: string, updates: Partial<Officer>) => Promise<Officer>
+  updateOfficer: (officerId: string, updates: Partial<Officer>) => Promise<Officer>,
+  officers: Officer[] = []
 ) {
   // Helper method to update an officer's assignment in Supabase
   const updateOfficerAssignment = async (officerId: string, assignmentName: string) => {
@@ -85,7 +86,7 @@ export function useOfficerAssignmentOperations(
         variant: "destructive"
       });
     }
-  }, [refreshData, updateOfficer]);
+  }, [refreshData, updateOfficer, officers]);
   
   const handleOfficerDragStartFromAssignment = useCallback((e: React.DragEvent<HTMLDivElement>, officer: Officer) => {
     e.dataTransfer.setData("officerId", officer.id);
@@ -133,7 +134,7 @@ export function useOfficerAssignmentOperations(
         });
       }
     }
-  }, [refreshData, updateOfficer]);
+  }, [refreshData, updateOfficer, officers]);
 
   return {
     handleOfficerDrop,
