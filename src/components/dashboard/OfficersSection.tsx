@@ -39,6 +39,7 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
   };
   
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
     setIsDragOver(false);
     if (onOfficerDrop) {
       onOfficerDrop(e);
@@ -72,45 +73,12 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
       setIsTouchOver(false);
     };
     
-    const handleTouchDrop = (e: CustomEvent) => {
-      if (!sectionRef.current) return;
-      
-      const { x, y, officerId } = e.detail;
-      const rect = sectionRef.current.getBoundingClientRect();
-      
-      // Check if touch position is within this section
-      if (
-        x >= rect.left && 
-        x <= rect.right && 
-        y >= rect.top && 
-        y <= rect.bottom
-      ) {
-        // Create a synthetic drop event
-        const dropEvent = new Event('drop', { bubbles: true }) as unknown as React.DragEvent<HTMLDivElement>;
-        
-        // Add the dataTransfer object
-        Object.defineProperty(dropEvent, 'dataTransfer', {
-          value: {
-            getData: () => officerId
-          }
-        });
-        
-        // Call the onDrop handler
-        onOfficerDrop(dropEvent);
-      }
-      
-      setIsTouchOver(false);
-    };
-    
-    // Register event listeners
     window.addEventListener('touchdragmove', handleTouchDragMove as EventListener);
     window.addEventListener('touchdragend', handleTouchDragEnd as EventListener);
-    window.addEventListener('touchdrop', handleTouchDrop as EventListener);
     
     return () => {
       window.removeEventListener('touchdragmove', handleTouchDragMove as EventListener);
       window.removeEventListener('touchdragend', handleTouchDragEnd as EventListener);
-      window.removeEventListener('touchdrop', handleTouchDrop as EventListener);
     };
   }, [isTouchDevice, onOfficerDrop]);
 
@@ -121,9 +89,9 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
       </div>
       <div 
         ref={sectionRef}
-        onDragOver={!isTouchDevice ? handleDragOver : undefined}
-        onDragLeave={!isTouchDevice ? handleDragLeave : undefined}
-        onDrop={!isTouchDevice ? handleDrop : undefined}
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
         className={`border-2 border-dashed rounded-lg p-2 transition-colors duration-200
           ${(isDragOver || isTouchOver) 
             ? 'border-primary bg-primary/10' 
@@ -135,7 +103,7 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
             All officers are currently assigned to assignments
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto p-2">
             {availableOfficers.map((officer) => (
               <DraggableOfficerCard 
                 key={officer.id} 

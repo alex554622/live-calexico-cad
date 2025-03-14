@@ -34,9 +34,7 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
           <p>Drag officers to assign them to different locations.</p>
         </div>
       )}
-      <div className={`grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3 ${
-        isTouchDevice ? 'touch-action-pan-x overflow-x-auto -webkit-overflow-scrolling-touch' : ''
-      }`}>
+      <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3">
         {assignments.map((assignment) => (
           <AssignmentBlock
             key={assignment}

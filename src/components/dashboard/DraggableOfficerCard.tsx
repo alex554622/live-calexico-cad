@@ -26,6 +26,7 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
     const ghostElement = document.createElement('div');
     ghostElement.className = 'fixed z-50 bg-primary text-primary-foreground px-3 py-2 rounded-md shadow opacity-80';
     ghostElement.innerText = officer.name;
+    ghostElement.id = 'drag-ghost';
     document.body.appendChild(ghostElement);
     
     // Set the ghost image and position it
@@ -33,7 +34,7 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
     
     // Remove the ghost element after the drag starts
     setTimeout(() => {
-      if (ghostElement.parentNode) {
+      if (document.getElementById('drag-ghost')) {
         document.body.removeChild(ghostElement);
       }
     }, 0);
@@ -41,11 +42,18 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
 
   const handleDragEnd = () => {
     setIsDragging(false);
+    
+    // Cleanup any lingering ghost elements
+    const ghost = document.getElementById('touch-drag-ghost');
+    if (ghost && ghost.parentNode) {
+      document.body.removeChild(ghost);
+    }
   };
   
   // Touch handlers for touch devices
   const handleTouchStart = (e: React.TouchEvent) => {
-    // Don't prevent default here as it may prevent scrolling
+    e.stopPropagation();
+    
     const touch = e.touches[0];
     const officerId = officer.id;
     const name = officer.name;
@@ -80,6 +88,8 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
     
     // Prevent scrolling during drag
     e.preventDefault();
+    e.stopPropagation();
+    
     const touch = e.touches[0];
     
     // Update ghost element position
@@ -92,7 +102,7 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
     // Dispatch custom event for drag move
     window.dispatchEvent(new CustomEvent('touchdragmove', { 
       detail: { 
-        officerId: officer.id,
+        officerId: (window as any).touchDragOfficerId,
         x: touch.clientX,
         y: touch.clientY
       }
@@ -100,6 +110,8 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
   };
   
   const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
+    
     if (!(window as any).touchDragOfficerId) return;
     
     const touch = e.changedTouches[0];
@@ -147,10 +159,10 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
         ${isDragging ? 'opacity-50' : ''}
         ${officer.currentIncidentId ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40' : ''}
         ${isTouchDevice ? 'active:bg-primary/10' : 'cursor-move'}`}
-      onClick={onClick}
-      draggable={!isTouchDevice}
-      onDragStart={!isTouchDevice ? handleDragStart : undefined}
-      onDragEnd={!isTouchDevice ? handleDragEnd : undefined}
+      onClick={isTouchDevice ? onClick : undefined}
+      draggable={true}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onTouchStart={isTouchDevice ? handleTouchStart : undefined}
       onTouchMove={isTouchDevice ? handleTouchMove : undefined}
       onTouchEnd={isTouchDevice ? handleTouchEnd : undefined}

@@ -44,6 +44,7 @@ const Dashboard = () => {
         // Create a synthetic drop event
         const dropEvent = {
           preventDefault: () => {},
+          stopPropagation: () => {},
           dataTransfer: {
             getData: () => officerId
           }
@@ -61,6 +62,7 @@ const Dashboard = () => {
         // Create a synthetic drop event
         const dropEvent = {
           preventDefault: () => {},
+          stopPropagation: () => {},
           dataTransfer: {
             getData: () => officerId
           }
@@ -70,13 +72,28 @@ const Dashboard = () => {
       }
     };
     
+    // Clean up any lingering ghost elements on page navigation
+    const cleanupGhostElements = () => {
+      const ghost = document.getElementById('touch-drag-ghost');
+      if (ghost && ghost.parentNode) {
+        document.body.removeChild(ghost);
+      }
+      
+      // Also clean up any stored data
+      delete (window as any).touchDragOfficerId;
+    };
+    
     // Register event listeners
     window.addEventListener('touchdrop', handleTouchDrop as EventListener);
     window.addEventListener('touchdroptolist', handleTouchDropToList as EventListener);
+    window.addEventListener('popstate', cleanupGhostElements);
     
+    // Cleanup on component unmount
     return () => {
       window.removeEventListener('touchdrop', handleTouchDrop as EventListener);
       window.removeEventListener('touchdroptolist', handleTouchDropToList as EventListener);
+      window.removeEventListener('popstate', cleanupGhostElements);
+      cleanupGhostElements();
     };
   }, [isTouchDevice, handleOfficerDrop, handleOfficerDropToList]);
   
