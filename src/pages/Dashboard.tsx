@@ -3,7 +3,6 @@ import React, { useEffect } from 'react';
 import { useDashboard, ASSIGNMENTS } from '@/hooks/dashboard';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import { useTouchDevice } from '@/hooks/use-touch-device';
-import { toast } from '@/components/ui/use-toast';
 
 const Dashboard = () => {
   const {
@@ -44,32 +43,16 @@ const Dashboard = () => {
       if (officerId && assignmentId) {
         console.log(`Touch drop - Officer ${officerId} to assignment ${assignmentId}`);
         
-        try {
-          // Create a synthetic drop event
-          const dropEvent = {
-            preventDefault: () => {},
-            stopPropagation: () => {},
-            dataTransfer: {
-              getData: (key: string) => key === 'officerId' ? officerId : null
-            }
-          } as unknown as React.DragEvent<HTMLDivElement>;
-          
-          handleOfficerDrop(dropEvent, assignmentId);
-          
-          // Provide feedback for touch users
-          toast({
-            title: "Officer Assigned",
-            description: `Officer assigned to ${assignmentId}`,
-            duration: 2000,
-          });
-        } catch (error) {
-          console.error("Error handling touch drop:", error);
-          toast({
-            title: "Assignment Failed",
-            description: "Could not assign officer to this location",
-            variant: "destructive",
-          });
-        }
+        // Create a synthetic drop event
+        const dropEvent = {
+          preventDefault: () => {},
+          stopPropagation: () => {},
+          dataTransfer: {
+            getData: (key: string) => key === 'officerId' ? officerId : null
+          }
+        } as unknown as React.DragEvent<HTMLDivElement>;
+        
+        handleOfficerDrop(dropEvent, assignmentId);
       }
     };
     
@@ -80,32 +63,16 @@ const Dashboard = () => {
       if (officerId && handleOfficerDropToList) {
         console.log(`Touch drop to list - Officer ${officerId}`);
         
-        try {
-          // Create a synthetic drop event
-          const dropEvent = {
-            preventDefault: () => {},
-            stopPropagation: () => {},
-            dataTransfer: {
-              getData: (key: string) => key === 'officerId' ? officerId : null
-            }
-          } as unknown as React.DragEvent<HTMLDivElement>;
-          
-          handleOfficerDropToList(dropEvent);
-          
-          // Provide feedback for touch users
-          toast({
-            title: "Officer Unassigned",
-            description: "Officer has been returned to the available list",
-            duration: 2000,
-          });
-        } catch (error) {
-          console.error("Error handling touch drop to list:", error);
-          toast({
-            title: "Unassignment Failed",
-            description: "Could not unassign officer",
-            variant: "destructive",
-          });
-        }
+        // Create a synthetic drop event
+        const dropEvent = {
+          preventDefault: () => {},
+          stopPropagation: () => {},
+          dataTransfer: {
+            getData: (key: string) => key === 'officerId' ? officerId : null
+          }
+        } as unknown as React.DragEvent<HTMLDivElement>;
+        
+        handleOfficerDropToList(dropEvent);
       }
     };
     

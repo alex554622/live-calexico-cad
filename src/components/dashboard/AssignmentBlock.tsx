@@ -39,25 +39,18 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
-    
-    try {
-      onDrop(e, title);
-    } catch (error) {
-      console.error(`Error dropping on assignment ${title}:`, error);
-    }
+    onDrop(e, title);
   };
 
   // Touch event handlers
   useEffect(() => {
-    if (!isTouchDevice || !blockRef.current) return;
-
-    const currentBlockRef = blockRef.current;
+    if (!isTouchDevice) return;
 
     const handleTouchDragMove = (e: CustomEvent) => {
-      if (!currentBlockRef) return;
+      if (!blockRef.current) return;
       
       const { x, y } = e.detail;
-      const rect = currentBlockRef.getBoundingClientRect();
+      const rect = blockRef.current.getBoundingClientRect();
       
       // Check if touch position is within this assignment block
       const isOver = 
@@ -67,46 +60,40 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
         y <= rect.bottom;
       
       setIsTouchOver(isOver);
-      
-      // If over this block, update potential drop target visually
-      if (isOver && (window as any).touchDragOfficerId) {
-        document.querySelectorAll('[data-assignment-id]').forEach(el => {
-          el.classList.remove('touch-drag-target');
-        });
-        currentBlockRef.classList.add('touch-drag-target');
-      }
     };
     
-    const handleTouchDragEnd = (e: CustomEvent) => {
+    const handleTouchDragEnd = () => {
       setIsTouchOver(false);
-      currentBlockRef.classList.remove('touch-drag-target');
+    };
+    
+    const handleTouchDrop = (e: CustomEvent) => {
+      const { assignmentId, officerId } = e.detail;
       
-      // If touch ended over this block and we have a dragged officer, dispatch drop event
-      if (isTouchOver && (window as any).touchDragOfficerId) {
-        const officerId = (window as any).touchDragOfficerId;
-        
-        // Custom event to be handled by Dashboard component
-        const touchDropEvent = new CustomEvent('touchdrop', {
-          detail: {
-            officerId,
-            assignmentId: title
+      if (assignmentId === title) {
+        // Create a synthetic event for the drop handler
+        const syntheticEvent = {
+          preventDefault: () => {},
+          stopPropagation: () => {},
+          dataTransfer: {
+            getData: () => officerId
           }
-        });
+        } as unknown as React.DragEvent<HTMLDivElement>;
         
-        window.dispatchEvent(touchDropEvent);
+        onDrop(syntheticEvent, title);
       }
     };
     
     // Register event listeners
     window.addEventListener('touchdragmove', handleTouchDragMove as EventListener);
     window.addEventListener('touchdragend', handleTouchDragEnd as EventListener);
+    window.addEventListener('touchdrop', handleTouchDrop as EventListener);
     
     return () => {
       window.removeEventListener('touchdragmove', handleTouchDragMove as EventListener);
       window.removeEventListener('touchdragend', handleTouchDragEnd as EventListener);
-      currentBlockRef.classList.remove('touch-drag-target');
+      window.removeEventListener('touchdrop', handleTouchDrop as EventListener);
     };
-  }, [isTouchDevice, title, isTouchOver]);
+  }, [isTouchDevice, title, onDrop]);
 
   return (
     <div 
@@ -125,10 +112,8 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
           <div 
             key={officer.id} 
             className="flex items-center justify-between bg-white dark:bg-gray-700 p-1 rounded shadow-sm cursor-move"
-            draggable={!isTouchDevice}
-            onDragStart={onDragStart && !isTouchDevice ? (e) => onDragStart(e, officer) : undefined}
-            data-officer-id={officer.id}
-            data-officer-name={officer.name}
+            draggable={true}
+            onDragStart={onDragStart ? (e) => onDragStart(e, officer) : undefined}
           >
             <div className="text-xs truncate max-w-[100px] dark:text-white">{officer.name}</div>
             <OfficerStatusBadge status={officer.status} />

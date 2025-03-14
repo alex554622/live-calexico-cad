@@ -67,8 +67,6 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
     ghost.style.left = `${touch.clientX - 30}px`;
     ghost.style.top = `${touch.clientY - 30}px`;
     ghost.style.pointerEvents = 'none';
-    ghost.style.zIndex = '9999';
-    ghost.style.touchAction = 'none';
     document.body.appendChild(ghost);
     
     // Store data for the drag operation
@@ -161,16 +159,16 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
         ${isDragging ? 'opacity-50' : ''}
         ${officer.currentIncidentId ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40' : ''}
         ${isTouchDevice ? 'active:bg-primary/10' : 'cursor-move'}`}
-      onClick={isTouchDevice ? undefined : onClick}
-      draggable={!isTouchDevice}
-      onDragStart={!isTouchDevice ? handleDragStart : undefined}
-      onDragEnd={!isTouchDevice ? handleDragEnd : undefined}
+      onClick={isTouchDevice ? onClick : undefined}
+      draggable={true}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onTouchStart={isTouchDevice ? handleTouchStart : undefined}
       onTouchMove={isTouchDevice ? handleTouchMove : undefined}
       onTouchEnd={isTouchDevice ? handleTouchEnd : undefined}
       onTouchCancel={isTouchDevice ? handleTouchEnd : undefined}
     >
-      <div className="w-full" onClick={isTouchDevice ? onClick : undefined}>
+      <div>
         <h3 className="font-medium">{officer.name}</h3>
         <p className="text-xs text-muted-foreground">
           {officer.rank}
