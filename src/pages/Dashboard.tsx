@@ -36,54 +36,49 @@ const Dashboard = () => {
   useEffect(() => {
     if (!isTouchDevice) return;
     
-    // Setup ghost element for touch dragging
-    const handleTouchDragStart = (e: CustomEvent) => {
-      const { officerId, name, x, y } = e.detail;
+    // Handle touch drop on assignment
+    const handleTouchDrop = (e: CustomEvent) => {
+      const { officerId, assignmentId } = e.detail;
       
-      // Create ghost element
-      const ghost = document.createElement('div');
-      ghost.className = 'fixed z-50 bg-white dark:bg-gray-800 border rounded-lg shadow-lg p-3 opacity-90';
-      ghost.innerHTML = `<div>${name}</div>`;
-      ghost.id = 'touch-drag-ghost';
-      ghost.style.position = 'fixed';
-      ghost.style.left = `${x - 30}px`;
-      ghost.style.top = `${y - 30}px`;
-      ghost.style.width = '120px';
-      ghost.style.pointerEvents = 'none';
-      document.body.appendChild(ghost);
-      
-      // Store officer ID in window for reference
-      (window as any).touchDragOfficerId = officerId;
-    };
-    
-    const handleTouchDragMove = (e: CustomEvent) => {
-      const { x, y } = e.detail;
-      const ghost = document.getElementById('touch-drag-ghost');
-      if (ghost) {
-        ghost.style.left = `${x - 30}px`;
-        ghost.style.top = `${y - 30}px`;
+      if (officerId && assignmentId) {
+        // Create a synthetic drop event
+        const dropEvent = {
+          preventDefault: () => {},
+          dataTransfer: {
+            getData: () => officerId
+          }
+        } as unknown as React.DragEvent<HTMLDivElement>;
+        
+        handleOfficerDrop(dropEvent, assignmentId);
       }
     };
     
-    const handleTouchDragEnd = () => {
-      const ghost = document.getElementById('touch-drag-ghost');
-      if (ghost) {
-        document.body.removeChild(ghost);
+    // Handle drop back to officers list
+    const handleTouchDropToList = (e: CustomEvent) => {
+      const { officerId } = e.detail;
+      
+      if (officerId && handleOfficerDropToList) {
+        // Create a synthetic drop event
+        const dropEvent = {
+          preventDefault: () => {},
+          dataTransfer: {
+            getData: () => officerId
+          }
+        } as unknown as React.DragEvent<HTMLDivElement>;
+        
+        handleOfficerDropToList(dropEvent);
       }
-      delete (window as any).touchDragOfficerId;
     };
     
     // Register event listeners
-    window.addEventListener('touchdragstart', handleTouchDragStart as EventListener);
-    window.addEventListener('touchdragmove', handleTouchDragMove as EventListener);
-    window.addEventListener('touchdragend', handleTouchDragEnd as EventListener);
+    window.addEventListener('touchdrop', handleTouchDrop as EventListener);
+    window.addEventListener('touchdroptolist', handleTouchDropToList as EventListener);
     
     return () => {
-      window.removeEventListener('touchdragstart', handleTouchDragStart as EventListener);
-      window.removeEventListener('touchdragmove', handleTouchDragMove as EventListener);
-      window.removeEventListener('touchdragend', handleTouchDragEnd as EventListener);
+      window.removeEventListener('touchdrop', handleTouchDrop as EventListener);
+      window.removeEventListener('touchdroptolist', handleTouchDropToList as EventListener);
     };
-  }, [isTouchDevice]);
+  }, [isTouchDevice, handleOfficerDrop, handleOfficerDropToList]);
   
   return (
     <DashboardContainer

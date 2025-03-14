@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Officer } from '@/types';
 import OfficerStatusBadge from '@/components/common/OfficerStatusBadge';
 import { useTouchDevice } from '@/hooks/use-touch-device';
@@ -14,11 +14,13 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
   onClick 
 }) => {
   const isTouchDevice = useTouchDevice();
+  const [isDragging, setIsDragging] = useState(false);
   
   // Handle mouse drag start
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     e.dataTransfer.setData("officerId", officer.id);
     e.dataTransfer.effectAllowed = "move";
+    setIsDragging(true);
     
     // Create a ghost image for dragging
     const ghostElement = document.createElement('div');
@@ -36,9 +38,14 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
       }
     }, 0);
   };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
   
   // Touch handlers for touch devices
   const handleTouchStart = (e: React.TouchEvent) => {
+    // Don't prevent default here as it may prevent scrolling
     const touch = e.touches[0];
     const officerId = officer.id;
     const name = officer.name;
@@ -71,7 +78,8 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
   const handleTouchMove = (e: React.TouchEvent) => {
     if (!(window as any).touchDragOfficerId) return;
     
-    e.preventDefault(); // Prevent scrolling during drag
+    // Prevent scrolling during drag
+    e.preventDefault();
     const touch = e.touches[0];
     
     // Update ghost element position
@@ -112,7 +120,7 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
         }));
       }
     } else {
-      // Check if droppe back to officers list
+      // Check if dropped back to officers list
       const officersList = dropElement?.closest('[data-drop-target="officers-list"]');
       if (officersList) {
         window.dispatchEvent(new CustomEvent('touchdroptolist', { 
@@ -135,11 +143,14 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
 
   return (
     <div 
-      className={`border rounded-lg p-3 cursor-move hover:border-primary transition-colors flex items-center justify-between 
-        ${officer.currentIncidentId ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40' : ''}`}
+      className={`border rounded-lg p-3 hover:border-primary transition-colors flex items-center justify-between 
+        ${isDragging ? 'opacity-50' : ''}
+        ${officer.currentIncidentId ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40' : ''}
+        ${isTouchDevice ? 'active:bg-primary/10' : 'cursor-move'}`}
       onClick={onClick}
       draggable={!isTouchDevice}
       onDragStart={!isTouchDevice ? handleDragStart : undefined}
+      onDragEnd={!isTouchDevice ? handleDragEnd : undefined}
       onTouchStart={isTouchDevice ? handleTouchStart : undefined}
       onTouchMove={isTouchDevice ? handleTouchMove : undefined}
       onTouchEnd={isTouchDevice ? handleTouchEnd : undefined}

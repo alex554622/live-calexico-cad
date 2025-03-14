@@ -24,15 +24,20 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
+    e.stopPropagation();
     e.dataTransfer.dropEffect = "move";
     setIsDragOver(true);
   };
   
-  const handleDragLeave = () => {
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
   };
   
   const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
     setIsDragOver(false);
     onDrop(e, title);
   };
@@ -61,15 +66,33 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
       setIsTouchOver(false);
     };
     
+    const handleTouchDrop = (e: CustomEvent) => {
+      const { assignmentId, officerId } = e.detail;
+      
+      if (assignmentId === title) {
+        // Create a synthetic event for the drop handler
+        const syntheticEvent = {
+          preventDefault: () => {},
+          dataTransfer: {
+            getData: () => officerId
+          }
+        } as unknown as React.DragEvent<HTMLDivElement>;
+        
+        onDrop(syntheticEvent, title);
+      }
+    };
+    
     // Register event listeners
     window.addEventListener('touchdragmove', handleTouchDragMove as EventListener);
     window.addEventListener('touchdragend', handleTouchDragEnd as EventListener);
+    window.addEventListener('touchdrop', handleTouchDrop as EventListener);
     
     return () => {
       window.removeEventListener('touchdragmove', handleTouchDragMove as EventListener);
       window.removeEventListener('touchdragend', handleTouchDragEnd as EventListener);
+      window.removeEventListener('touchdrop', handleTouchDrop as EventListener);
     };
-  }, [isTouchDevice]);
+  }, [isTouchDevice, title, onDrop]);
 
   return (
     <div 
@@ -77,8 +100,7 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
       data-assignment-id={title}
       className={`border rounded-lg p-2 h-32 overflow-y-auto transition-colors duration-200
         ${isDragOver || isTouchOver ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''}
-        ${officers.length > 0 ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800' : 'bg-gray-50 dark:bg-gray-800/50'}
-        ${isTouchDevice ? 'touch-action-manipulation' : ''}`}
+        ${officers.length > 0 ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}
       onDragOver={!isTouchDevice ? handleDragOver : undefined}
       onDragLeave={!isTouchDevice ? handleDragLeave : undefined}
       onDrop={!isTouchDevice ? handleDrop : undefined}
