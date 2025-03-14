@@ -1,6 +1,6 @@
 
 import React, { useEffect } from 'react';
-import { useDashboard, ASSIGNMENTS } from '@/hooks/use-dashboard';
+import { useDashboard, ASSIGNMENTS } from '@/hooks/dashboard';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 
 const Dashboard = () => {

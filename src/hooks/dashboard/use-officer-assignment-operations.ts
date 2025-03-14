@@ -1,106 +1,17 @@
 
-import { useState, useEffect, useCallback } from 'react';
-import { useData } from '@/context/data';
+import { useCallback } from 'react';
+import { supabase } from '@/integrations/supabase/client';
 import { Officer, Incident } from '@/types';
 import { toast } from '@/components/ui/use-toast';
-import { supabase } from '@/integrations/supabase/client';
+import { ASSIGNMENTS } from './constants';
 
-export const ASSIGNMENTS = [
-  "2nd St & Chavez",
-  "Imperial & 5th St",
-  "Imperial & 7th St",
-  "Imperial & Grant St",
-  "Imperial & 98",
-  "Chavez & Grant",
-  "UP/DOWN",
-  "ENF 2 HRS",
-  "ENF METERS",
-  "Beats Patrol"
-];
-
-export function useDashboard() {
-  const { officers, incidents, updateOfficer } = useData();
-  
-  const [selectedOfficer, setSelectedOfficer] = useState<Officer | null>(null);
-  const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
-  const [officerAssignments, setOfficerAssignments] = useState<Record<string, string[]>>({});
-  const [loading, setLoading] = useState(true);
-  const [lastRefresh, setLastRefresh] = useState(Date.now());
-  
-  // Get all assigned officer IDs across all assignments
-  const allAssignedOfficerIds = Object.values(officerAssignments).flat();
-  
-  // Function to refresh the data
-  const refreshData = useCallback(() => {
-    setLastRefresh(Date.now());
-  }, []);
-  
-  // Fetch officer assignments from Supabase
-  const fetchOfficerAssignments = useCallback(async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('officer_assignments')
-        .select('*');
-      
-      if (error) throw error;
-      
-      // Transform the data into our assignment structure
-      const assignments: Record<string, string[]> = {};
-      
-      // Initialize all assignments with empty arrays
-      ASSIGNMENTS.forEach(assignment => {
-        assignments[assignment] = [];
-      });
-      
-      // Populate assignments from the database
-      if (data) {
-        data.forEach(item => {
-          if (ASSIGNMENTS.includes(item.assignment_name)) {
-            assignments[item.assignment_name].push(item.officer_id);
-          }
-        });
-      }
-      
-      setOfficerAssignments(assignments);
-    } catch (error) {
-      console.error('Error fetching officer assignments:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load officer assignments',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-  
-  // Initial fetch of assignments and setup for real-time updates
-  useEffect(() => {
-    fetchOfficerAssignments();
-    
-    // Subscribe to real-time changes
-    const assignmentsChannel = supabase
-      .channel('officer_assignments_changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'officer_assignments' }, 
-        () => {
-          fetchOfficerAssignments();
-          refreshData();
-          toast({
-            title: 'Assignment Updated',
-            description: 'An officer has been reassigned.',
-          });
-        }
-      )
-      .subscribe();
-    
-    // Cleanup subscription on unmount
-    return () => {
-      supabase.removeChannel(assignmentsChannel);
-    };
-  }, [fetchOfficerAssignments, refreshData]);
-  
+/**
+ * Hook for officer assignment operations
+ */
+export function useOfficerAssignmentOperations(
+  refreshData: () => void,
+  updateOfficer: (officerId: string, updates: Partial<Officer>) => Promise<Officer>
+) {
   // Helper method to update an officer's assignment in Supabase
   const updateOfficerAssignment = async (officerId: string, assignmentName: string) => {
     try {
@@ -141,7 +52,7 @@ export function useDashboard() {
   };
   
   // Handle dragging officer to an assignment
-  const handleOfficerDrop = async (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => {
+  const handleOfficerDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => {
     e.preventDefault();
     const officerId = e.dataTransfer.getData("officerId");
     if (!officerId) return;
@@ -174,14 +85,14 @@ export function useDashboard() {
         variant: "destructive"
       });
     }
-  };
+  }, [refreshData, updateOfficer]);
   
-  const handleOfficerDragStartFromAssignment = (e: React.DragEvent<HTMLDivElement>, officer: Officer) => {
+  const handleOfficerDragStartFromAssignment = useCallback((e: React.DragEvent<HTMLDivElement>, officer: Officer) => {
     e.dataTransfer.setData("officerId", officer.id);
     e.dataTransfer.effectAllowed = "move";
-  };
+  }, []);
   
-  const handleOfficerDropOnIncident = async (e: React.DragEvent<HTMLDivElement>, incident: Incident) => {
+  const handleOfficerDropOnIncident = useCallback(async (e: React.DragEvent<HTMLDivElement>, incident: Incident) => {
     e.preventDefault();
     const officerId = e.dataTransfer.getData("officerId");
     if (!officerId) return;
@@ -222,18 +133,9 @@ export function useDashboard() {
         });
       }
     }
-  };
+  }, [refreshData, updateOfficer]);
 
   return {
-    selectedOfficer,
-    setSelectedOfficer,
-    selectedIncident,
-    setSelectedIncident,
-    officerAssignments,
-    allAssignedOfficerIds,
-    loading,
-    lastRefresh,
-    refreshData,
     handleOfficerDrop,
     handleOfficerDragStartFromAssignment,
     handleOfficerDropOnIncident
