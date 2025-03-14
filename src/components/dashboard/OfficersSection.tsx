@@ -68,29 +68,17 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
         y <= rect.bottom
       ) {
         setIsTouchOver(true);
+        console.log('Touch over officers list');
       } else {
         setIsTouchOver(false);
       }
     };
     
-    const handleTouchDragEnd = (e: Event) => {
+    const handleTouchDragEnd = () => {
       setIsTouchOver(false);
-      
-      // If we have a touch over state and a valid officer id from touch event
-      if (isTouchOver && (window as any).touchDragOfficerId) {
-        const officerId = (window as any).touchDragOfficerId;
-        
-        // Dispatch a custom event for dropping an officer back to the list
-        const dropEvent = new CustomEvent('touchdroptolist', {
-          detail: { officerId }
-        });
-        window.dispatchEvent(dropEvent);
-        
-        // Clear the dragged officer id
-        delete (window as any).touchDragOfficerId;
-      }
     };
     
+    // Register event listeners
     window.addEventListener('touchdragmove', handleTouchDragMove as EventListener);
     window.addEventListener('touchdragend', handleTouchDragEnd as EventListener);
     
@@ -98,7 +86,7 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
       window.removeEventListener('touchdragmove', handleTouchDragMove as EventListener);
       window.removeEventListener('touchdragend', handleTouchDragEnd as EventListener);
     };
-  }, [isTouchDevice, onOfficerDrop, isTouchOver]);
+  }, [isTouchDevice, onOfficerDrop]);
 
   return (
     <div>
@@ -107,9 +95,9 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
       </div>
       <div 
         ref={sectionRef}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+        onDragOver={!isTouchDevice ? handleDragOver : undefined}
+        onDragLeave={!isTouchDevice ? handleDragLeave : undefined}
+        onDrop={!isTouchDevice ? handleDrop : undefined}
         className={`border-2 border-dashed rounded-lg p-2 transition-colors duration-200
           ${(isDragOver || isTouchOver) 
             ? 'border-primary bg-primary/10' 
