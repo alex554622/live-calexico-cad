@@ -1,8 +1,8 @@
 
 import { useState, useCallback, useEffect } from 'react';
-import { supabase } from '@/integrations/supabase/client';
-import { toast } from '@/components/ui/use-toast';
 import { ASSIGNMENTS } from './constants';
+import { useFetchAssignments } from './use-fetch-assignments';
+import { useAssignmentSubscription } from './use-assignment-subscription';
 
 /**
  * Hook for fetching and handling officer assignments
@@ -20,71 +20,27 @@ export function useOfficerAssignments() {
     setLastRefresh(Date.now());
   }, []);
   
-  // Fetch officer assignments from Supabase
+  // Get the fetch function from our custom hook
+  const fetchAssignments = useFetchAssignments();
+  
+  // Wrapped fetch function to update state
   const fetchOfficerAssignments = useCallback(async () => {
     try {
       setLoading(true);
-      const { data, error } = await supabase
-        .from('officer_assignments')
-        .select('*');
-      
-      if (error) throw error;
-      
-      // Transform the data into our assignment structure
-      const assignments: Record<string, string[]> = {};
-      
-      // Initialize all assignments with empty arrays
-      ASSIGNMENTS.forEach(assignment => {
-        assignments[assignment] = [];
-      });
-      
-      // Populate assignments from the database
-      if (data) {
-        data.forEach(item => {
-          if (ASSIGNMENTS.includes(item.assignment_name)) {
-            assignments[item.assignment_name].push(item.officer_id);
-          }
-        });
-      }
-      
+      const assignments = await fetchAssignments();
       setOfficerAssignments(assignments);
-    } catch (error) {
-      console.error('Error fetching officer assignments:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load officer assignments',
-        variant: 'destructive',
-      });
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [fetchAssignments]);
 
-  // Initialize subscription to real-time changes
+  // Subscribe to real-time changes
+  useAssignmentSubscription(fetchOfficerAssignments, refreshData);
+  
+  // Initial data fetch
   useEffect(() => {
     fetchOfficerAssignments();
-    
-    // Subscribe to real-time changes
-    const assignmentsChannel = supabase
-      .channel('officer_assignments_changes')
-      .on('postgres_changes', 
-        { event: '*', schema: 'public', table: 'officer_assignments' }, 
-        () => {
-          fetchOfficerAssignments();
-          refreshData();
-          toast({
-            title: 'Assignment Updated',
-            description: 'An officer has been reassigned.',
-          });
-        }
-      )
-      .subscribe();
-    
-    // Cleanup subscription on unmount
-    return () => {
-      supabase.removeChannel(assignmentsChannel);
-    };
-  }, [fetchOfficerAssignments, refreshData]);
+  }, [fetchOfficerAssignments]);
 
   return {
     officerAssignments,
