@@ -7,18 +7,18 @@ interface OfficerStatusBadgeProps {
 }
 
 const OfficerStatusBadge = ({ status, showText = true }: OfficerStatusBadgeProps) => {
-  const getStatusClass = (status: OfficerStatus) => {
+  const getStatusColorClass = (status: OfficerStatus) => {
     switch (status) {
       case 'available':
-        return 'status-available';
+        return 'bg-green-500';
       case 'busy':
-        return 'status-busy';
+        return 'bg-orange-500';
       case 'responding':
-        return 'status-responding';
+        return 'bg-blue-500';
       case 'offDuty':
-        return 'status-offDuty';
+        return 'bg-gray-500';
       default:
-        return 'status-offDuty';
+        return 'bg-gray-500';
     }
   };
 
@@ -38,8 +38,8 @@ const OfficerStatusBadge = ({ status, showText = true }: OfficerStatusBadgeProps
   };
 
   return (
-    <div className="flex items-center">
-      <span className={`status-indicator ${getStatusClass(status)}`}></span>
+    <div className="flex items-center gap-2">
+      <span className={`h-2.5 w-2.5 rounded-full ${getStatusColorClass(status)}`}></span>
       {showText && <span className="text-sm font-medium">{getStatusText(status)}</span>}
     </div>
   );
