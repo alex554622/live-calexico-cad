@@ -199,7 +199,7 @@ const Dashboard = () => {
       )}
       
       {/* Officer Details Dialog */}
-      <Dialog open={!!selectedOfficer} onOpenChange={() => setSelectedOfficer(null)}>
+      <Dialog open={!!selectedOfficer} onOpenChange={(open) => !open && setSelectedOfficer(null)}>
         {selectedOfficer && (
           <DialogContent className="sm:max-w-[425px]">
             <DialogHeader>
@@ -253,7 +253,7 @@ const Dashboard = () => {
       </Dialog>
       
       {/* Incident Details Dialog */}
-      <Dialog open={!!selectedIncident} onOpenChange={() => setSelectedIncident(null)}>
+      <Dialog open={!!selectedIncident} onOpenChange={(open) => !open && setSelectedIncident(null)}>
         {selectedIncident && (
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
