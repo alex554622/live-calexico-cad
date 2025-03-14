@@ -25,6 +25,7 @@ const DashboardContainer: React.FC<{
   handleOfficerDrop: (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => void;
   handleOfficerDragStartFromAssignment: (e: React.DragEvent<HTMLDivElement>, officer: Officer) => void;
   handleOfficerDropOnIncident: (e: React.DragEvent<HTMLDivElement>, incident: Incident) => void;
+  handleOfficerDropToList?: (e: React.DragEvent<HTMLDivElement>) => void;
 }> = ({
   selectedOfficer,
   selectedIncident,
@@ -39,6 +40,7 @@ const DashboardContainer: React.FC<{
   handleOfficerDrop,
   handleOfficerDragStartFromAssignment,
   handleOfficerDropOnIncident,
+  handleOfficerDropToList,
 }) => {
   const { officers, incidents, loadingOfficers, loadingIncidents } = useData();
   const { user } = useAuth();
@@ -98,6 +100,7 @@ const DashboardContainer: React.FC<{
           officers={officers}
           assignedOfficerIds={allAssignedOfficerIds}
           onOfficerClick={setSelectedOfficer}
+          onOfficerDrop={handleOfficerDropToList}
         />
         
         <RecentIncidentsSection 

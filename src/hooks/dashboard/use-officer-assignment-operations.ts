@@ -14,7 +14,7 @@ export function useOfficerAssignmentOperations(
   officers: Officer[] = []
 ) {
   // Helper method to update an officer's assignment in Supabase
-  const updateOfficerAssignment = async (officerId: string, assignmentName: string) => {
+  const updateOfficerAssignment = async (officerId: string, assignmentName: string | null) => {
     try {
       // First check if the officer already has an assignment
       const { data, error } = await supabase
@@ -24,7 +24,17 @@ export function useOfficerAssignmentOperations(
         
       if (error) throw error;
       
-      if (data && data.length > 0) {
+      if (assignmentName === null) {
+        // Remove assignment if we're setting to null (dragging back to officers list)
+        if (data && data.length > 0) {
+          const { error: deleteError } = await supabase
+            .from('officer_assignments')
+            .delete()
+            .eq('officer_id', officerId);
+            
+          if (deleteError) throw deleteError;
+        }
+      } else if (data && data.length > 0) {
         // Update existing assignment
         const { error: updateError } = await supabase
           .from('officer_assignments')
@@ -75,9 +85,6 @@ export function useOfficerAssignmentOperations(
         title: "Officer assigned",
         description: `${officer.name} has been assigned to ${assignmentId}`,
       });
-      
-      // Trigger refresh
-      refreshData();
     } catch (error) {
       console.error("Failed to update officer assignment", error);
       toast({
@@ -92,6 +99,40 @@ export function useOfficerAssignmentOperations(
     e.dataTransfer.setData("officerId", officer.id);
     e.dataTransfer.effectAllowed = "move";
   }, []);
+  
+  // Handle dragging officer back to officer list
+  const handleOfficerDropToList = useCallback(async (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    const officerId = e.dataTransfer.getData("officerId");
+    if (!officerId) return;
+    
+    const officer = officers.find(o => o.id === officerId);
+    if (!officer) return;
+    
+    try {
+      // Update the officer status to available
+      await updateOfficer(officer.id, {
+        ...officer,
+        status: 'available',
+        currentIncidentId: null
+      });
+      
+      // Remove assignment
+      await updateOfficerAssignment(officerId, null);
+      
+      toast({
+        title: "Officer returned to available",
+        description: `${officer.name} is now available`,
+      });
+    } catch (error) {
+      console.error("Failed to update officer status", error);
+      toast({
+        title: "Status update failed",
+        description: "Failed to make officer available",
+        variant: "destructive"
+      });
+    }
+  }, [refreshData, updateOfficer, officers]);
   
   const handleOfficerDropOnIncident = useCallback(async (e: React.DragEvent<HTMLDivElement>, incident: Incident) => {
     e.preventDefault();
@@ -122,9 +163,6 @@ export function useOfficerAssignmentOperations(
           title: "Officer assigned to incident",
           description: `${officer.name} has been assigned to "${incident.title}"`,
         });
-        
-        // Trigger refresh
-        refreshData();
       } catch (error) {
         console.error("Failed to assign officer to incident", error);
         toast({
@@ -139,6 +177,7 @@ export function useOfficerAssignmentOperations(
   return {
     handleOfficerDrop,
     handleOfficerDragStartFromAssignment,
-    handleOfficerDropOnIncident
+    handleOfficerDropOnIncident,
+    handleOfficerDropToList
   };
 }

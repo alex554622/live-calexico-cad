@@ -16,7 +16,8 @@ const Dashboard = () => {
     refreshData,
     handleOfficerDrop,
     handleOfficerDragStartFromAssignment,
-    handleOfficerDropOnIncident
+    handleOfficerDropOnIncident,
+    handleOfficerDropToList
   } = useDashboard();
   
   // Add effect to periodically refresh the data
@@ -43,6 +44,7 @@ const Dashboard = () => {
       handleOfficerDrop={handleOfficerDrop}
       handleOfficerDragStartFromAssignment={handleOfficerDragStartFromAssignment}
       handleOfficerDropOnIncident={handleOfficerDropOnIncident}
+      handleOfficerDropToList={handleOfficerDropToList}
     />
   );
 };
