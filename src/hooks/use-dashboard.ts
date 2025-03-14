@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useData } from '@/context/data';
 import { Officer, Incident } from '@/types';
 import { toast } from '@/components/ui/use-toast';
@@ -25,12 +25,18 @@ export function useDashboard() {
   const [selectedIncident, setSelectedIncident] = useState<Incident | null>(null);
   const [officerAssignments, setOfficerAssignments] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
+  const [lastRefresh, setLastRefresh] = useState(Date.now());
   
   // Get all assigned officer IDs across all assignments
   const allAssignedOfficerIds = Object.values(officerAssignments).flat();
   
+  // Function to refresh the data
+  const refreshData = useCallback(() => {
+    setLastRefresh(Date.now());
+  }, []);
+  
   // Fetch officer assignments from Supabase
-  const fetchOfficerAssignments = async () => {
+  const fetchOfficerAssignments = useCallback(async () => {
     try {
       setLoading(true);
       const { data, error } = await supabase
@@ -67,7 +73,7 @@ export function useDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
   
   // Initial fetch of assignments and setup for real-time updates
   useEffect(() => {
@@ -80,6 +86,11 @@ export function useDashboard() {
         { event: '*', schema: 'public', table: 'officer_assignments' }, 
         () => {
           fetchOfficerAssignments();
+          refreshData();
+          toast({
+            title: 'Assignment Updated',
+            description: 'An officer has been reassigned.',
+          });
         }
       )
       .subscribe();
@@ -88,7 +99,7 @@ export function useDashboard() {
     return () => {
       supabase.removeChannel(assignmentsChannel);
     };
-  }, []);
+  }, [fetchOfficerAssignments, refreshData]);
   
   // Helper method to update an officer's assignment in Supabase
   const updateOfficerAssignment = async (officerId: string, assignmentName: string) => {
@@ -120,6 +131,9 @@ export function useDashboard() {
           
         if (insertError) throw insertError;
       }
+      
+      // Trigger a refresh after assignment is updated
+      refreshData();
     } catch (error) {
       console.error('Error updating officer assignment:', error);
       throw error;
@@ -149,6 +163,9 @@ export function useDashboard() {
         title: "Officer assigned",
         description: `${officer.name} has been assigned to ${assignmentId}`,
       });
+      
+      // Trigger refresh
+      refreshData();
     } catch (error) {
       console.error("Failed to update officer assignment", error);
       toast({
@@ -193,6 +210,9 @@ export function useDashboard() {
           title: "Officer assigned to incident",
           description: `${officer.name} has been assigned to "${incident.title}"`,
         });
+        
+        // Trigger refresh
+        refreshData();
       } catch (error) {
         console.error("Failed to assign officer to incident", error);
         toast({
@@ -212,6 +232,8 @@ export function useDashboard() {
     officerAssignments,
     allAssignedOfficerIds,
     loading,
+    lastRefresh,
+    refreshData,
     handleOfficerDrop,
     handleOfficerDragStartFromAssignment,
     handleOfficerDropOnIncident

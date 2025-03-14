@@ -8,6 +8,8 @@ import RecentIncidentsSection from './RecentIncidentsSection';
 import OfficerDetailsDialog from './OfficerDetailsDialog';
 import IncidentDetailsDialog from './IncidentDetailsDialog';
 import { Officer, Incident } from '@/types';
+import { Button } from '@/components/ui/button';
+import { RefreshCw } from 'lucide-react';
 
 const DashboardContainer: React.FC<{
   selectedOfficer: Officer | null;
@@ -18,6 +20,8 @@ const DashboardContainer: React.FC<{
   assignments: string[];
   allAssignedOfficerIds: string[];
   loading?: boolean;
+  lastRefresh?: number;
+  refreshData?: () => void;
   handleOfficerDrop: (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => void;
   handleOfficerDragStartFromAssignment: (e: React.DragEvent<HTMLDivElement>, officer: Officer) => void;
   handleOfficerDropOnIncident: (e: React.DragEvent<HTMLDivElement>, incident: Incident) => void;
@@ -30,6 +34,8 @@ const DashboardContainer: React.FC<{
   assignments,
   allAssignedOfficerIds,
   loading = false,
+  lastRefresh,
+  refreshData,
   handleOfficerDrop,
   handleOfficerDragStartFromAssignment,
   handleOfficerDropOnIncident,
@@ -52,12 +58,32 @@ const DashboardContainer: React.FC<{
   
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Welcome back, {user?.name}. Here's what's happening today.
-        </p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Welcome back, {user?.name}. Here's what's happening today.
+          </p>
+        </div>
+        
+        {refreshData && (
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={refreshData} 
+            className="flex items-center gap-1"
+          >
+            <RefreshCw className="h-4 w-4" />
+            <span>Refresh</span>
+          </Button>
+        )}
       </div>
+      
+      {lastRefresh && (
+        <div className="text-xs text-muted-foreground text-right">
+          Last updated: {new Date(lastRefresh).toLocaleTimeString()}
+        </div>
+      )}
       
       <AssignmentGrid 
         assignments={assignments}

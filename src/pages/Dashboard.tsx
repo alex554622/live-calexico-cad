@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useDashboard, ASSIGNMENTS } from '@/hooks/use-dashboard';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 
@@ -12,10 +12,21 @@ const Dashboard = () => {
     officerAssignments,
     allAssignedOfficerIds,
     loading,
+    lastRefresh,
+    refreshData,
     handleOfficerDrop,
     handleOfficerDragStartFromAssignment,
     handleOfficerDropOnIncident
   } = useDashboard();
+  
+  // Add effect to periodically refresh the data
+  useEffect(() => {
+    const intervalId = setInterval(() => {
+      refreshData();
+    }, 30000); // Refresh every 30 seconds
+    
+    return () => clearInterval(intervalId);
+  }, [refreshData]);
   
   return (
     <DashboardContainer
@@ -27,6 +38,8 @@ const Dashboard = () => {
       assignments={ASSIGNMENTS}
       allAssignedOfficerIds={allAssignedOfficerIds}
       loading={loading}
+      lastRefresh={lastRefresh}
+      refreshData={refreshData}
       handleOfficerDrop={handleOfficerDrop}
       handleOfficerDragStartFromAssignment={handleOfficerDragStartFromAssignment}
       handleOfficerDropOnIncident={handleOfficerDropOnIncident}
