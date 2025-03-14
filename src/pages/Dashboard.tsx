@@ -1,23 +1,16 @@
+
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
-import AssignmentBlock from '@/components/dashboard/AssignmentBlock';
-import DraggableOfficerCard from '@/components/dashboard/DraggableOfficerCard';
-import IncidentCard from '@/components/dashboard/IncidentCard';
-import { 
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle
-} from '@/components/ui/dialog';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Officer, Incident } from '@/types';
-import OfficerStatusBadge from '@/components/common/OfficerStatusBadge';
-import IncidentPriorityBadge from '@/components/common/IncidentPriorityBadge';
-import IncidentStatusBadge from '@/components/common/IncidentStatusBadge';
-import { format } from 'date-fns';
 import { toast } from '@/components/ui/use-toast';
+
+// Import our new components
+import AssignmentGrid from '@/components/dashboard/AssignmentGrid';
+import OfficersSection from '@/components/dashboard/OfficersSection';
+import RecentIncidentsSection from '@/components/dashboard/RecentIncidentsSection';
+import OfficerDetailsDialog from '@/components/dashboard/OfficerDetailsDialog';
+import IncidentDetailsDialog from '@/components/dashboard/IncidentDetailsDialog';
 
 const ASSIGNMENTS = [
   "2nd St & Chavez",
@@ -70,11 +63,6 @@ const Dashboard = () => {
   const recentIncidents = [...incidents]
     .sort((a, b) => new Date(b.reportedAt).getTime() - new Date(a.reportedAt).getTime())
     .slice(0, 4);
-  
-  const getAssignmentOfficers = (assignment: string) => {
-    const officerIds = officerAssignments[assignment] || [];
-    return officers.filter(officer => officerIds.includes(officer.id));
-  };
   
   const handleOfficerDrop = async (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => {
     e.preventDefault();
@@ -184,191 +172,45 @@ const Dashboard = () => {
         </div>
       ) : (
         <>
-          <div>
-            <h2 className="text-xl font-semibold mb-4">Assignments</h2>
-            <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3">
-              {ASSIGNMENTS.map((assignment) => (
-                <AssignmentBlock
-                  key={assignment}
-                  title={assignment}
-                  officers={getAssignmentOfficers(assignment)}
-                  onDrop={handleOfficerDrop}
-                />
-              ))}
-            </div>
-          </div>
+          <AssignmentGrid 
+            assignments={ASSIGNMENTS}
+            officers={officers}
+            officerAssignments={officerAssignments}
+            onDrop={handleOfficerDrop}
+          />
           
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Officers</h2>
-              </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto">
-                {officers.map((officer) => (
-                  <DraggableOfficerCard 
-                    key={officer.id} 
-                    officer={officer} 
-                    onClick={() => setSelectedOfficer(officer)}
-                  />
-                ))}
-              </div>
-            </div>
+            <OfficersSection 
+              officers={officers}
+              onOfficerClick={setSelectedOfficer}
+            />
             
-            <div>
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Recent Incidents</h2>
-              </div>
-              <div className="space-y-4">
-                {recentIncidents.map((incident) => (
-                  <div 
-                    key={incident.id}
-                    onDragOver={(e) => e.preventDefault()}
-                    onDrop={(e) => handleOfficerDropOnIncident(e, incident)}
-                    className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-1 hover:border-primary transition-colors"
-                  >
-                    <IncidentCard 
-                      incident={incident} 
-                      onClick={() => setSelectedIncident(incident)}
-                    />
-                  </div>
-                ))}
-              </div>
-            </div>
+            <RecentIncidentsSection 
+              incidents={recentIncidents}
+              onIncidentClick={setSelectedIncident}
+              onOfficerDrop={handleOfficerDropOnIncident}
+            />
           </div>
         </>
       )}
       
-      <Dialog 
-        open={!!selectedOfficer} 
+      <OfficerDetailsDialog 
+        officer={selectedOfficer}
+        incidents={incidents}
+        open={!!selectedOfficer}
         onOpenChange={(open) => {
           if (!open) setSelectedOfficer(null);
         }}
-      >
-        {selectedOfficer && (
-          <DialogContent className="sm:max-w-[425px]">
-            <DialogHeader>
-              <DialogTitle>Officer Details</DialogTitle>
-              <DialogDescription>
-                Information about {selectedOfficer.name}
-              </DialogDescription>
-            </DialogHeader>
-            
-            <div className="space-y-4 py-4">
-              <div className="flex items-center space-x-4">
-                <div className="h-12 w-12 rounded-full bg-police text-white flex items-center justify-center font-bold text-lg">
-                  {selectedOfficer.name.split(' ')[0][0] + (selectedOfficer.name.split(' ')[1]?.[0] || '')}
-                </div>
-                <div>
-                  <h3 className="font-medium">{selectedOfficer.name}</h3>
-                  <p className="text-sm text-muted-foreground">{selectedOfficer.rank}</p>
-                </div>
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm font-medium">Badge Number</p>
-                  <p className="text-sm">{selectedOfficer.badgeNumber}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Department</p>
-                  <p className="text-sm">{selectedOfficer.department}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Status</p>
-                  <OfficerStatusBadge status={selectedOfficer.status} />
-                </div>
-                <div>
-                  <p className="text-sm font-medium">Last Updated</p>
-                  <p className="text-sm">{format(new Date(selectedOfficer.lastUpdated), 'h:mm a')}</p>
-                </div>
-              </div>
-              
-              {selectedOfficer.currentIncidentId && (
-                <div>
-                  <p className="text-sm font-medium">Current Incident</p>
-                  <p className="text-sm">{
-                    incidents.find(i => i.id === selectedOfficer.currentIncidentId)?.title || 'Unknown'
-                  }</p>
-                </div>
-              )}
-            </div>
-          </DialogContent>
-        )}
-      </Dialog>
+      />
       
-      <Dialog 
-        open={!!selectedIncident} 
+      <IncidentDetailsDialog 
+        incident={selectedIncident}
+        officers={officers}
+        open={!!selectedIncident}
         onOpenChange={(open) => {
           if (!open) setSelectedIncident(null);
         }}
-      >
-        {selectedIncident && (
-          <DialogContent className="sm:max-w-[500px]">
-            <DialogHeader>
-              <DialogTitle>{selectedIncident.title}</DialogTitle>
-              <div className="flex space-x-2 mt-2">
-                <IncidentPriorityBadge priority={selectedIncident.priority} />
-                <IncidentStatusBadge status={selectedIncident.status} />
-              </div>
-            </DialogHeader>
-            
-            <Tabs defaultValue="details">
-              <TabsList className="grid grid-cols-2">
-                <TabsTrigger value="details">Details</TabsTrigger>
-                <TabsTrigger value="officers">Assigned Officers</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="details" className="space-y-4 py-4">
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Description</h3>
-                  <p className="text-sm">{selectedIncident.description}</p>
-                </div>
-                
-                <div>
-                  <h3 className="text-sm font-medium mb-1">Location</h3>
-                  <p className="text-sm">{selectedIncident.location.address}</p>
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">Reported At</h3>
-                    <p className="text-sm">{format(new Date(selectedIncident.reportedAt), 'MMM d, h:mm a')}</p>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium mb-1">Last Updated</h3>
-                    <p className="text-sm">{format(new Date(selectedIncident.updatedAt), 'MMM d, h:mm a')}</p>
-                  </div>
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="officers">
-                {selectedIncident.assignedOfficers.length > 0 ? (
-                  <div className="space-y-3 py-4">
-                    {selectedIncident.assignedOfficers.map(officerId => {
-                      const officer = officers.find(o => o.id === officerId);
-                      if (!officer) return null;
-                      
-                      return (
-                        <div key={officer.id} className="flex items-center justify-between p-2 border rounded-md">
-                          <div>
-                            <p className="font-medium">{officer.name}</p>
-                            <p className="text-sm text-muted-foreground">{officer.rank}</p>
-                          </div>
-                          <OfficerStatusBadge status={officer.status} />
-                        </div>
-                      );
-                    })}
-                  </div>
-                ) : (
-                  <div className="py-4 text-center text-muted-foreground">
-                    No officers assigned to this incident
-                  </div>
-                )}
-              </TabsContent>
-            </Tabs>
-          </DialogContent>
-        )}
-      </Dialog>
+      />
     </div>
   );
 };
