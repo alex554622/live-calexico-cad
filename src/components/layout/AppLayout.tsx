@@ -6,10 +6,12 @@ import { Sidebar } from './Sidebar';
 import { cn } from '@/lib/utils';
 import ThemeToggle from '@/components/common/ThemeToggle';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { useTouchDevice } from '@/hooks/use-touch-device';
 
 const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const isMobile = useIsMobile();
+  const isTouchDevice = useTouchDevice();
   
   // Auto-collapse sidebar on mobile
   useEffect(() => {
@@ -23,7 +25,10 @@ const AppLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   };
   
   return (
-    <div className="min-h-screen flex flex-col bg-background">
+    <div className={cn(
+      "min-h-screen flex flex-col bg-background",
+      isTouchDevice && "touch-device"
+    )}>
       <Header toggleSidebar={toggleSidebar} />
       
       {/* Theme toggle positioned in the top-right corner */}

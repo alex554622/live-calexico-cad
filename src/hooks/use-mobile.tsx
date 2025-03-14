@@ -35,6 +35,13 @@ export function useIsMobile() {
       // Use proper TypeScript compatible way to set webkit property
       (document.body.style as any)["-webkit-overflow-scrolling"] = "touch";
       document.documentElement.style.overscrollBehavior = "contain";
+      
+      // Add touch action to prevent delay
+      document.body.style.touchAction = "manipulation";
+      
+      // Prevent text selection for better dragging experience
+      document.body.style.webkitUserSelect = "none";
+      document.body.style.userSelect = "none";
     }
     
     // Remove event listener and reset styles on cleanup

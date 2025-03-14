@@ -138,3 +138,65 @@
     @apply h-9 text-sm;
   }
 }
+
+/* Touch device specific styles */
+.touch-device {
+  /* Improve tap targets */
+  button, .button, a, [role="button"], input[type="checkbox"], input[type="radio"] {
+    @apply min-h-[44px];
+  }
+  
+  /* Remove hover states that can stick on touch devices */
+  *:hover {
+    @apply transition-none;
+  }
+  
+  /* Better touch feedback */
+  button:active, .button:active, a:active, [role="button"]:active {
+    @apply opacity-70;
+  }
+  
+  /* Remove delay on tap for interactive elements */
+  a, button, input, select, textarea {
+    touch-action: manipulation;
+  }
+  
+  /* Improve scrolling */
+  .overflow-auto, .overflow-y-auto, .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
+  
+  /* Prevent zooming */
+  input[type="text"], input[type="email"], input[type="password"] {
+    font-size: 16px;
+  }
+  
+  /* Better drag and drop experience */
+  [draggable="true"] {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+  }
+}
+
+/* Touch-action utility classes */
+.touch-action-manipulation {
+  touch-action: manipulation;
+}
+
+.touch-action-pan-y {
+  touch-action: pan-y;
+}
+
+.touch-action-pan-x {
+  touch-action: pan-x;
+}
+
+.touch-action-none {
+  touch-action: none;
+}
+
+.-webkit-tap-highlight-color-transparent {
+  -webkit-tap-highlight-color: transparent;
+}
+
