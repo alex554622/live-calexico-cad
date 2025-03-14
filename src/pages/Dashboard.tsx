@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { useData } from '@/context/DataContext';
 import { useAuth } from '@/context/AuthContext';
@@ -82,6 +81,9 @@ const Dashboard = () => {
     const officerId = e.dataTransfer.getData("officerId");
     if (!officerId) return;
     
+    const officer = officers.find(o => o.id === officerId);
+    if (!officer) return;
+    
     const updatedAssignments = { ...officerAssignments };
     
     Object.keys(updatedAssignments).forEach(assignment => {
@@ -97,26 +99,23 @@ const Dashboard = () => {
     
     setOfficerAssignments(updatedAssignments);
     
-    const officer = officers.find(o => o.id === officerId);
-    if (officer) {
-      try {
-        await updateOfficer(officer.id, {
-          ...officer,
-          status: 'responding'
-        });
-        
-        toast({
-          title: "Officer assigned",
-          description: `${officer.name} has been assigned to ${assignmentId}`,
-        });
-      } catch (error) {
-        console.error("Failed to update officer status", error);
-        toast({
-          title: "Assignment failed",
-          description: "Failed to update officer status",
-          variant: "destructive"
-        });
-      }
+    try {
+      await updateOfficer(officer.id, {
+        ...officer,
+        status: 'responding'
+      });
+      
+      toast({
+        title: "Officer assigned",
+        description: `${officer.name} has been assigned to ${assignmentId}`,
+      });
+    } catch (error) {
+      console.error("Failed to update officer status", error);
+      toast({
+        title: "Assignment failed",
+        description: "Failed to update officer status",
+        variant: "destructive"
+      });
     }
   };
   
@@ -133,6 +132,27 @@ const Dashboard = () => {
           status: 'responding',
           currentIncidentId: incident.id
         });
+        
+        const matchedAssignment = ASSIGNMENTS.find(
+          assignment => incident.location.address.includes(assignment)
+        );
+        
+        if (matchedAssignment) {
+          const updatedAssignments = { ...officerAssignments };
+          
+          Object.keys(updatedAssignments).forEach(assignment => {
+            updatedAssignments[assignment] = updatedAssignments[assignment].filter(
+              id => id !== officerId
+            );
+          });
+          
+          updatedAssignments[matchedAssignment] = [
+            ...updatedAssignments[matchedAssignment],
+            officerId
+          ];
+          
+          setOfficerAssignments(updatedAssignments);
+        }
         
         toast({
           title: "Officer assigned to incident",
@@ -204,7 +224,7 @@ const Dashboard = () => {
                     key={incident.id}
                     onDragOver={(e) => e.preventDefault()}
                     onDrop={(e) => handleOfficerDropOnIncident(e, incident)}
-                    className="border-2 border-dashed border-gray-300 rounded-lg p-1 hover:border-primary transition-colors"
+                    className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-1 hover:border-primary transition-colors"
                   >
                     <IncidentCard 
                       incident={incident} 
