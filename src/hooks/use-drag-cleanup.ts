@@ -1,9 +1,8 @@
 
-import { useEffect, RefObject } from 'react';
-import { useTouchDevice } from './use-touch-device';
+import { useEffect, RefObject, MutableRefObject } from 'react';
 
 export function useDragCleanup(
-  isDraggable: RefObject<boolean>,
+  isDraggable: MutableRefObject<boolean>,
   cardRef: RefObject<HTMLDivElement>,
   isTouchDevice: boolean
 ) {
