@@ -26,6 +26,7 @@ const DashboardContainer: React.FC<{
   handleOfficerDragStartFromAssignment: (e: React.DragEvent<HTMLDivElement>, officer: Officer) => void;
   handleOfficerDropOnIncident: (e: React.DragEvent<HTMLDivElement>, incident: Incident) => void;
   handleOfficerDropToList?: (e: React.DragEvent<HTMLDivElement>) => void;
+  canAssignOfficers?: boolean;
 }> = ({
   selectedOfficer,
   selectedIncident,
@@ -41,6 +42,7 @@ const DashboardContainer: React.FC<{
   handleOfficerDragStartFromAssignment,
   handleOfficerDropOnIncident,
   handleOfficerDropToList,
+  canAssignOfficers = true,
 }) => {
   const { officers, incidents, loadingOfficers, loadingIncidents } = useData();
   const { user } = useAuth();
@@ -93,6 +95,7 @@ const DashboardContainer: React.FC<{
         officerAssignments={officerAssignments}
         onDrop={handleOfficerDrop}
         onOfficerDragStart={handleOfficerDragStartFromAssignment}
+        canAssignOfficers={canAssignOfficers}
       />
       
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -101,12 +104,14 @@ const DashboardContainer: React.FC<{
           assignedOfficerIds={allAssignedOfficerIds}
           onOfficerClick={setSelectedOfficer}
           onOfficerDrop={handleOfficerDropToList}
+          canDragDrop={canAssignOfficers}
         />
         
         <RecentIncidentsSection 
           incidents={recentIncidents}
           onIncidentClick={setSelectedIncident}
           onOfficerDrop={handleOfficerDropOnIncident}
+          canReceiveDrop={canAssignOfficers}
         />
       </div>
       

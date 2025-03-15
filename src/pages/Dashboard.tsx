@@ -3,6 +3,7 @@ import React, { useEffect } from 'react';
 import { useDashboard, ASSIGNMENTS } from '@/hooks/dashboard';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import { useTouchDevice } from '@/hooks/use-touch-device';
+import { useAuth } from '@/context/AuthContext';
 
 const Dashboard = () => {
   const {
@@ -22,6 +23,8 @@ const Dashboard = () => {
   } = useDashboard();
   
   const isTouchDevice = useTouchDevice();
+  const { hasPermission } = useAuth();
+  const canAssignOfficers = hasPermission('assignOfficer');
   
   // Add effect to periodically refresh the data
   useEffect(() => {
@@ -34,7 +37,8 @@ const Dashboard = () => {
   
   // Handle touch-specific events for the entire dashboard
   useEffect(() => {
-    if (!isTouchDevice) return;
+    // Skip touch drag functionality if the user doesn't have assignOfficer permission
+    if (!isTouchDevice || !canAssignOfficers) return;
     
     // Handle touch drop on assignment
     const handleTouchDrop = (e: CustomEvent) => {
@@ -99,7 +103,7 @@ const Dashboard = () => {
       window.removeEventListener('popstate', cleanupGhostElements);
       cleanupGhostElements();
     };
-  }, [isTouchDevice, handleOfficerDrop, handleOfficerDropToList]);
+  }, [isTouchDevice, handleOfficerDrop, handleOfficerDropToList, canAssignOfficers]);
   
   return (
     <DashboardContainer
@@ -117,6 +121,7 @@ const Dashboard = () => {
       handleOfficerDragStartFromAssignment={handleOfficerDragStartFromAssignment}
       handleOfficerDropOnIncident={handleOfficerDropOnIncident}
       handleOfficerDropToList={handleOfficerDropToList}
+      canAssignOfficers={canAssignOfficers}
     />
   );
 };

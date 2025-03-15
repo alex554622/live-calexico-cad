@@ -20,11 +20,8 @@ export const usePermissions = (user: User | null) => {
         'viewOfficerDetails',
         'viewIncidentDetails',
         'createIncident',
-        'editIncident',
-        'assignOfficer',
-        'viewReports',
-        'deleteIncident',
         'viewSettings'
+        // Removed: 'editIncident', 'assignOfficer', 'deleteIncident'
       ];
       return dispatcherPermissions.includes(permission);
     }
