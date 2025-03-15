@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import { Incident } from '@/types';
 import IncidentCard from './IncidentCard';
@@ -8,12 +7,14 @@ interface RecentIncidentsSectionProps {
   incidents: Incident[];
   onIncidentClick: (incident: Incident) => void;
   onOfficerDrop: (e: React.DragEvent<HTMLDivElement>, incident: Incident) => void;
+  canReceiveDrop?: boolean;
 }
 
 const RecentIncidentsSection: React.FC<RecentIncidentsSectionProps> = ({
   incidents,
   onIncidentClick,
   onOfficerDrop,
+  canReceiveDrop = true,
 }) => {
   const isTouchDevice = useTouchDevice();
   const [activeDrop, setActiveDrop] = useState<string | null>(null);
@@ -135,9 +136,9 @@ const RecentIncidentsSection: React.FC<RecentIncidentsSectionProps> = ({
           <div 
             key={incident.id}
             ref={(el) => setIncidentRef(incident.id, el)}
-            onDragOver={!isTouchDevice ? (e) => handleDragOver(e, incident.id) : undefined}
-            onDragLeave={!isTouchDevice ? handleDragLeave : undefined}
-            onDrop={!isTouchDevice ? (e) => handleDrop(e, incident) : undefined}
+            onDragOver={canReceiveDrop && !isTouchDevice ? (e) => handleDragOver(e, incident.id) : undefined}
+            onDragLeave={canReceiveDrop && !isTouchDevice ? handleDragLeave : undefined}
+            onDrop={canReceiveDrop && !isTouchDevice ? (e) => handleDrop(e, incident) : undefined}
             className={`border-2 border-dashed rounded-lg p-1 transition-colors
               ${(activeDrop === incident.id || activeTouchDrop === incident.id)
                 ? 'bg-primary/5 border-primary' 

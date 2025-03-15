@@ -1,184 +1,201 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Officer } from '@/types';
-import OfficerStatusBadge from '@/components/common/OfficerStatusBadge';
+import OfficerStatusBadge from '../common/OfficerStatusBadge';
+import { Card } from '../ui/card';
 import { useTouchDevice } from '@/hooks/use-touch-device';
 
 interface DraggableOfficerCardProps {
   officer: Officer;
   onClick: () => void;
+  draggable?: boolean;
 }
 
 const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({ 
   officer, 
-  onClick 
+  onClick,
+  draggable = true
 }) => {
-  const isTouchDevice = useTouchDevice();
   const [isDragging, setIsDragging] = useState(false);
+  const [touchTimeout, setTouchTimeout] = useState<NodeJS.Timeout | null>(null);
+  const isTouchDevice = useTouchDevice();
+  const cardRef = useRef<HTMLDivElement>(null);
+  const touchStartPosRef = useRef<{ x: number, y: number } | null>(null);
   
-  // Handle mouse drag start
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
-    e.dataTransfer.setData("officerId", officer.id);
-    e.dataTransfer.effectAllowed = "move";
+    if (!draggable) return;
+    
+    e.dataTransfer.setData('officerId', officer.id);
+    e.dataTransfer.effectAllowed = 'move';
     setIsDragging(true);
     
-    // Create a ghost image for dragging
-    const ghostElement = document.createElement('div');
-    ghostElement.className = 'fixed z-50 bg-primary text-primary-foreground px-3 py-2 rounded-md shadow opacity-80';
-    ghostElement.innerText = officer.name;
-    ghostElement.id = 'drag-ghost';
-    document.body.appendChild(ghostElement);
-    
-    // Set the ghost image and position it
-    e.dataTransfer.setDragImage(ghostElement, 20, 20);
-    
-    // Remove the ghost element after the drag starts
-    setTimeout(() => {
-      if (document.getElementById('drag-ghost')) {
-        document.body.removeChild(ghostElement);
-      }
-    }, 0);
-  };
-
-  const handleDragEnd = () => {
-    setIsDragging(false);
-    
-    // Cleanup any lingering ghost elements
-    const ghost = document.getElementById('touch-drag-ghost');
-    if (ghost && ghost.parentNode) {
-      document.body.removeChild(ghost);
+    // Set drag image (optional)
+    if (cardRef.current) {
+      const rect = cardRef.current.getBoundingClientRect();
+      e.dataTransfer.setDragImage(cardRef.current, rect.width / 2, rect.height / 2);
     }
   };
   
-  // Touch handlers for touch devices
-  const handleTouchStart = (e: React.TouchEvent) => {
-    e.stopPropagation();
-    
-    const touch = e.touches[0];
-    const officerId = officer.id;
-    const name = officer.name;
-    
-    // Create ghost element for touch dragging
-    const ghost = document.createElement('div');
-    ghost.className = 'fixed z-50 bg-primary text-primary-foreground px-3 py-2 rounded-md shadow opacity-80';
-    ghost.innerHTML = name;
-    ghost.id = 'touch-drag-ghost';
-    ghost.style.position = 'fixed';
-    ghost.style.left = `${touch.clientX - 30}px`;
-    ghost.style.top = `${touch.clientY - 30}px`;
-    ghost.style.pointerEvents = 'none';
-    document.body.appendChild(ghost);
-    
-    // Store data for the drag operation
-    (window as any).touchDragOfficerId = officerId;
-    
-    // Dispatch custom event to indicate drag start
-    window.dispatchEvent(new CustomEvent('touchdragstart', { 
-      detail: { 
-        officerId: officerId,
-        name: name,
-        x: touch.clientX,
-        y: touch.clientY
-      }
-    }));
+  const handleDragEnd = () => {
+    setIsDragging(false);
   };
   
-  const handleTouchMove = (e: React.TouchEvent) => {
-    if (!(window as any).touchDragOfficerId) return;
+  // Touch handling for mobile devices
+  const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!draggable || !isTouchDevice) return;
+    
+    // Save the touch start position
+    const touch = e.touches[0];
+    touchStartPosRef.current = { x: touch.clientX, y: touch.clientY };
+    
+    // Set a timeout to detect long press (500ms)
+    if (touchTimeout) clearTimeout(touchTimeout);
+    
+    const timeout = setTimeout(() => {
+      if (!cardRef.current) return;
+      
+      // Create ghost element for dragging
+      const ghost = document.createElement('div');
+      ghost.id = 'touch-drag-ghost';
+      ghost.innerHTML = `<div class="bg-white dark:bg-gray-800 p-2 rounded shadow-lg border">${officer.name}</div>`;
+      ghost.style.position = 'absolute';
+      ghost.style.top = '-1000px';
+      ghost.style.zIndex = '9999';
+      ghost.style.pointerEvents = 'none';
+      document.body.appendChild(ghost);
+      
+      // Store the officer ID for later use
+      (window as any).touchDragOfficerId = officer.id;
+      
+      // Provide haptic feedback if available
+      if (navigator.vibrate) {
+        navigator.vibrate(50);
+      }
+      
+      // Start the drag operation
+      setIsDragging(true);
+      
+      // Prevent default on the card to avoid touch conflicts
+      cardRef.current.style.opacity = '0.5';
+      
+      console.log('Long press detected, starting touch drag for officer', officer.id);
+    }, 500);
+    
+    setTouchTimeout(timeout);
+  };
+  
+  const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (!draggable || !isTouchDevice || !isDragging) return;
+    if (!touchStartPosRef.current) return;
+    
+    const touch = e.touches[0];
+    const ghost = document.getElementById('touch-drag-ghost');
+    
+    if (ghost) {
+      ghost.style.top = `${touch.clientY - 30}px`;
+      ghost.style.left = `${touch.clientX - 50}px`;
+      ghost.style.display = 'block';
+      
+      // Dispatch custom event to notify containers
+      const touchMoveEvent = new CustomEvent('touchdragmove', {
+        detail: { x: touch.clientX, y: touch.clientY, officerId: officer.id }
+      });
+      window.dispatchEvent(touchMoveEvent);
+    }
     
     // Prevent scrolling during drag
     e.preventDefault();
-    e.stopPropagation();
-    
-    const touch = e.touches[0];
-    
-    // Update ghost element position
-    const ghost = document.getElementById('touch-drag-ghost');
-    if (ghost) {
-      ghost.style.left = `${touch.clientX - 30}px`;
-      ghost.style.top = `${touch.clientY - 30}px`;
-    }
-    
-    // Dispatch custom event for drag move
-    window.dispatchEvent(new CustomEvent('touchdragmove', { 
-      detail: { 
-        officerId: (window as any).touchDragOfficerId,
-        x: touch.clientX,
-        y: touch.clientY
-      }
-    }));
   };
   
-  const handleTouchEnd = (e: React.TouchEvent) => {
-    e.stopPropagation();
-    
-    if (!(window as any).touchDragOfficerId) return;
-    
-    const touch = e.changedTouches[0];
-    const dropElement = document.elementFromPoint(touch.clientX, touch.clientY);
-    const assignmentBlock = dropElement?.closest('[data-assignment-id]');
-    
-    // Handle dropping on an assignment
-    if (assignmentBlock) {
-      const assignmentId = assignmentBlock.getAttribute('data-assignment-id');
-      if (assignmentId) {
-        window.dispatchEvent(new CustomEvent('touchdrop', { 
-          detail: { 
-            officerId: (window as any).touchDragOfficerId,
-            assignmentId: assignmentId,
-            x: touch.clientX,
-            y: touch.clientY
-          }
-        }));
-      }
-    } else {
-      // Check if dropped back to officers list
-      const officersList = dropElement?.closest('[data-drop-target="officers-list"]');
-      if (officersList) {
-        window.dispatchEvent(new CustomEvent('touchdroptolist', { 
-          detail: { 
-            officerId: (window as any).touchDragOfficerId
-          }
-        }));
-      }
+  const handleTouchEnd = (e: React.TouchEvent<HTMLDivElement>) => {
+    if (touchTimeout) {
+      clearTimeout(touchTimeout);
+      setTouchTimeout(null);
     }
     
-    // Clean up
+    if (!isDragging) return;
+    
     const ghost = document.getElementById('touch-drag-ghost');
     if (ghost && ghost.parentNode) {
       document.body.removeChild(ghost);
     }
-    delete (window as any).touchDragOfficerId;
     
-    window.dispatchEvent(new CustomEvent('touchdragend'));
+    if (isTouchDevice && isDragging) {
+      const touch = e.changedTouches[0];
+      
+      // Reset card appearance
+      if (cardRef.current) {
+        cardRef.current.style.opacity = '1';
+      }
+      
+      // Find the element under the touch point
+      const elementsUnderTouch = document.elementsFromPoint(touch.clientX, touch.clientY);
+      
+      // Look for assignment blocks
+      const assignmentBlock = elementsUnderTouch.find(el => 
+        el.hasAttribute('data-assignment-id')
+      );
+      
+      if (assignmentBlock) {
+        const assignmentId = assignmentBlock.getAttribute('data-assignment-id');
+        console.log(`Touch drop detected on assignment: ${assignmentId}`);
+        
+        // Dispatch custom event for the drop
+        const touchDropEvent = new CustomEvent('touchdrop', {
+          detail: { 
+            assignmentId,
+            officerId: officer.id,
+            x: touch.clientX,
+            y: touch.clientY
+          }
+        });
+        window.dispatchEvent(touchDropEvent);
+      }
+      
+      // Dispatch touchdragend event for any containers listening
+      const touchDragEndEvent = new Event('touchdragend');
+      window.dispatchEvent(touchDragEndEvent);
+      
+      setIsDragging(false);
+    }
   };
+  
+  // Cancel the touch timeout when component unmounts
+  useEffect(() => {
+    return () => {
+      if (touchTimeout) {
+        clearTimeout(touchTimeout);
+      }
+    };
+  }, [touchTimeout]);
 
   return (
-    <div 
-      className={`border rounded-lg p-3 hover:border-primary transition-colors flex items-center justify-between 
-        ${isDragging ? 'opacity-50' : ''}
-        ${officer.currentIncidentId ? 'border-amber-400 dark:border-amber-500 bg-amber-50 dark:bg-amber-950/40' : ''}
-        ${isTouchDevice ? 'active:bg-primary/10' : 'cursor-move'}`}
-      onClick={isTouchDevice ? onClick : undefined}
-      draggable={true}
+    <Card
+      ref={cardRef}
+      className={`p-2 cursor-pointer hover:bg-accent transition-colors
+        ${isDragging ? 'opacity-50' : 'opacity-100'}`}
+      onClick={(e) => {
+        // Only trigger click if not dragging
+        if (!isDragging) {
+          onClick();
+        }
+      }}
+      draggable={draggable && !isTouchDevice}
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
-      onTouchStart={isTouchDevice ? handleTouchStart : undefined}
-      onTouchMove={isTouchDevice ? handleTouchMove : undefined}
-      onTouchEnd={isTouchDevice ? handleTouchEnd : undefined}
-      onTouchCancel={isTouchDevice ? handleTouchEnd : undefined}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      onTouchCancel={handleTouchEnd}
     >
-      <div>
-        <h3 className="font-medium">{officer.name}</h3>
-        <p className="text-xs text-muted-foreground">
-          {officer.rank}
-          {officer.currentIncidentId && 
-            <span className="ml-1 text-amber-600 dark:text-amber-400">• Assigned</span>
-          }
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <div className="font-medium">{officer.name}</div>
+          <div className="text-xs text-muted-foreground">{officer.badgeNumber}</div>
+        </div>
+        <OfficerStatusBadge status={officer.status} />
       </div>
-      <OfficerStatusBadge status={officer.status} />
-    </div>
+    </Card>
   );
 };
 

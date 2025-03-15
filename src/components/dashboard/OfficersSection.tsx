@@ -9,6 +9,7 @@ interface OfficersSectionProps {
   assignedOfficerIds: string[];
   onOfficerClick: (officer: Officer) => void;
   onOfficerDrop?: (e: React.DragEvent<HTMLDivElement>) => void;
+  canDragDrop?: boolean; // Added the missing property
 }
 
 const OfficersSection: React.FC<OfficersSectionProps> = ({
@@ -16,6 +17,7 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
   assignedOfficerIds,
   onOfficerClick,
   onOfficerDrop,
+  canDragDrop = true, // Set default value to true
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isTouchOver, setIsTouchOver] = useState(false);
@@ -107,9 +109,9 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
       </div>
       <div 
         ref={sectionRef}
-        onDragOver={handleDragOver}
-        onDragLeave={handleDragLeave}
-        onDrop={handleDrop}
+        onDragOver={canDragDrop && onOfficerDrop ? handleDragOver : undefined}
+        onDragLeave={canDragDrop && onOfficerDrop ? handleDragLeave : undefined}
+        onDrop={canDragDrop && onOfficerDrop ? handleDrop : undefined}
         className={`border-2 border-dashed rounded-lg p-2 transition-colors duration-200
           ${(isDragOver || isTouchOver) 
             ? 'border-primary bg-primary/10' 
@@ -127,6 +129,7 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
                 key={officer.id} 
                 officer={officer} 
                 onClick={() => onOfficerClick(officer)}
+                draggable={canDragDrop}
               />
             ))}
           </div>
