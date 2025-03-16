@@ -6,3 +6,4 @@ export * from './use-officer-assignments';
 export * from './use-officer-assignment-operations/index';
 export * from './use-fetch-assignments';
 export * from './use-assignment-subscription';
+export * from './use-draggable-officer';
