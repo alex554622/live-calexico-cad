@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { 
@@ -16,15 +16,24 @@ import { Label } from '@/components/ui/label';
 import { Shield } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { Checkbox } from '@/components/ui/checkbox';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const { login } = useAuth();
+  const [retainData, setRetainData] = useState(false);
+  const { login, user } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const isMobile = useIsMobile();
+
+  // Redirect if already logged in
+  useEffect(() => {
+    if (user) {
+      navigate('/');
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,7 +42,7 @@ const Login = () => {
     try {
       console.log("Attempting login with:", { email });
       
-      const success = await login(email, password);
+      const success = await login(email, password, retainData);
       
       if (success) {
         toast({
@@ -59,7 +68,7 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 bg-gray-100">
+    <div className="min-h-screen flex flex-col items-center justify-center px-4 py-8 bg-gray-100 dark:bg-gray-900">
       <div className={`w-full ${isMobile ? 'max-w-xs' : 'max-w-sm'} p-2`}>
         <Card className="border-2 border-police shadow-md">
           <CardHeader className="space-y-1 flex flex-col items-center pb-4">
@@ -97,6 +106,19 @@ const Login = () => {
                   className="h-9"
                 />
               </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="retain" 
+                  checked={retainData}
+                  onCheckedChange={(checked) => setRetainData(checked === true)}
+                />
+                <label
+                  htmlFor="retain"
+                  className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  Remember me
+                </label>
+              </div>
             </CardContent>
             <CardFooter className="pt-0">
               <Button
@@ -114,8 +136,8 @@ const Login = () => {
       {/* Valladolid Software Engineering Logo */}
       <div className="mt-4 text-center">
         <div className="flex items-center justify-center">
-          <div className="bg-white p-2 rounded-md shadow-sm">
-            <p className="text-xs text-gray-500">by</p>
+          <div className="bg-white dark:bg-gray-800 p-2 rounded-md shadow-sm">
+            <p className="text-xs text-gray-500 dark:text-gray-400">by</p>
             <p className="text-sm font-semibold text-police">Valladolid Software Engineering</p>
           </div>
         </div>
