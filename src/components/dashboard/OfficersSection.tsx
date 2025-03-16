@@ -1,8 +1,10 @@
 
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { Officer } from '@/types';
-import DraggableOfficerCard from './DraggableOfficerCard';
-import { useTouchDevice } from '@/hooks/use-touch-device';
+import { useOfficerDropZone } from '@/hooks/dashboard/use-officer-drop-zone';
+import OfficersHeader from './officer-section/OfficersHeader';
+import EmptyOfficersList from './officer-section/EmptyOfficersList';
+import OfficersGrid from './officer-section/OfficersGrid';
 
 interface OfficersSectionProps {
   officers: Officer[];
@@ -19,101 +21,23 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
   onOfficerDrop,
   canDragDrop = true,
 }) => {
-  const [isDragOver, setIsDragOver] = useState(false);
-  const [isTouchOver, setIsTouchOver] = useState(false);
-  const isTouchDevice = useTouchDevice();
-  const sectionRef = useRef<HTMLDivElement>(null);
+  const {
+    isDragOver,
+    isTouchOver,
+    sectionRef,
+    handleDragOver,
+    handleDragLeave,
+    handleDrop
+  } = useOfficerDropZone(onOfficerDrop);
   
   // Filter out officers that are already assigned to an assignment
   const availableOfficers = officers.filter(
     officer => !assignedOfficerIds.includes(officer.id)
   );
 
-  // Mouse drag handlers
-  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    e.dataTransfer.dropEffect = "move";
-    setIsDragOver(true);
-  };
-  
-  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-  };
-  
-  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
-    
-    // Log to debug
-    console.log('Dropping officer back to officers list');
-    console.log('Data transferred:', e.dataTransfer.getData('officerId'));
-    
-    if (onOfficerDrop) {
-      onOfficerDrop(e);
-    }
-  };
-
-  // Touch event handlers for drop zone
-  useEffect(() => {
-    if (!isTouchDevice || !onOfficerDrop) return;
-    
-    const handleTouchDragMove = (e: CustomEvent) => {
-      if (!sectionRef.current) return;
-      
-      const { x, y } = e.detail;
-      const rect = sectionRef.current.getBoundingClientRect();
-      
-      // Check if touch position is within this section
-      if (
-        x >= rect.left && 
-        x <= rect.right && 
-        y >= rect.top && 
-        y <= rect.bottom
-      ) {
-        setIsTouchOver(true);
-      } else {
-        setIsTouchOver(false);
-      }
-    };
-    
-    const handleTouchDragEnd = (e: Event) => {
-      setIsTouchOver(false);
-      
-      // If we have a touch over state and a valid officer id from touch event
-      if (isTouchOver && (window as any).touchDragOfficerId) {
-        const officerId = (window as any).touchDragOfficerId;
-        
-        console.log(`Touch drop back to list detected for officer: ${officerId}`);
-        
-        // Dispatch a custom event for dropping an officer back to the list
-        const dropEvent = new CustomEvent('touchdroptolist', {
-          detail: { officerId }
-        });
-        window.dispatchEvent(dropEvent);
-        
-        // Clear the dragged officer id
-        delete (window as any).touchDragOfficerId;
-      }
-    };
-    
-    window.addEventListener('touchdragmove', handleTouchDragMove as EventListener);
-    window.addEventListener('touchdragend', handleTouchDragEnd as EventListener);
-    
-    return () => {
-      window.removeEventListener('touchdragmove', handleTouchDragMove as EventListener);
-      window.removeEventListener('touchdragend', handleTouchDragEnd as EventListener);
-    };
-  }, [isTouchDevice, onOfficerDrop, isTouchOver]);
-
   return (
     <div>
-      <div className="flex items-center justify-between mb-4">
-        <h2 className="text-xl font-semibold">Officers</h2>
-      </div>
+      <OfficersHeader />
       <div 
         ref={sectionRef}
         onDragOver={canDragDrop && onOfficerDrop ? handleDragOver : undefined}
@@ -126,20 +50,13 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
         data-drop-target="officers-list"
       >
         {availableOfficers.length === 0 ? (
-          <div className="p-4 text-center text-muted-foreground border rounded-lg">
-            All officers are currently assigned to assignments
-          </div>
+          <EmptyOfficersList />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[500px] overflow-y-auto p-2">
-            {availableOfficers.map((officer) => (
-              <DraggableOfficerCard 
-                key={officer.id} 
-                officer={officer} 
-                onClick={() => onOfficerClick(officer)}
-                draggable={canDragDrop}
-              />
-            ))}
-          </div>
+          <OfficersGrid 
+            officers={availableOfficers} 
+            onOfficerClick={onOfficerClick}
+            draggable={canDragDrop} 
+          />
         )}
       </div>
     </div>
