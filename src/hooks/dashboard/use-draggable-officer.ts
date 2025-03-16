@@ -16,12 +16,11 @@ export function useDraggableOfficer(
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     if (!draggable) return;
     
+    console.log(`Starting drag for officer: ${officerName} (${officerId})`);
+    
     // Set the officer ID as the drag data
     e.dataTransfer.setData('officerId', officerId);
     e.dataTransfer.effectAllowed = 'move';
-    
-    // Log to debug
-    console.log(`Started dragging officer: ${officerName} (${officerId})`);
     
     setIsDragging(true);
     
@@ -73,7 +72,9 @@ export function useDraggableOfficer(
       setIsDragging(true);
       
       // Prevent default on the card to avoid touch conflicts
-      cardRef.current.style.opacity = '0.5';
+      if (cardRef.current) {
+        cardRef.current.style.opacity = '0.5';
+      }
       
       console.log('Long press detected, starting touch drag for officer', officerId);
     }, 500);

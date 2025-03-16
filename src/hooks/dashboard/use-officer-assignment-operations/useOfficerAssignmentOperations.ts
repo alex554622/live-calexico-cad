@@ -80,6 +80,9 @@ export function useOfficerAssignmentOperations(
         description: "Failed to update officer assignment",
         variant: "destructive"
       });
+      
+      // Refresh to revert optimistic updates if the operation failed
+      refreshData();
     }
   }, [refreshData, updateOfficer, officers, updateAssignmentOptimistically, updateOfficerAssignment]);
   

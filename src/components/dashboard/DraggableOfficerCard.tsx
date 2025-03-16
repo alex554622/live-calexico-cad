@@ -45,6 +45,7 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       onTouchCancel={handleTouchEnd}
+      data-officer-id={officer.id}
     >
       <OfficerInfo officer={officer} />
     </Card>

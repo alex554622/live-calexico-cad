@@ -51,7 +51,7 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
 
   // Touch event handlers
   useEffect(() => {
-    if (!isTouchDevice) return;
+    if (!isTouchDevice || !canDragDrop) return;
 
     const handleTouchDragMove = (e: CustomEvent) => {
       if (!blockRef.current) return;
@@ -102,7 +102,7 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
       window.removeEventListener('touchdragend', handleTouchDragEnd as EventListener);
       window.removeEventListener('touchdrop', handleTouchDrop as EventListener);
     };
-  }, [isTouchDevice, title, onDrop]);
+  }, [isTouchDevice, title, onDrop, canDragDrop]);
 
   return (
     <div 
@@ -126,6 +126,7 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
               console.log(`Dragging officer ${officer.name} (${officer.id}) from assignment ${title}`);
               onDragStart(e, officer);
             } : undefined}
+            data-officer-id={officer.id}
           >
             <div className="text-xs truncate max-w-[100px] dark:text-white">{officer.name}</div>
             <OfficerStatusBadge status={officer.status} />
