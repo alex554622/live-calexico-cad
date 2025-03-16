@@ -25,8 +25,13 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
     if (!draggable) return;
     
+    // Set the officer ID as the drag data
     e.dataTransfer.setData('officerId', officer.id);
     e.dataTransfer.effectAllowed = 'move';
+    
+    // Log to debug
+    console.log(`Started dragging officer: ${officer.name} (${officer.id})`);
+    
     setIsDragging(true);
     
     // Set drag image (optional)
@@ -37,6 +42,7 @@ const DraggableOfficerCard: React.FC<DraggableOfficerCardProps> = ({
   };
   
   const handleDragEnd = () => {
+    console.log(`Ended dragging officer: ${officer.name} (${officer.id})`);
     setIsDragging(false);
   };
   

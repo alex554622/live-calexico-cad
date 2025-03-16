@@ -9,7 +9,7 @@ interface AssignmentBlockProps {
   officers: Officer[];
   onDrop: (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => void;
   onDragStart?: (e: React.DragEvent<HTMLDivElement>, officer: Officer) => void;
-  canDragDrop?: boolean; // Added the missing property
+  canDragDrop?: boolean;
 }
 
 const AssignmentBlock: React.FC<AssignmentBlockProps> = ({ 
@@ -17,7 +17,7 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
   officers,
   onDrop,
   onDragStart,
-  canDragDrop = true // Set default value to true
+  canDragDrop = true
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isTouchOver, setIsTouchOver] = useState(false);
@@ -41,6 +41,11 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
+    
+    // Log to debug the drop event
+    console.log(`Dropping on assignment: ${title}`);
+    console.log('Data transferred:', e.dataTransfer.getData('officerId'));
+    
     onDrop(e, title);
   };
 
@@ -72,6 +77,8 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
       const { assignmentId, officerId } = e.detail;
       
       if (assignmentId === title) {
+        console.log(`Touch drop detected - Officer ${officerId} to ${assignmentId}`);
+        
         // Create a synthetic event for the drop handler
         const syntheticEvent = {
           preventDefault: () => {},
@@ -115,7 +122,10 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
             key={officer.id} 
             className="flex items-center justify-between bg-white dark:bg-gray-700 p-1 rounded shadow-sm cursor-move"
             draggable={canDragDrop}
-            onDragStart={canDragDrop && onDragStart ? (e) => onDragStart(e, officer) : undefined}
+            onDragStart={canDragDrop && onDragStart ? (e) => {
+              console.log(`Dragging officer ${officer.name} (${officer.id}) from assignment ${title}`);
+              onDragStart(e, officer);
+            } : undefined}
           >
             <div className="text-xs truncate max-w-[100px] dark:text-white">{officer.name}</div>
             <OfficerStatusBadge status={officer.status} />

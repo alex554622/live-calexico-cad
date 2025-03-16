@@ -9,7 +9,7 @@ interface OfficersSectionProps {
   assignedOfficerIds: string[];
   onOfficerClick: (officer: Officer) => void;
   onOfficerDrop?: (e: React.DragEvent<HTMLDivElement>) => void;
-  canDragDrop?: boolean; // Added the missing property
+  canDragDrop?: boolean;
 }
 
 const OfficersSection: React.FC<OfficersSectionProps> = ({
@@ -17,7 +17,7 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
   assignedOfficerIds,
   onOfficerClick,
   onOfficerDrop,
-  canDragDrop = true, // Set default value to true
+  canDragDrop = true,
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isTouchOver, setIsTouchOver] = useState(false);
@@ -47,6 +47,11 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
     e.preventDefault();
     e.stopPropagation();
     setIsDragOver(false);
+    
+    // Log to debug
+    console.log('Dropping officer back to officers list');
+    console.log('Data transferred:', e.dataTransfer.getData('officerId'));
+    
     if (onOfficerDrop) {
       onOfficerDrop(e);
     }
@@ -81,6 +86,8 @@ const OfficersSection: React.FC<OfficersSectionProps> = ({
       // If we have a touch over state and a valid officer id from touch event
       if (isTouchOver && (window as any).touchDragOfficerId) {
         const officerId = (window as any).touchDragOfficerId;
+        
+        console.log(`Touch drop back to list detected for officer: ${officerId}`);
         
         // Dispatch a custom event for dropping an officer back to the list
         const dropEvent = new CustomEvent('touchdroptolist', {

@@ -17,34 +17,51 @@ export function useOfficerAssignmentOperations(
   // Helper method to update an officer's assignment in Supabase
   const updateOfficerAssignment = async (officerId: string, assignmentName: string | null) => {
     try {
+      console.log(`Updating officer ${officerId} assignment to ${assignmentName}`);
+      
       // First check if the officer already has an assignment
       const { data, error } = await supabase
         .from('officer_assignments')
         .select('*')
         .eq('officer_id', officerId);
         
-      if (error) throw error;
+      if (error) {
+        console.error('Error checking officer assignment:', error);
+        throw error;
+      }
       
       if (assignmentName === null) {
         // Remove assignment if we're setting to null (dragging back to officers list)
         if (data && data.length > 0) {
+          console.log(`Removing assignment for officer ${officerId}`);
+          
           const { error: deleteError } = await supabase
             .from('officer_assignments')
             .delete()
             .eq('officer_id', officerId);
             
-          if (deleteError) throw deleteError;
+          if (deleteError) {
+            console.error('Error deleting officer assignment:', deleteError);
+            throw deleteError;
+          }
         }
       } else if (data && data.length > 0) {
         // Update existing assignment
+        console.log(`Updating existing assignment for officer ${officerId} to ${assignmentName}`);
+        
         const { error: updateError } = await supabase
           .from('officer_assignments')
           .update({ assignment_name: assignmentName, assigned_at: new Date().toISOString() })
           .eq('officer_id', officerId);
           
-        if (updateError) throw updateError;
+        if (updateError) {
+          console.error('Error updating officer assignment:', updateError);
+          throw updateError;
+        }
       } else {
         // Create new assignment
+        console.log(`Creating new assignment for officer ${officerId} to ${assignmentName}`);
+        
         const { error: insertError } = await supabase
           .from('officer_assignments')
           .insert({
@@ -52,7 +69,10 @@ export function useOfficerAssignmentOperations(
             assignment_name: assignmentName
           });
           
-        if (insertError) throw insertError;
+        if (insertError) {
+          console.error('Error creating officer assignment:', insertError);
+          throw insertError;
+        }
       }
       
       // Trigger a refresh after assignment is updated
@@ -70,10 +90,16 @@ export function useOfficerAssignmentOperations(
     const officerId = e.dataTransfer.getData("officerId");
     console.log(`Dropping officer ${officerId} to assignment ${assignmentId}`);
     
-    if (!officerId) return;
+    if (!officerId) {
+      console.error('No officer ID found in drop event');
+      return;
+    }
     
     const officer = officers.find(o => o.id === officerId);
-    if (!officer) return;
+    if (!officer) {
+      console.error(`Officer not found with ID: ${officerId}`);
+      return;
+    }
     
     try {
       // Update the UI immediately with optimistic updates
@@ -117,10 +143,16 @@ export function useOfficerAssignmentOperations(
     const officerId = e.dataTransfer.getData("officerId");
     console.log(`Dropping officer ${officerId} back to list`);
     
-    if (!officerId) return;
+    if (!officerId) {
+      console.error('No officer ID found in drop event');
+      return;
+    }
     
     const officer = officers.find(o => o.id === officerId);
-    if (!officer) return;
+    if (!officer) {
+      console.error(`Officer not found with ID: ${officerId}`);
+      return;
+    }
     
     try {
       // Update the UI immediately with optimistic updates
