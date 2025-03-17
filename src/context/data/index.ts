@@ -1,5 +1,5 @@
 
 export * from './DataContext';
-export * from './useOfficerData';
+export * from './officer';
 export * from './useIncidentData';
 export * from './useNotificationData';
