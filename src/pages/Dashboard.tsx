@@ -45,7 +45,7 @@ const Dashboard = () => {
       const { officerId, assignmentId } = e.detail;
       
       if (officerId && assignmentId) {
-        console.log(`Touch drop - Officer ${officerId} to assignment ${assignmentId}`);
+        console.log(`Touch drop detected - Officer ${officerId} to assignment ${assignmentId}`);
         
         // Create a synthetic drop event
         const dropEvent = {

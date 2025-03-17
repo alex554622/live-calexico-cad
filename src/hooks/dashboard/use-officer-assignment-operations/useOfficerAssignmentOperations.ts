@@ -37,6 +37,8 @@ export function useOfficerAssignmentOperations(
   const handleOfficerDrop = useCallback(async (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Get officer ID from the data transfer
     const officerId = e.dataTransfer.getData("officerId");
     console.log(`Dropping officer ${officerId} to assignment ${assignmentId}`);
     
