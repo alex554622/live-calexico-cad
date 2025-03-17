@@ -3,7 +3,7 @@ import React, { useEffect } from 'react';
 import { useDashboard, ASSIGNMENTS } from '@/hooks/dashboard';
 import DashboardContainer from '@/components/dashboard/DashboardContainer';
 import { useTouchDevice } from '@/hooks/use-touch-device';
-import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/components/ui/use-toast';
 
 const Dashboard = () => {
   const {
@@ -23,8 +23,6 @@ const Dashboard = () => {
   } = useDashboard();
   
   const isTouchDevice = useTouchDevice();
-  const { hasPermission } = useAuth();
-  const canAssignOfficers = hasPermission('assignOfficer');
   
   // Add effect to periodically refresh the data
   useEffect(() => {
@@ -37,26 +35,41 @@ const Dashboard = () => {
   
   // Handle touch-specific events for the entire dashboard
   useEffect(() => {
-    // Skip touch drag functionality if the user doesn't have assignOfficer permission
-    if (!isTouchDevice || !canAssignOfficers) return;
+    if (!isTouchDevice) return;
     
     // Handle touch drop on assignment
     const handleTouchDrop = (e: CustomEvent) => {
       const { officerId, assignmentId } = e.detail;
       
       if (officerId && assignmentId) {
-        console.log(`Touch drop detected - Officer ${officerId} to assignment ${assignmentId}`);
+        console.log(`Touch drop - Officer ${officerId} to assignment ${assignmentId}`);
         
-        // Create a synthetic drop event
-        const dropEvent = {
-          preventDefault: () => {},
-          stopPropagation: () => {},
-          dataTransfer: {
-            getData: (key: string) => key === 'officerId' ? officerId : null
-          }
-        } as unknown as React.DragEvent<HTMLDivElement>;
-        
-        handleOfficerDrop(dropEvent, assignmentId);
+        try {
+          // Create a synthetic drop event
+          const dropEvent = {
+            preventDefault: () => {},
+            stopPropagation: () => {},
+            dataTransfer: {
+              getData: (key: string) => key === 'officerId' ? officerId : null
+            }
+          } as unknown as React.DragEvent<HTMLDivElement>;
+          
+          handleOfficerDrop(dropEvent, assignmentId);
+          
+          // Provide feedback for touch users
+          toast({
+            title: "Officer Assigned",
+            description: `Officer assigned to ${assignmentId}`,
+            duration: 2000,
+          });
+        } catch (error) {
+          console.error("Error handling touch drop:", error);
+          toast({
+            title: "Assignment Failed",
+            description: "Could not assign officer to this location",
+            variant: "destructive",
+          });
+        }
       }
     };
     
@@ -67,16 +80,32 @@ const Dashboard = () => {
       if (officerId && handleOfficerDropToList) {
         console.log(`Touch drop to list - Officer ${officerId}`);
         
-        // Create a synthetic drop event
-        const dropEvent = {
-          preventDefault: () => {},
-          stopPropagation: () => {},
-          dataTransfer: {
-            getData: (key: string) => key === 'officerId' ? officerId : null
-          }
-        } as unknown as React.DragEvent<HTMLDivElement>;
-        
-        handleOfficerDropToList(dropEvent);
+        try {
+          // Create a synthetic drop event
+          const dropEvent = {
+            preventDefault: () => {},
+            stopPropagation: () => {},
+            dataTransfer: {
+              getData: (key: string) => key === 'officerId' ? officerId : null
+            }
+          } as unknown as React.DragEvent<HTMLDivElement>;
+          
+          handleOfficerDropToList(dropEvent);
+          
+          // Provide feedback for touch users
+          toast({
+            title: "Officer Unassigned",
+            description: "Officer has been returned to the available list",
+            duration: 2000,
+          });
+        } catch (error) {
+          console.error("Error handling touch drop to list:", error);
+          toast({
+            title: "Unassignment Failed",
+            description: "Could not unassign officer",
+            variant: "destructive",
+          });
+        }
       }
     };
     
@@ -103,7 +132,7 @@ const Dashboard = () => {
       window.removeEventListener('popstate', cleanupGhostElements);
       cleanupGhostElements();
     };
-  }, [isTouchDevice, handleOfficerDrop, handleOfficerDropToList, canAssignOfficers]);
+  }, [isTouchDevice, handleOfficerDrop, handleOfficerDropToList]);
   
   return (
     <DashboardContainer
@@ -121,7 +150,6 @@ const Dashboard = () => {
       handleOfficerDragStartFromAssignment={handleOfficerDragStartFromAssignment}
       handleOfficerDropOnIncident={handleOfficerDropOnIncident}
       handleOfficerDropToList={handleOfficerDropToList}
-      canAssignOfficers={canAssignOfficers}
     />
   );
 };

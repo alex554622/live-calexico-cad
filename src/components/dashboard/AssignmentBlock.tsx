@@ -9,15 +9,13 @@ interface AssignmentBlockProps {
   officers: Officer[];
   onDrop: (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => void;
   onDragStart?: (e: React.DragEvent<HTMLDivElement>, officer: Officer) => void;
-  canDragDrop?: boolean;
 }
 
 const AssignmentBlock: React.FC<AssignmentBlockProps> = ({ 
   title, 
   officers,
   onDrop,
-  onDragStart,
-  canDragDrop = true
+  onDragStart
 }) => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [isTouchOver, setIsTouchOver] = useState(false);
@@ -42,22 +40,24 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
     e.stopPropagation();
     setIsDragOver(false);
     
-    // Log to debug the drop event
-    console.log(`Dropping on assignment: ${title}`);
-    console.log('Data transferred:', e.dataTransfer.getData('officerId'));
-    
-    onDrop(e, title);
+    try {
+      onDrop(e, title);
+    } catch (error) {
+      console.error(`Error dropping on assignment ${title}:`, error);
+    }
   };
 
   // Touch event handlers
   useEffect(() => {
-    if (!isTouchDevice || !canDragDrop) return;
+    if (!isTouchDevice || !blockRef.current) return;
+
+    const currentBlockRef = blockRef.current;
 
     const handleTouchDragMove = (e: CustomEvent) => {
-      if (!blockRef.current) return;
+      if (!currentBlockRef) return;
       
       const { x, y } = e.detail;
-      const rect = blockRef.current.getBoundingClientRect();
+      const rect = currentBlockRef.getBoundingClientRect();
       
       // Check if touch position is within this assignment block
       const isOver = 
@@ -67,42 +67,46 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
         y <= rect.bottom;
       
       setIsTouchOver(isOver);
-    };
-    
-    const handleTouchDragEnd = () => {
-      setIsTouchOver(false);
-    };
-    
-    const handleTouchDrop = (e: CustomEvent) => {
-      const { assignmentId, officerId } = e.detail;
       
-      if (assignmentId === title) {
-        console.log(`Touch drop detected - Officer ${officerId} to ${assignmentId}`);
+      // If over this block, update potential drop target visually
+      if (isOver && (window as any).touchDragOfficerId) {
+        document.querySelectorAll('[data-assignment-id]').forEach(el => {
+          el.classList.remove('touch-drag-target');
+        });
+        currentBlockRef.classList.add('touch-drag-target');
+      }
+    };
+    
+    const handleTouchDragEnd = (e: CustomEvent) => {
+      setIsTouchOver(false);
+      currentBlockRef.classList.remove('touch-drag-target');
+      
+      // If touch ended over this block and we have a dragged officer, dispatch drop event
+      if (isTouchOver && (window as any).touchDragOfficerId) {
+        const officerId = (window as any).touchDragOfficerId;
         
-        // Create a synthetic event for the drop handler
-        const syntheticEvent = {
-          preventDefault: () => {},
-          stopPropagation: () => {},
-          dataTransfer: {
-            getData: () => officerId
+        // Custom event to be handled by Dashboard component
+        const touchDropEvent = new CustomEvent('touchdrop', {
+          detail: {
+            officerId,
+            assignmentId: title
           }
-        } as unknown as React.DragEvent<HTMLDivElement>;
+        });
         
-        onDrop(syntheticEvent, title);
+        window.dispatchEvent(touchDropEvent);
       }
     };
     
     // Register event listeners
     window.addEventListener('touchdragmove', handleTouchDragMove as EventListener);
     window.addEventListener('touchdragend', handleTouchDragEnd as EventListener);
-    window.addEventListener('touchdrop', handleTouchDrop as EventListener);
     
     return () => {
       window.removeEventListener('touchdragmove', handleTouchDragMove as EventListener);
       window.removeEventListener('touchdragend', handleTouchDragEnd as EventListener);
-      window.removeEventListener('touchdrop', handleTouchDrop as EventListener);
+      currentBlockRef.classList.remove('touch-drag-target');
     };
-  }, [isTouchDevice, title, onDrop, canDragDrop]);
+  }, [isTouchDevice, title, isTouchOver]);
 
   return (
     <div 
@@ -111,9 +115,9 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
       className={`border rounded-lg p-2 h-32 overflow-y-auto transition-colors duration-200
         ${isDragOver || isTouchOver ? 'bg-blue-100 dark:bg-blue-900/30 border-blue-300 dark:border-blue-700' : ''}
         ${officers.length > 0 ? 'bg-red-50 dark:bg-red-950/40 border-red-200 dark:border-red-800' : 'bg-gray-50 dark:bg-gray-800/50'}`}
-      onDragOver={canDragDrop ? handleDragOver : undefined}
-      onDragLeave={canDragDrop ? handleDragLeave : undefined}
-      onDrop={canDragDrop ? handleDrop : undefined}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
     >
       <h3 className="font-medium text-xs mb-1 text-foreground dark:text-gray-100">{title}</h3>
       <div className="space-y-1">
@@ -121,12 +125,10 @@ const AssignmentBlock: React.FC<AssignmentBlockProps> = ({
           <div 
             key={officer.id} 
             className="flex items-center justify-between bg-white dark:bg-gray-700 p-1 rounded shadow-sm cursor-move"
-            draggable={canDragDrop}
-            onDragStart={canDragDrop && onDragStart ? (e) => {
-              console.log(`Dragging officer ${officer.name} (${officer.id}) from assignment ${title}`);
-              onDragStart(e, officer);
-            } : undefined}
+            draggable={true}
+            onDragStart={onDragStart ? (e) => onDragStart(e, officer) : undefined}
             data-officer-id={officer.id}
+            data-officer-name={officer.name}
           >
             <div className="text-xs truncate max-w-[100px] dark:text-white">{officer.name}</div>
             <OfficerStatusBadge status={officer.status} />

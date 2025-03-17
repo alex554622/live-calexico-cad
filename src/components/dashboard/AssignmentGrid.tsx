@@ -10,7 +10,6 @@ interface AssignmentGridProps {
   officerAssignments: Record<string, string[]>;
   onDrop: (e: React.DragEvent<HTMLDivElement>, assignmentId: string) => void;
   onOfficerDragStart: (e: React.DragEvent<HTMLDivElement>, officer: Officer) => void;
-  canAssignOfficers?: boolean;
 }
 
 const AssignmentGrid: React.FC<AssignmentGridProps> = ({
@@ -19,7 +18,6 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
   officerAssignments,
   onDrop,
   onOfficerDragStart,
-  canAssignOfficers = true
 }) => {
   const isTouchDevice = useTouchDevice();
   
@@ -31,17 +29,12 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
   return (
     <div>
       <h2 className="text-xl font-semibold mb-4">Assignments</h2>
-      {isTouchDevice && canAssignOfficers && (
+      {isTouchDevice && (
         <div className="mb-3 text-sm text-muted-foreground">
           <p>Tap and hold officers to assign them to different locations.</p>
         </div>
       )}
-      {!canAssignOfficers && (
-        <div className="mb-3 text-sm text-muted-foreground">
-          <p>View-only mode: You don't have permission to modify officer assignments.</p>
-        </div>
-      )}
-      <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3">
+      <div className="grid grid-cols-2 md:grid-cols-5 lg:grid-cols-5 gap-3" id="assignment-grid">
         {assignments.map((assignment) => (
           <AssignmentBlock
             key={assignment}
@@ -49,7 +42,6 @@ const AssignmentGrid: React.FC<AssignmentGridProps> = ({
             officers={getAssignmentOfficers(assignment)}
             onDrop={onDrop}
             onDragStart={onOfficerDragStart}
-            canDragDrop={canAssignOfficers}
           />
         ))}
       </div>

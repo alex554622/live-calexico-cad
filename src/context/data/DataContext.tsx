@@ -3,7 +3,7 @@ import React, { createContext, useContext, useCallback } from 'react';
 import { Officer, Incident, Notification } from '@/types';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '../AuthContext';
-import { useOfficerData } from './officer/useOfficerData';
+import { useOfficerData } from './useOfficerData';
 import { useIncidentData } from './useIncidentData';
 import { useNotificationData } from './useNotificationData';
 
