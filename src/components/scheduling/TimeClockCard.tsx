@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { Clock, LogIn, LogOut, Coffee, Utensils } from 'lucide-react';
@@ -32,6 +31,8 @@ export const TimeClockCard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedBreakType, setSelectedBreakType] = useState<'paid10' | 'unpaid30' | 'unpaid60'>('paid10');
   const [isClockingIn, setIsClockingIn] = useState(false);
+  const [isProcessingBreak, setIsProcessingBreak] = useState(false);
+  const [isClockingOut, setIsClockingOut] = useState(false);
   
   const { 
     startShift,
@@ -60,15 +61,6 @@ export const TimeClockCard = () => {
     return () => clearInterval(timer);
   }, []);
   
-  // Round time to nearest 15 minutes for display
-  const roundTime = (date: Date) => {
-    const minutes = date.getMinutes();
-    const roundedMinutes = Math.round(minutes / 15) * 15;
-    const newDate = new Date(date);
-    newDate.setMinutes(roundedMinutes, 0, 0);
-    return newDate;
-  };
-  
   // Find matching officer for the current user
   const findOfficerIdForUser = () => {
     if (!user) return undefined;
@@ -93,15 +85,31 @@ export const TimeClockCard = () => {
       return;
     }
     
+    // Ensure that the user has a valid UUID
+    if (!user.id || typeof user.id !== 'string' || user.id === 'admin-id') {
+      toast({
+        title: 'Error',
+        description: 'You have an invalid user ID. Please contact support.',
+        variant: 'destructive',
+      });
+      console.error('Invalid user ID for clock in:', user.id);
+      return;
+    }
+    
     setIsClockingIn(true);
     try {
       const officerId = findOfficerIdForUser();
+      console.log('Clocking in with user ID:', user.id, 'officer ID:', officerId);
       await startShift(officerId);
+      toast({
+        title: 'Success',
+        description: 'You have successfully clocked in',
+      });
     } catch (error) {
       console.error('Error clocking in:', error);
       toast({
         title: 'Error',
-        description: 'Failed to start shift. Please try again later.',
+        description: error instanceof Error ? error.message : 'Failed to start shift. Please try again later.',
         variant: 'destructive',
       });
     } finally {
@@ -111,17 +119,68 @@ export const TimeClockCard = () => {
   
   const handleClockOut = async () => {
     if (!currentShift) return;
-    await endShift(currentShift.id);
+    
+    setIsClockingOut(true);
+    try {
+      await endShift(currentShift.id);
+      toast({
+        title: 'Success',
+        description: 'You have successfully clocked out',
+      });
+    } catch (error) {
+      console.error('Error clocking out:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to end shift. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsClockingOut(false);
+    }
   };
   
   const handleBreakStart = async () => {
     if (!currentShift) return;
-    await startBreak(currentShift.id, selectedBreakType);
+    
+    setIsProcessingBreak(true);
+    try {
+      await startBreak(currentShift.id, selectedBreakType);
+      toast({
+        title: 'Break Started',
+        description: `Your ${selectedBreakType === 'paid10' ? '10-minute' : selectedBreakType === 'unpaid30' ? '30-minute' : '1-hour'} break has started`,
+      });
+    } catch (error) {
+      console.error('Error starting break:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start break. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessingBreak(false);
+    }
   };
   
   const handleBreakEnd = async () => {
     if (!currentBreak) return;
-    await endBreak(currentBreak.id);
+    
+    setIsProcessingBreak(true);
+    try {
+      await endBreak(currentBreak.id);
+      toast({
+        title: 'Break Ended',
+        description: 'Your break has ended successfully',
+      });
+    } catch (error) {
+      console.error('Error ending break:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to end break. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsProcessingBreak(false);
+    }
   };
   
   // Get all events for the current user, sorted by time
@@ -238,6 +297,7 @@ export const TimeClockCard = () => {
           <div className="flex-1 text-center sm:text-left">
             <h3 className="font-medium text-lg">{user?.name}</h3>
             <p className="text-muted-foreground text-sm">{user?.role}</p>
+            {user?.id && <p className="text-xs text-muted-foreground">ID: {user.id.substring(0, 8)}...</p>}
           </div>
           
           <div className="text-center">
@@ -266,21 +326,23 @@ export const TimeClockCard = () => {
                 className="w-full"
                 variant="outline"
                 onClick={handleBreakEnd}
+                disabled={isProcessingBreak}
               >
                 {currentBreak.type === 'paid10' ? (
                   <Coffee className="mr-2 h-4 w-4" />
                 ) : (
                   <Utensils className="mr-2 h-4 w-4" />
                 )}
-                End Break
+                {isProcessingBreak ? 'Processing...' : 'End Break'}
               </Button>
               <Button 
                 className="w-full" 
                 variant="outline"
                 onClick={handleClockOut}
+                disabled={isClockingOut || isProcessingBreak}
               >
                 <LogOut className="mr-2 h-4 w-4" />
-                Clock Out
+                {isClockingOut ? 'Processing...' : 'Clock Out'}
               </Button>
             </>
           ) : (
@@ -291,6 +353,7 @@ export const TimeClockCard = () => {
                   onValueChange={(value) => 
                     setSelectedBreakType(value as 'paid10' | 'unpaid30' | 'unpaid60')
                   }
+                  disabled={isProcessingBreak}
                 >
                   <SelectTrigger className="col-span-1">
                     <SelectValue placeholder="Break Type" />
@@ -304,21 +367,23 @@ export const TimeClockCard = () => {
                 <Button 
                   className="col-span-1"
                   onClick={handleBreakStart}
+                  disabled={isProcessingBreak}
                 >
                   {selectedBreakType === 'paid10' ? (
                     <Coffee className="mr-2 h-4 w-4" />
                   ) : (
                     <Utensils className="mr-2 h-4 w-4" />
                   )}
-                  Break
+                  {isProcessingBreak ? 'Wait...' : 'Break'}
                 </Button>
                 <Button 
                   className="col-span-1" 
                   variant="outline"
                   onClick={handleClockOut}
+                  disabled={isClockingOut}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  Out
+                  {isClockingOut ? 'Wait...' : 'Out'}
                 </Button>
               </div>
             </>

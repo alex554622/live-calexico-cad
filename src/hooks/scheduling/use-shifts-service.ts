@@ -14,6 +14,16 @@ export const useShiftsService = () => {
     try {
       const now = new Date();
       
+      // Check if userId is a valid UUID format
+      const isValidUUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(userId);
+      
+      if (!isValidUUID) {
+        console.error('Invalid UUID format for userId:', userId);
+        throw new Error('Invalid user ID format. Expected UUID format.');
+      }
+      
+      console.log('Starting shift with userId:', userId, 'officerId:', officerId);
+      
       const { data, error } = await supabase
         .from('employee_shifts')
         .insert({
@@ -32,6 +42,8 @@ export const useShiftsService = () => {
         throw error;
       }
 
+      console.log('Successfully started shift:', data);
+      
       return { 
         data,
         timestamp: now,
