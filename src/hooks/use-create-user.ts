@@ -4,11 +4,32 @@ import { useToast } from '@/hooks/use-toast';
 import { signUp, createUserRecord } from '@/lib/supabase';
 import { useData } from '@/context/data';
 import { NewAccountFormData } from '@/types/user';
+import { supabase } from "@/integrations/supabase/client";
 
 export const useCreateUser = () => {
   const { toast } = useToast();
   const { createOfficer } = useData();
   const [isSaving, setIsSaving] = useState(false);
+
+  const createSchedulingEmployee = async (userData: NewAccountFormData) => {
+    try {
+      const { data, error } = await supabase
+        .from('employee_shifts')
+        .insert({
+          employee_id: userData.email,
+          status: 'active'
+        })
+        .select();
+      
+      if (error) {
+        console.error('Error creating employee shift record:', error);
+      } else {
+        console.log('Created employee shift record:', data);
+      }
+    } catch (error) {
+      console.error('Error in createSchedulingEmployee:', error);
+    }
+  };
 
   const createAccounts = async (newAccounts: NewAccountFormData[]) => {
     if (newAccounts.length === 0) return false;
@@ -77,6 +98,9 @@ export const useCreateUser = () => {
           success = false;
           continue;
         }
+
+        // Create an employee for scheduling
+        await createSchedulingEmployee(account);
 
         if (account.role === 'officer') {
           await createOfficer({
