@@ -15,6 +15,7 @@ import Officers from "./pages/Officers";
 import NotFound from "./pages/NotFound";
 import Notifications from "./pages/Notifications";
 import Settings from "./pages/Settings";
+import EmployeeScheduling from "./pages/EmployeeScheduling";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +64,7 @@ const App = () => (
                         <Route path="/officers" element={<Officers />} />
                         <Route path="/incidents" element={<Incidents />} />
                         <Route path="/notifications" element={<Notifications />} />
+                        <Route path="/scheduling" element={<EmployeeScheduling />} />
                         <Route path="/settings" element={<SettingsRoute />} />
                         <Route path="*" element={<NotFound />} />
                       </Routes>

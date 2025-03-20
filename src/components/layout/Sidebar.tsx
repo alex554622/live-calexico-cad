@@ -7,7 +7,8 @@ import {
   Bell, 
   Settings,
   Menu,
-  X
+  X,
+  Calendar
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -32,6 +33,7 @@ export function Sidebar({ collapsed, setCollapsed }: {
     { icon: Home, label: 'Dashboard', path: '/' },
     { icon: Users, label: 'Officers', path: '/officers' },
     { icon: FileText, label: 'Incidents', path: '/incidents' },
+    { icon: Calendar, label: 'Scheduling', path: '/scheduling' },
     { icon: Bell, label: 'Notifications', path: '/notifications' },
     { icon: Settings, label: 'Settings', path: '/settings' }
   ];
