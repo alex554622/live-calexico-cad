@@ -1,7 +1,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { Clock, LogIn, LogOut } from 'lucide-react';
+import { Clock, LogIn, LogOut, Coffee, Utensils } from 'lucide-react';
 import { 
   Card, 
   CardContent, 
@@ -14,12 +14,14 @@ import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
-
-type ClockEvent = {
-  id: string;
-  type: 'in' | 'out';
-  timestamp: Date;
-};
+import { 
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { ClockEvent } from '@/types/scheduling';
 
 export const TimeClockCard = () => {
   const { user } = useAuth();
@@ -27,6 +29,9 @@ export const TimeClockCard = () => {
   const [currentTime, setCurrentTime] = useState(new Date());
   const [clockEvents, setClockEvents] = useState<ClockEvent[]>([]);
   const [isClockedIn, setIsClockedIn] = useState(false);
+  const [isOnBreak, setIsOnBreak] = useState(false);
+  const [currentBreakType, setCurrentBreakType] = useState<'paid10' | 'unpaid30' | 'unpaid60' | null>(null);
+  const [selectedBreakType, setSelectedBreakType] = useState<'paid10' | 'unpaid30' | 'unpaid60'>('paid10');
   
   // Update current time
   useEffect(() => {
@@ -37,9 +42,19 @@ export const TimeClockCard = () => {
     return () => clearInterval(timer);
   }, []);
   
+  // Round time to nearest 15 minutes for display
+  const roundTime = (date: Date) => {
+    const minutes = date.getMinutes();
+    const roundedMinutes = Math.round(minutes / 15) * 15;
+    const newDate = new Date(date);
+    newDate.setMinutes(roundedMinutes, 0, 0);
+    return newDate;
+  };
+  
   const handleClockIn = () => {
     const newEvent: ClockEvent = {
       id: crypto.randomUUID(),
+      employeeId: user?.id || 'unknown',
       type: 'in',
       timestamp: new Date()
     };
@@ -49,14 +64,20 @@ export const TimeClockCard = () => {
     
     toast({
       title: "Clocked In",
-      description: `Successfully clocked in at ${format(new Date(), 'h:mm a')}`,
+      description: `Successfully clocked in at ${format(roundTime(new Date()), 'h:mm a')}`,
       variant: "default"
     });
   };
   
   const handleClockOut = () => {
+    // If on break, end it first
+    if (isOnBreak) {
+      handleBreakEnd();
+    }
+    
     const newEvent: ClockEvent = {
       id: crypto.randomUUID(),
+      employeeId: user?.id || 'unknown',
       type: 'out',
       timestamp: new Date()
     };
@@ -66,7 +87,52 @@ export const TimeClockCard = () => {
     
     toast({
       title: "Clocked Out",
-      description: `Successfully clocked out at ${format(new Date(), 'h:mm a')}`,
+      description: `Successfully clocked out at ${format(roundTime(new Date()), 'h:mm a')}`,
+      variant: "default"
+    });
+  };
+  
+  const handleBreakStart = () => {
+    const newEvent: ClockEvent = {
+      id: crypto.randomUUID(),
+      employeeId: user?.id || 'unknown',
+      type: 'breakStart',
+      breakType: selectedBreakType,
+      timestamp: new Date()
+    };
+    
+    setClockEvents([...clockEvents, newEvent]);
+    setIsOnBreak(true);
+    setCurrentBreakType(selectedBreakType);
+    
+    const breakTypeLabel = 
+      selectedBreakType === 'paid10' ? '10-minute paid break' : 
+      selectedBreakType === 'unpaid30' ? '30-minute lunch break' : 
+      '1-hour lunch break';
+    
+    toast({
+      title: "Break Started",
+      description: `Started ${breakTypeLabel} at ${format(roundTime(new Date()), 'h:mm a')}`,
+      variant: "default"
+    });
+  };
+  
+  const handleBreakEnd = () => {
+    const newEvent: ClockEvent = {
+      id: crypto.randomUUID(),
+      employeeId: user?.id || 'unknown',
+      type: 'breakEnd',
+      breakType: currentBreakType || undefined,
+      timestamp: new Date()
+    };
+    
+    setClockEvents([...clockEvents, newEvent]);
+    setIsOnBreak(false);
+    setCurrentBreakType(null);
+    
+    toast({
+      title: "Break Ended",
+      description: `Ended break at ${format(roundTime(new Date()), 'h:mm a')}`,
       variant: "default"
     });
   };
@@ -76,11 +142,53 @@ export const TimeClockCard = () => {
     .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
     .slice(0, 5);
   
+  const getEventIcon = (event: ClockEvent) => {
+    switch (event.type) {
+      case 'in':
+        return <LogIn className="mr-2 h-4 w-4 text-green-500" />;
+      case 'out':
+        return <LogOut className="mr-2 h-4 w-4 text-amber-500" />;
+      case 'breakStart':
+        return event.breakType === 'paid10' 
+          ? <Coffee className="mr-2 h-4 w-4 text-blue-500" /> 
+          : <Utensils className="mr-2 h-4 w-4 text-purple-500" />;
+      case 'breakEnd':
+        return event.breakType === 'paid10'
+          ? <Coffee className="mr-2 h-4 w-4 text-gray-500" />
+          : <Utensils className="mr-2 h-4 w-4 text-gray-500" />;
+      default:
+        return <Clock className="mr-2 h-4 w-4" />;
+    }
+  };
+  
+  const getEventLabel = (event: ClockEvent) => {
+    switch (event.type) {
+      case 'in':
+        return 'Clock In';
+      case 'out':
+        return 'Clock Out';
+      case 'breakStart':
+        return event.breakType === 'paid10' 
+          ? 'Start 10-min Break' 
+          : event.breakType === 'unpaid30'
+            ? 'Start 30-min Lunch'
+            : 'Start 1-hour Lunch';
+      case 'breakEnd':
+        return event.breakType === 'paid10' 
+          ? 'End 10-min Break' 
+          : event.breakType === 'unpaid30'
+            ? 'End 30-min Lunch'
+            : 'End 1-hour Lunch';
+      default:
+        return 'Event';
+    }
+  };
+  
   return (
     <Card className="w-full max-w-xl mx-auto">
       <CardHeader className="pb-2">
         <CardTitle className="text-xl">Employee Time Clock</CardTitle>
-        <CardDescription>Record your working hours</CardDescription>
+        <CardDescription>Record your working hours and breaks</CardDescription>
       </CardHeader>
       
       <CardContent className="space-y-6">
@@ -103,24 +211,80 @@ export const TimeClockCard = () => {
         </div>
         
         <div className="grid grid-cols-2 gap-4">
-          <Button 
-            className="w-full"
-            disabled={isClockedIn}
-            onClick={handleClockIn}
-          >
-            <LogIn className="mr-2 h-4 w-4" />
-            Clock In
-          </Button>
-          
-          <Button 
-            className="w-full" 
-            variant="outline"
-            disabled={!isClockedIn}
-            onClick={handleClockOut}
-          >
-            <LogOut className="mr-2 h-4 w-4" />
-            Clock Out
-          </Button>
+          {!isClockedIn ? (
+            <>
+              <Button 
+                className="w-full"
+                onClick={handleClockIn}
+              >
+                <LogIn className="mr-2 h-4 w-4" />
+                Clock In
+              </Button>
+              <div></div> {/* Empty space for grid alignment */}
+            </>
+          ) : isOnBreak ? (
+            <>
+              <Button 
+                className="w-full"
+                variant="outline"
+                onClick={handleBreakEnd}
+              >
+                {currentBreakType === 'paid10' ? (
+                  <Coffee className="mr-2 h-4 w-4" />
+                ) : (
+                  <Utensils className="mr-2 h-4 w-4" />
+                )}
+                End Break
+              </Button>
+              <Button 
+                className="w-full" 
+                variant="outline"
+                onClick={handleClockOut}
+              >
+                <LogOut className="mr-2 h-4 w-4" />
+                Clock Out
+              </Button>
+            </>
+          ) : (
+            <>
+              <div className="col-span-2 grid grid-cols-3 gap-2">
+                <Select
+                  value={selectedBreakType}
+                  onValueChange={(value) => 
+                    setSelectedBreakType(value as 'paid10' | 'unpaid30' | 'unpaid60')
+                  }
+                >
+                  <SelectTrigger className="col-span-1">
+                    <SelectValue placeholder="Break Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="paid10">10-min (Paid)</SelectItem>
+                    <SelectItem value="unpaid30">30-min Lunch</SelectItem>
+                    <SelectItem value="unpaid60">1-hour Lunch</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Button 
+                  className="col-span-1"
+                  onClick={handleBreakStart}
+                >
+                  {selectedBreakType === 'paid10' ? (
+                    <Coffee className="mr-2 h-4 w-4" />
+                  ) : (
+                    <Utensils className="mr-2 h-4 w-4" />
+                  )}
+                  Break
+                </Button>
+                <Button 
+                  className="col-span-1" 
+                  variant="outline"
+                  onClick={handleClockOut}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Out
+                </Button>
+              </div>
+            </>
+          )}
         </div>
         
         {recentEvents.length > 0 && (
@@ -130,12 +294,8 @@ export const TimeClockCard = () => {
               {recentEvents.map((event) => (
                 <div key={event.id} className="flex items-center justify-between text-sm p-2 border rounded">
                   <div className="flex items-center">
-                    {event.type === 'in' ? (
-                      <LogIn className="mr-2 h-4 w-4 text-green-500" />
-                    ) : (
-                      <LogOut className="mr-2 h-4 w-4 text-amber-500" />
-                    )}
-                    <span>{event.type === 'in' ? 'Clock In' : 'Clock Out'}</span>
+                    {getEventIcon(event)}
+                    <span>{getEventLabel(event)}</span>
                   </div>
                   <span className="text-muted-foreground">
                     {format(event.timestamp, 'h:mm a')}
