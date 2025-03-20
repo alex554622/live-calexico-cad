@@ -31,6 +31,7 @@ export const TimeClockCard = () => {
   const { toast } = useToast();
   const [currentTime, setCurrentTime] = useState(new Date());
   const [selectedBreakType, setSelectedBreakType] = useState<'paid10' | 'unpaid30' | 'unpaid60'>('paid10');
+  const [isClockingIn, setIsClockingIn] = useState(false);
   
   const { 
     startShift,
@@ -83,8 +84,29 @@ export const TimeClockCard = () => {
   };
   
   const handleClockIn = async () => {
-    const officerId = findOfficerIdForUser();
-    await startShift(officerId);
+    if (!user) {
+      toast({
+        title: 'Error',
+        description: 'You must be logged in to clock in',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    setIsClockingIn(true);
+    try {
+      const officerId = findOfficerIdForUser();
+      await startShift(officerId);
+    } catch (error) {
+      console.error('Error clocking in:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to start shift. Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsClockingIn(false);
+    }
   };
   
   const handleClockOut = async () => {
@@ -231,9 +253,10 @@ export const TimeClockCard = () => {
               <Button 
                 className="w-full"
                 onClick={handleClockIn}
+                disabled={isClockingIn}
               >
                 <LogIn className="mr-2 h-4 w-4" />
-                Clock In
+                {isClockingIn ? 'Clocking In...' : 'Clock In'}
               </Button>
               <div></div> {/* Empty space for grid alignment */}
             </>

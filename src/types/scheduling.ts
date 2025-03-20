@@ -1,4 +1,3 @@
-
 // Types for the scheduling functionality
 
 export interface TimeSheetEntry {
@@ -70,8 +69,14 @@ export interface EmployeeShift {
   updatedAt: Date;
   employee?: Employee;
   breaks?: EmployeeBreak[];
-  // Add this property to handle Supabase response structure
+  // Add these properties to handle Supabase response structure
   employee_breaks?: any[];
+  employee_id?: string;
+  officer_id?: string;
+  clock_in?: string;
+  clock_out?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface EmployeeBreak {
@@ -82,6 +87,11 @@ export interface EmployeeBreak {
   endTime: Date | null;
   duration: number | null; // Duration in minutes
   createdAt: Date;
+  // Add these properties to handle Supabase response structure
+  shift_id?: string;
+  start_time?: string;
+  end_time?: string;
+  created_at?: string;
 }
 
 // Employee type to connect with officers

@@ -113,18 +113,25 @@ export const useEmployeeShifts = () => {
 
     try {
       const now = new Date();
+      
+      // Fix: Use snake_case for column names to match the database schema
       const { data, error } = await supabase
         .from('employee_shifts')
         .insert({
           employee_id: user.id,
-          officer_id: officerId,
+          officer_id: officerId || null,
           clock_in: now.toISOString(),
-          status: 'active'
+          status: 'active',
+          created_at: now.toISOString(),
+          updated_at: now.toISOString()
         })
         .select()
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Database error when starting shift:', error);
+        throw error;
+      }
 
       toast({
         title: 'Success',
@@ -137,7 +144,7 @@ export const useEmployeeShifts = () => {
       console.error('Error starting shift:', error);
       toast({
         title: 'Error',
-        description: 'Failed to start shift',
+        description: 'Failed to start shift. Please try again.',
         variant: 'destructive',
       });
       return null;
