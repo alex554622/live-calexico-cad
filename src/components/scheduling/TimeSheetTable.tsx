@@ -47,6 +47,33 @@ export const TimeSheetTable = ({ timeSheets, onDownload }: TimeSheetTableProps) 
   // Format hours with one decimal place
   const formatHours = (hours: number) => hours.toFixed(1);
   
+  // Format break type to be more human-readable
+  const formatBreakType = (type: string) => {
+    switch (type) {
+      case 'paid10': return '10m (paid)';
+      case 'unpaid30': return '30m lunch';
+      case 'unpaid60': return '1h lunch';
+      default: return type;
+    }
+  };
+  
+  // Get CSS class for timesheet status
+  const getStatusClass = (status: 'approved' | 'pending' | 'rejected') => {
+    switch (status) {
+      case 'approved': 
+        return 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300';
+      case 'pending': 
+        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300';
+      case 'rejected': 
+        return 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300';
+    }
+  };
+  
+  // Calculate total break time for a day
+  const calculateBreakTime = (breaks: any[]) => {
+    return breaks.reduce((total, breakItem) => total + breakItem.duration, 0);
+  };
+  
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
@@ -91,13 +118,7 @@ export const TimeSheetTable = ({ timeSheets, onDownload }: TimeSheetTableProps) 
                     <TableCell className="font-medium">{sheet.employeeName}</TableCell>
                     <TableCell>{sheet.weekLabel}</TableCell>
                     <TableCell>
-                      <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                        sheet.status === 'approved' 
-                          ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                          : sheet.status === 'pending' 
-                          ? 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300'
-                          : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
-                      }`}>
+                      <div className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${getStatusClass(sheet.status)}`}>
                         {sheet.status.charAt(0).toUpperCase() + sheet.status.slice(1)}
                       </div>
                     </TableCell>
@@ -131,6 +152,7 @@ export const TimeSheetTable = ({ timeSheets, onDownload }: TimeSheetTableProps) 
                                 <TableHead>Clock In</TableHead>
                                 <TableHead>Clock Out</TableHead>
                                 <TableHead>Breaks</TableHead>
+                                <TableHead>Break Time</TableHead>
                                 <TableHead className="text-right">Hours</TableHead>
                               </TableRow>
                             </TableHeader>
@@ -146,9 +168,7 @@ export const TimeSheetTable = ({ timeSheets, onDownload }: TimeSheetTableProps) 
                                         {entry.breaks.map((breakItem, i) => (
                                           <div key={i} className="flex gap-2">
                                             <span>
-                                              {breakItem.type === 'paid10' ? '10m (paid)' : 
-                                               breakItem.type === 'unpaid30' ? '30m lunch' : 
-                                               '1h lunch'}
+                                              {formatBreakType(breakItem.type)}
                                             </span>
                                             <span className="text-muted-foreground">
                                               {breakItem.startTime} - {breakItem.endTime}
@@ -160,11 +180,20 @@ export const TimeSheetTable = ({ timeSheets, onDownload }: TimeSheetTableProps) 
                                       <span className="text-muted-foreground text-xs">None</span>
                                     )}
                                   </TableCell>
+                                  <TableCell>
+                                    {entry.breaks && entry.breaks.length > 0 ? (
+                                      <span className="text-xs">
+                                        {calculateBreakTime(entry.breaks)} min
+                                      </span>
+                                    ) : (
+                                      <span className="text-muted-foreground text-xs">0 min</span>
+                                    )}
+                                  </TableCell>
                                   <TableCell className="text-right">{formatHours(entry.hoursWorked)}</TableCell>
                                 </TableRow>
                               ))}
                               <TableRow>
-                                <TableCell colSpan={4} className="font-medium text-right">Weekly Total:</TableCell>
+                                <TableCell colSpan={5} className="font-medium text-right">Weekly Total:</TableCell>
                                 <TableCell className="text-right font-bold">{formatHours(sheet.totalHours)}</TableCell>
                               </TableRow>
                             </TableBody>

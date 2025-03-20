@@ -21,17 +21,34 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ClockEvent } from '@/types/scheduling';
+import { EmployeeBreak } from '@/types/scheduling';
+import { useEmployeeShifts } from '@/hooks/scheduling/use-employee-shifts';
+import { useData } from '@/context/data';
 
 export const TimeClockCard = () => {
   const { user } = useAuth();
+  const { officers } = useData();
   const { toast } = useToast();
   const [currentTime, setCurrentTime] = useState(new Date());
-  const [clockEvents, setClockEvents] = useState<ClockEvent[]>([]);
-  const [isClockedIn, setIsClockedIn] = useState(false);
-  const [isOnBreak, setIsOnBreak] = useState(false);
-  const [currentBreakType, setCurrentBreakType] = useState<'paid10' | 'unpaid30' | 'unpaid60' | null>(null);
   const [selectedBreakType, setSelectedBreakType] = useState<'paid10' | 'unpaid30' | 'unpaid60'>('paid10');
+  
+  const { 
+    startShift,
+    endShift,
+    startBreak,
+    endBreak,
+    getCurrentUserShift,
+    getCurrentUserBreak,
+    activeShifts,
+    activeBreaks 
+  } = useEmployeeShifts();
+  
+  const currentShift = getCurrentUserShift();
+  const currentBreak = getCurrentUserBreak();
+  
+  // State derived from the hooks
+  const isClockedIn = !!currentShift;
+  const isOnBreak = !!currentBreak;
   
   // Update current time
   useEffect(() => {
@@ -51,98 +68,96 @@ export const TimeClockCard = () => {
     return newDate;
   };
   
-  const handleClockIn = () => {
-    const newEvent: ClockEvent = {
-      id: crypto.randomUUID(),
-      employeeId: user?.id || 'unknown',
-      type: 'in',
-      timestamp: new Date()
-    };
+  // Find matching officer for the current user
+  const findOfficerIdForUser = () => {
+    if (!user) return undefined;
     
-    setClockEvents([...clockEvents, newEvent]);
-    setIsClockedIn(true);
+    // In a real app, you would have a proper way to link users to officers
+    // This is a simplified example using either matching names or emails
+    const matchingOfficer = officers.find(officer => 
+      (user.name && officer.name.includes(user.name)) ||
+      (officer.contactInfo?.email && officer.contactInfo.email === user.username)
+    );
     
-    toast({
-      title: "Clocked In",
-      description: `Successfully clocked in at ${format(roundTime(new Date()), 'h:mm a')}`,
-      variant: "default"
-    });
+    return matchingOfficer?.id;
   };
   
-  const handleClockOut = () => {
-    // If on break, end it first
-    if (isOnBreak) {
-      handleBreakEnd();
+  const handleClockIn = async () => {
+    const officerId = findOfficerIdForUser();
+    await startShift(officerId);
+  };
+  
+  const handleClockOut = async () => {
+    if (!currentShift) return;
+    await endShift(currentShift.id);
+  };
+  
+  const handleBreakStart = async () => {
+    if (!currentShift) return;
+    await startBreak(currentShift.id, selectedBreakType);
+  };
+  
+  const handleBreakEnd = async () => {
+    if (!currentBreak) return;
+    await endBreak(currentBreak.id);
+  };
+  
+  // Get all events for the current user, sorted by time
+  const getUserEvents = () => {
+    if (!user) return [];
+    
+    const events = [];
+    
+    // Get all shifts for this user
+    const userShifts = activeShifts.filter(shift => shift.employeeId === user.id);
+    
+    for (const shift of userShifts) {
+      if (shift.clockIn) {
+        events.push({
+          id: `clock-in-${shift.id}`,
+          type: 'in' as const,
+          timestamp: shift.clockIn
+        });
+      }
+      
+      if (shift.clockOut) {
+        events.push({
+          id: `clock-out-${shift.id}`,
+          type: 'out' as const,
+          timestamp: shift.clockOut
+        });
+      }
+      
+      // Get all breaks for this shift
+      const shiftBreaks = activeBreaks.filter(b => b.shiftId === shift.id);
+      
+      for (const breakItem of shiftBreaks) {
+        events.push({
+          id: `break-start-${breakItem.id}`,
+          type: 'breakStart' as const,
+          breakType: breakItem.type,
+          timestamp: breakItem.startTime
+        });
+        
+        if (breakItem.endTime) {
+          events.push({
+            id: `break-end-${breakItem.id}`,
+            type: 'breakEnd' as const,
+            breakType: breakItem.type,
+            timestamp: breakItem.endTime
+          });
+        }
+      }
     }
     
-    const newEvent: ClockEvent = {
-      id: crypto.randomUUID(),
-      employeeId: user?.id || 'unknown',
-      type: 'out',
-      timestamp: new Date()
-    };
-    
-    setClockEvents([...clockEvents, newEvent]);
-    setIsClockedIn(false);
-    
-    toast({
-      title: "Clocked Out",
-      description: `Successfully clocked out at ${format(roundTime(new Date()), 'h:mm a')}`,
-      variant: "default"
-    });
-  };
-  
-  const handleBreakStart = () => {
-    const newEvent: ClockEvent = {
-      id: crypto.randomUUID(),
-      employeeId: user?.id || 'unknown',
-      type: 'breakStart',
-      breakType: selectedBreakType,
-      timestamp: new Date()
-    };
-    
-    setClockEvents([...clockEvents, newEvent]);
-    setIsOnBreak(true);
-    setCurrentBreakType(selectedBreakType);
-    
-    const breakTypeLabel = 
-      selectedBreakType === 'paid10' ? '10-minute paid break' : 
-      selectedBreakType === 'unpaid30' ? '30-minute lunch break' : 
-      '1-hour lunch break';
-    
-    toast({
-      title: "Break Started",
-      description: `Started ${breakTypeLabel} at ${format(roundTime(new Date()), 'h:mm a')}`,
-      variant: "default"
-    });
-  };
-  
-  const handleBreakEnd = () => {
-    const newEvent: ClockEvent = {
-      id: crypto.randomUUID(),
-      employeeId: user?.id || 'unknown',
-      type: 'breakEnd',
-      breakType: currentBreakType || undefined,
-      timestamp: new Date()
-    };
-    
-    setClockEvents([...clockEvents, newEvent]);
-    setIsOnBreak(false);
-    setCurrentBreakType(null);
-    
-    toast({
-      title: "Break Ended",
-      description: `Ended break at ${format(roundTime(new Date()), 'h:mm a')}`,
-      variant: "default"
-    });
+    // Sort events by timestamp, most recent first
+    return events.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime());
   };
   
   // Recent clock events (last 5)
-  const recentEvents = [...clockEvents]
-    .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
-    .slice(0, 5);
+  const recentEvents = getUserEvents().slice(0, 5);
   
-  const getEventIcon = (event: ClockEvent) => {
+  const getEventIcon = (event: any) => {
     switch (event.type) {
       case 'in':
         return <LogIn className="mr-2 h-4 w-4 text-green-500" />;
@@ -161,7 +176,7 @@ export const TimeClockCard = () => {
     }
   };
   
-  const getEventLabel = (event: ClockEvent) => {
+  const getEventLabel = (event: any) => {
     switch (event.type) {
       case 'in':
         return 'Clock In';
@@ -229,7 +244,7 @@ export const TimeClockCard = () => {
                 variant="outline"
                 onClick={handleBreakEnd}
               >
-                {currentBreakType === 'paid10' ? (
+                {currentBreak.type === 'paid10' ? (
                   <Coffee className="mr-2 h-4 w-4" />
                 ) : (
                   <Utensils className="mr-2 h-4 w-4" />

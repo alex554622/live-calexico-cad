@@ -58,6 +58,30 @@ export interface ClockEvent {
   note?: string;
 }
 
+// New interfaces for database-backed shifts and breaks
+export interface EmployeeShift {
+  id: string;
+  employeeId: string;
+  officerId?: string;
+  clockIn: Date | null;
+  clockOut: Date | null;
+  status: 'active' | 'completed';
+  createdAt: Date;
+  updatedAt: Date;
+  employee?: Employee;
+  breaks?: EmployeeBreak[];
+}
+
+export interface EmployeeBreak {
+  id: string;
+  shiftId: string;
+  type: 'paid10' | 'unpaid30' | 'unpaid60';
+  startTime: Date;
+  endTime: Date | null;
+  duration: number | null; // Duration in minutes
+  createdAt: Date;
+}
+
 // Employee type to connect with officers
 export interface Employee {
   id: string;
@@ -71,4 +95,6 @@ export interface Employee {
     email: string;
     phone: string;
   };
+  currentShift?: EmployeeShift;
+  currentBreak?: EmployeeBreak;
 }

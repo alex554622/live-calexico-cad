@@ -9,6 +9,85 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      employee_breaks: {
+        Row: {
+          created_at: string
+          duration: number | null
+          end_time: string | null
+          id: string
+          shift_id: string | null
+          start_time: string
+          type: string
+        }
+        Insert: {
+          created_at?: string
+          duration?: number | null
+          end_time?: string | null
+          id?: string
+          shift_id?: string | null
+          start_time: string
+          type: string
+        }
+        Update: {
+          created_at?: string
+          duration?: number | null
+          end_time?: string | null
+          id?: string
+          shift_id?: string | null
+          start_time?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_breaks_shift_id_fkey"
+            columns: ["shift_id"]
+            isOneToOne: false
+            referencedRelation: "employee_shifts"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employee_shifts: {
+        Row: {
+          clock_in: string | null
+          clock_out: string | null
+          created_at: string
+          employee_id: string
+          id: string
+          officer_id: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          employee_id: string
+          id?: string
+          officer_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          clock_in?: string | null
+          clock_out?: string | null
+          created_at?: string
+          employee_id?: string
+          id?: string
+          officer_id?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_shifts_officer_id_fkey"
+            columns: ["officer_id"]
+            isOneToOne: false
+            referencedRelation: "officers"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       incident_officers: {
         Row: {
           assigned_at: string
