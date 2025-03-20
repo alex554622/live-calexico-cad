@@ -11,7 +11,8 @@ import {
 import { Employee, EmployeeBreak } from '@/types/scheduling';
 import { format, formatDistanceToNow } from 'date-fns';
 import { EmployeeStatusBadge } from './EmployeeStatusBadge';
-import { Alert, AlertCircle, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { AlertCircle } from 'lucide-react';
 
 interface EmployeeListProps {
   employees: Employee[];
