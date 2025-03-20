@@ -58,7 +58,7 @@ export interface ClockEvent {
   note?: string;
 }
 
-// New interfaces for database-backed shifts and breaks
+// Updated interface for database-backed shifts to match database structure
 export interface EmployeeShift {
   id: string;
   employeeId: string;
@@ -70,6 +70,8 @@ export interface EmployeeShift {
   updatedAt: Date;
   employee?: Employee;
   breaks?: EmployeeBreak[];
+  // Add this property to handle Supabase response structure
+  employee_breaks?: any[];
 }
 
 export interface EmployeeBreak {

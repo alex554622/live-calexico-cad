@@ -31,19 +31,28 @@ export const useEmployeeShifts = () => {
       const shifts = shiftsData as unknown as EmployeeShift[];
       
       // Transform the data to properly type the nested breaks
-      const transformedShifts = shifts.map(shift => ({
-        ...shift,
-        clockIn: shift.clockIn ? new Date(shift.clockIn) : null,
-        clockOut: shift.clockOut ? new Date(shift.clockOut) : null,
-        createdAt: new Date(shift.createdAt),
-        updatedAt: new Date(shift.updatedAt),
-        breaks: shift.employee_breaks ? shift.employee_breaks.map((breakItem: any) => ({
-          ...breakItem,
-          startTime: new Date(breakItem.start_time),
-          endTime: breakItem.end_time ? new Date(breakItem.end_time) : null,
-          createdAt: new Date(breakItem.created_at)
-        })) : []
-      }));
+      const transformedShifts = shifts.map(shift => {
+        // Get the breaks from the employee_breaks property
+        const breakItems = shift.employee_breaks || [];
+        
+        return {
+          ...shift,
+          clockIn: shift.clockIn ? new Date(shift.clockIn) : null,
+          clockOut: shift.clockOut ? new Date(shift.clockOut) : null,
+          createdAt: new Date(shift.createdAt),
+          updatedAt: new Date(shift.updatedAt),
+          // Add the breaks to the breaks property
+          breaks: breakItems.map((breakItem: any) => ({
+            id: breakItem.id,
+            shiftId: breakItem.shift_id,
+            type: breakItem.type as 'paid10' | 'unpaid30' | 'unpaid60',
+            startTime: new Date(breakItem.start_time),
+            endTime: breakItem.end_time ? new Date(breakItem.end_time) : null,
+            duration: breakItem.duration,
+            createdAt: new Date(breakItem.created_at)
+          }))
+        };
+      });
       
       // Get active breaks (where end_time is null)
       const activeBreaksData = [];
