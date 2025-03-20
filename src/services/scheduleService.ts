@@ -35,3 +35,41 @@ export async function getSchedules() {
 
   return data;
 }
+
+// Function to update an existing schedule
+export async function updateSchedule(scheduleId: string, scheduleData: Partial<ScheduleFormSchema>) {
+  const updateObject: any = { ...scheduleData };
+  
+  // If date exists, format it properly
+  if (updateObject.date) {
+    updateObject.date = format(updateObject.date, 'yyyy-MM-dd');
+  }
+
+  const { data, error } = await supabase
+    .from('employee_schedules')
+    .update(updateObject)
+    .eq('id', scheduleId)
+    .select();
+
+  if (error) {
+    console.error('Error updating schedule:', error);
+    throw error;
+  }
+
+  return data;
+}
+
+// Function to delete a schedule
+export async function deleteSchedule(scheduleId: string) {
+  const { error } = await supabase
+    .from('employee_schedules')
+    .delete()
+    .eq('id', scheduleId);
+
+  if (error) {
+    console.error('Error deleting schedule:', error);
+    throw error;
+  }
+
+  return true;
+}

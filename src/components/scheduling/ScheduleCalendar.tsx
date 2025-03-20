@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useSchedules } from '@/hooks/scheduling/use-schedules';
 import { employees } from './schedule-data';
+import { Skeleton } from '@/components/ui/skeleton';
 
 export const ScheduleCalendar = () => {
   const { schedules, loading } = useSchedules();
@@ -26,6 +27,23 @@ export const ScheduleCalendar = () => {
     const employee = employees.find(emp => emp.id === employeeId);
     return employee ? employee.name : 'Unknown';
   };
+
+  // Render loading skeletons
+  const renderLoadingState = () => (
+    <div className="space-y-4">
+      {[1, 2, 3].map((i) => (
+        <div key={i} className="border rounded-lg p-4">
+          <div className="flex justify-between items-start mb-2">
+            <div className="w-full">
+              <Skeleton className="h-4 w-1/3 mb-2" />
+              <Skeleton className="h-3 w-1/4" />
+            </div>
+            <Skeleton className="h-6 w-16" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
 
   return (
     <div className="grid gap-4 md:grid-cols-2">
@@ -51,7 +69,7 @@ export const ScheduleCalendar = () => {
         </CardHeader>
         <CardContent>
           {loading ? (
-            <p className="text-muted-foreground">Loading schedules...</p>
+            renderLoadingState()
           ) : selectedDateSchedules.length > 0 ? (
             <div className="space-y-4">
               {selectedDateSchedules.map((schedule) => (
