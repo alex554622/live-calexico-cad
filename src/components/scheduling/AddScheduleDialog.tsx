@@ -1,96 +1,20 @@
 
 import React from 'react';
-import { Calendar, Clock } from 'lucide-react';
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-import { format } from 'date-fns';
 import { 
   Dialog, 
   DialogContent, 
   DialogDescription, 
-  DialogFooter, 
   DialogHeader, 
   DialogTitle 
 } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import { Input } from '@/components/ui/input';
-import { cn } from '@/lib/utils';
-import { useToast } from '@/hooks/use-toast';
+import { ScheduleForm } from './ScheduleForm';
 
 interface AddScheduleDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-const formSchema = z.object({
-  employeeId: z.string().min(1, { message: "Employee is required" }),
-  date: z.date({ required_error: "Date is required" }),
-  startTime: z.string().min(1, { message: "Start time is required" }),
-  endTime: z.string().min(1, { message: "End time is required" }),
-  position: z.string().min(1, { message: "Position is required" }),
-});
-
-// Sample employee data
-const employees = [
-  { id: "emp1", name: "John Doe" },
-  { id: "emp2", name: "Jane Smith" },
-  { id: "emp3", name: "Mike Johnson" },
-  { id: "emp4", name: "Sarah Williams" },
-];
-
-// Sample positions
-const positions = [
-  "Dispatcher",
-  "Officer",
-  "Supervisor",
-  "Administrator",
-];
-
 export const AddScheduleDialog = ({ open, onOpenChange }: AddScheduleDialogProps) => {
-  const { toast } = useToast();
-  
-  const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
-    defaultValues: {
-      employeeId: "",
-      date: new Date(),
-      startTime: "09:00",
-      endTime: "17:00",
-      position: "",
-    },
-  });
-
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
-    console.log("Schedule values:", values);
-    
-    // Here you would submit the values to your backend
-    
-    toast({
-      title: "Schedule created",
-      description: `Added schedule for ${employees.find(e => e.id === values.employeeId)?.name} on ${format(values.date, 'MMM d, yyyy')}`,
-      variant: "default",
-    });
-    
-    form.reset();
-    onOpenChange(false);
-  };
-
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
@@ -101,127 +25,7 @@ export const AddScheduleDialog = ({ open, onOpenChange }: AddScheduleDialogProps
           </DialogDescription>
         </DialogHeader>
         
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-            <FormField
-              control={form.control}
-              name="employeeId"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Employee</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select employee" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {employees.map((employee) => (
-                        <SelectItem key={employee.id} value={employee.id}>
-                          {employee.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <FormField
-              control={form.control}
-              name="date"
-              render={({ field }) => (
-                <FormItem className="flex flex-col">
-                  <FormLabel>Date</FormLabel>
-                  <FormControl>
-                    <Input
-                      type="date"
-                      onChange={(e) => {
-                        const date = e.target.valueAsDate || new Date();
-                        field.onChange(date);
-                      }}
-                      value={field.value ? format(field.value, 'yyyy-MM-dd') : ''}
-                      className="w-full"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="startTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Start Time</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="endTime"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>End Time</FormLabel>
-                    <FormControl>
-                      <Input
-                        type="time"
-                        {...field}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <FormField
-              control={form.control}
-              name="position"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Position</FormLabel>
-                  <Select 
-                    onValueChange={field.onChange} 
-                    defaultValue={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select position" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {positions.map((position) => (
-                        <SelectItem key={position} value={position}>
-                          {position}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            <DialogFooter>
-              <Button type="submit">Save Schedule</Button>
-            </DialogFooter>
-          </form>
-        </Form>
+        <ScheduleForm onSuccess={() => onOpenChange(false)} />
       </DialogContent>
     </Dialog>
   );
