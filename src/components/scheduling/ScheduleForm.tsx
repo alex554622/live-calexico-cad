@@ -24,6 +24,7 @@ import { useToast } from '@/hooks/use-toast';
 import { scheduleFormSchema, ScheduleFormSchema } from './types';
 import { employees, positions } from './schedule-data';
 import { DialogFooter } from '@/components/ui/dialog';
+import { createSchedule } from '@/services/scheduleService';
 
 interface ScheduleFormProps {
   onSuccess: () => void;
@@ -43,19 +44,26 @@ export const ScheduleForm = ({ onSuccess }: ScheduleFormProps) => {
     },
   });
 
-  const onSubmit = (values: ScheduleFormSchema) => {
-    console.log("Schedule values:", values);
-    
-    // Here you would submit the values to your backend
-    
-    toast({
-      title: "Schedule created",
-      description: `Added schedule for ${employees.find(e => e.id === values.employeeId)?.name} on ${format(values.date, 'MMM d, yyyy')}`,
-      variant: "default",
-    });
-    
-    form.reset();
-    onSuccess();
+  const onSubmit = async (values: ScheduleFormSchema) => {
+    try {
+      await createSchedule(values);
+      
+      toast({
+        title: "Schedule created",
+        description: `Added schedule for ${employees.find(e => e.id === values.employeeId)?.name} on ${format(values.date, 'MMM d, yyyy')}`,
+        variant: "default",
+      });
+      
+      form.reset();
+      onSuccess();
+    } catch (error) {
+      console.error("Error saving schedule:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save schedule. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   return (

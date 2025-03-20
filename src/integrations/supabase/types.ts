@@ -47,6 +47,36 @@ export type Database = {
           },
         ]
       }
+      employee_schedules: {
+        Row: {
+          created_at: string
+          date: string
+          employee_id: string
+          end_time: string
+          id: string
+          position: string
+          start_time: string
+        }
+        Insert: {
+          created_at?: string
+          date: string
+          employee_id: string
+          end_time: string
+          id?: string
+          position: string
+          start_time: string
+        }
+        Update: {
+          created_at?: string
+          date?: string
+          employee_id?: string
+          end_time?: string
+          id?: string
+          position?: string
+          start_time?: string
+        }
+        Relationships: []
+      }
       employee_shifts: {
         Row: {
           clock_in: string | null
